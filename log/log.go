@@ -10,16 +10,16 @@ import (
 
 // levels
 const (
-	DEBUG_LEVEL = iota
-	INFO_LEVEL
+	INFO_LEVEL = iota
+	DEBUG_LEVEL
 	WARN_LEVEL
 	ERROR_LEVEL
 	FATAL_LEVEL
 )
 
 const (
-	DEBUG_LEVEL_DESC = "[debug] "
 	INFO_LEVEL_DESC  = "[info ] "
+	DEBUG_LEVEL_DESC = "[debug] "
 	WARN_LEVEL_DESC  = "[warn ] "
 	ERROR_LEVEL_DESC = "[error] "
 	FATAL_LEVEL_DESC = "[fatal] "
@@ -50,6 +50,7 @@ var glogger *Logger
 
 func send(level int, desc, format string, param ...interface{}) {
 	if glogger == nil {
+		log.Fatal("log is not init, please call log.Init first.")
 		return
 	}
 	m := &Msg{level, desc, format, param}
@@ -131,7 +132,7 @@ func (self *Logger) doPrintf(level int, levelDesc, format string, a ...interface
 				self.baseFile.Close()
 			}
 			self.baseFile, _ = createLogFile(self.outputPath)
-			self.fileLogger = log.New(self.baseFile, "", log.LstdFlags|log.Lmicroseconds)
+			self.fileLogger = log.New(self.baseFile, "", log.Ldate|log.Lmicroseconds)
 			self.logLine = 0
 		}
 		if self.fileLogger != nil {
