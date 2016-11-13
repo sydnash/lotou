@@ -10,8 +10,7 @@ func f(m *core.Message) {
 }
 
 type Game struct {
-	in chan *core.Message
-	id uint
+	*core.Base
 }
 
 type Game2 struct {
@@ -22,16 +21,11 @@ var m *Game
 var m2 *Game2
 
 func init() {
-	m = &Game{}
-	m.in = make(chan *core.Message, 1000)
-	m.id = core.RegisterService(m)
+	m = &Game{Base: core.NewBase()}
+	core.RegisterService(m)
 
-	m2 = &Game2{}
-	m2.in = make(chan *core.Message, 1000)
-	m2.id = core.RegisterService(m2)
-}
-func (self *Game) Send(m *core.Message) {
-	self.in <- m
+	m2 = &Game2{Game: Game{Base: core.NewBase()}}
+	core.RegisterService(m2)
 }
 
 func TestCore(t *testing.T) {
@@ -39,10 +33,11 @@ func TestCore(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case msg, ok := <-m.in:
+			case msg, ok := <-m.In():
 				if ok {
 					if msg.Type == core.MSG_TYPE_CLOSE {
 						fmt.Println(msg.Src, msg.Dest, msg.Type)
+						m.Close()
 						a <- 1
 						break
 					} else {
@@ -55,13 +50,14 @@ func TestCore(t *testing.T) {
 
 	go func() {
 		for {
-			time.Sleep(time.Second)
-			if !(core.Send(m.id, m2.id, "kdjfajdfkdf", "aksjdflkajsdf")) {
+			if !(core.Send(m.Id(), m2.Id(), "kdjfajdfkdf", "aksjdflkajsdf")) {
+				m2.Close()
 				a <- 1
 				break
 			}
+			time.Sleep(time.Second)
 			time.AfterFunc(time.Second*10, func() {
-				core.Close(m.id, m2.id)
+				core.Close(m.Id(), m2.Id())
 			})
 		}
 	}()

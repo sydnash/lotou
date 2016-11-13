@@ -1,12 +1,13 @@
 package core
 
 import (
-	"fmt"
+	"github.com/sydnash/majiang/log"
 	"sync"
 )
 
 type Service interface {
 	Send(m *Message)
+	SetId(id uint)
 }
 
 type manager struct {
@@ -27,7 +28,7 @@ func GetService(id uint) Service {
 	defer c.mutex.Unlock()
 	ser, ok := c.dictory[id]
 	if !ok {
-		fmt.Printf("service %d is not exist.\n", id)
+		log.Info("service %d is not exist.", id)
 	}
 	return ser
 }
@@ -36,6 +37,7 @@ func RegisterService(s Service) uint {
 	defer c.mutex.Unlock()
 	c.id++
 	c.dictory[c.id] = s
+	s.SetId(c.id)
 	return c.id
 }
 
@@ -45,11 +47,11 @@ func Send(dest uint, src uint, data ...interface{}) bool {
 
 func Close(dest uint, src uint) bool {
 	ret := send(dest, src, MSG_TYPE_CLOSE)
-	close(dest)
+	remove(dest)
 	return ret
 }
 
-func close(id uint) {
+func remove(id uint) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	delete(c.dictory, id)
