@@ -1,8 +1,8 @@
 package core_test
 
 import "testing"
-import "fmt"
 import "github.com/sydnash/majiang/core"
+import "github.com/sydnash/majiang/log"
 import "time"
 
 func f(m *core.Message) {
@@ -21,8 +21,10 @@ var m *Game
 var m2 *Game2
 
 func init() {
-	m = &Game{Base: core.NewBase()}
+	log.Init("log", log.FATAL_LEVEL, log.INFO_LEVEL, 10000, 1000)
+	m = &Game{core.NewBase()}
 	core.RegisterService(m)
+	core.Name(m.Id(), "m1")
 
 	m2 = &Game2{Game: Game{Base: core.NewBase()}}
 	core.RegisterService(m2)
@@ -36,12 +38,12 @@ func TestCore(t *testing.T) {
 			case msg, ok := <-m.In():
 				if ok {
 					if msg.Type == core.MSG_TYPE_CLOSE {
-						fmt.Println(msg.Src, msg.Dest, msg.Type)
 						m.Close()
+						log.Info("%v, %v, %v", msg.Src, msg.Dest, msg.Type)
 						a <- 1
 						break
 					} else {
-						fmt.Println(msg.Src, msg.Dest, msg.Type, msg.Data[0].(string))
+						log.Info("%v, %v, %v, %v", msg.Src, msg.Dest, msg.Type, msg.Data[0].(string))
 					}
 				}
 			}
@@ -50,8 +52,8 @@ func TestCore(t *testing.T) {
 
 	go func() {
 		for {
-			if !(core.Send(m.Id(), m2.Id(), "kdjfajdfkdf", "aksjdflkajsdf")) {
-				m2.Close()
+			time.Sleep(time.Second)
+			if !(core.SendName("m1", m2.Id(), "kdjfajdfkdf", "aksjdflkajsdf")) {
 				a <- 1
 				break
 			}

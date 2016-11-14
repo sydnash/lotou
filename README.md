@@ -1,0 +1,2 @@
+# lotou
+a go framework
