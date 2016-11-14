@@ -10,16 +10,16 @@ import (
 
 // levels
 const (
-	INFO_LEVEL = iota
-	DEBUG_LEVEL
+	DEBUG_LEVEL = iota
+	INFO_LEVEL  = iota
 	WARN_LEVEL
 	ERROR_LEVEL
 	FATAL_LEVEL
 )
 
 const (
-	INFO_LEVEL_DESC  = "[info ] "
 	DEBUG_LEVEL_DESC = "[debug] "
+	INFO_LEVEL_DESC  = "[info ] "
 	WARN_LEVEL_DESC  = "[warn ] "
 	ERROR_LEVEL_DESC = "[error] "
 	FATAL_LEVEL_DESC = "[fatal] "

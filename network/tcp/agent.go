@@ -44,7 +44,6 @@ func NewAgent(con *net.TCPConn, dest uint) *Agent {
 
 func (self *Agent) Run() {
 	core.RegisterService(self)
-	log.Info("agen read msg")
 	go func() {
 		for {
 			m, ok := <-self.In()
@@ -73,7 +72,6 @@ func (self *Agent) Run() {
 	}()
 	go func() {
 		for {
-			log.Info("agen read msg")
 			//need to do split package.
 			a := make([]byte, 8192)
 			len, err := self.inbuffer.Read(a)
