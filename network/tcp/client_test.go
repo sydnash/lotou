@@ -1,9 +1,9 @@
 package tcp_test
 
 import (
-	"github.com/sydnash/majiang/core"
-	"github.com/sydnash/majiang/log"
-	"github.com/sydnash/majiang/network/tcp"
+	"github.com/sydnash/lotou/core"
+	"github.com/sydnash/lotou/log"
+	"github.com/sydnash/lotou/network/tcp"
 	"testing"
 	"time"
 )

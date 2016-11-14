@@ -1,7 +1,7 @@
 package log_test
 
 import (
-	"github.com/sydnash/majiang/log"
+	"github.com/sydnash/lotou/log"
 	"testing"
 	"time"
 )

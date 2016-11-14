@@ -2,8 +2,8 @@ package tcp
 
 import (
 	"bufio"
-	"github.com/sydnash/majiang/core"
-	"github.com/sydnash/majiang/log"
+	"github.com/sydnash/lotou/core"
+	"github.com/sydnash/lotou/log"
 	"net"
 	"time"
 )

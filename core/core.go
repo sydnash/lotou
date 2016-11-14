@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/sydnash/majiang/log"
+	"github.com/sydnash/lotou/log"
 	"sync"
 )
 

@@ -6,7 +6,7 @@ when a tcp connect comming in
 create a agent
 */
 import (
-	"github.com/sydnash/majiang/log"
+	"github.com/sydnash/lotou/log"
 	"net"
 	"time"
 )

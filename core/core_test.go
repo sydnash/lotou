@@ -1,8 +1,8 @@
 package core_test
 
 import "testing"
-import "github.com/sydnash/majiang/core"
-import "github.com/sydnash/majiang/log"
+import "github.com/sydnash/lotou/core"
+import "github.com/sydnash/lotou/log"
 import "time"
 
 func f(m *core.Message) {
