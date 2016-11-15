@@ -26,42 +26,50 @@ func NewClient(host, port string, dest uint) *Client {
 		return nil
 	}
 	c.RemoteAddress = tcpAddress
+
+	c.SetSelf(c)
+	c.RegisterBaseCB(core.MSG_TYPE_CLOSE, (*Client).Close, true)
+	c.RegisterBaseCB(core.MSG_TYPE_NORMAL, (*Client).Normal, true)
 	return c
+}
+
+func (self *Client) Close(dest, src uint) {
+	self.Base.Close()
+	if self.Con != nil {
+		self.Con.Close()
+	}
+}
+func (self *Client) Normal(dest, src uint, cmd int, param ...interface{}) {
+	if cmd == 0 { //connect
+		n := param[0].(int)
+		self.connect(n)
+	} else if cmd == 1 { //send
+		if self.Con == nil {
+			self.connect(2)
+		}
+		if self.Con != nil {
+			data := param[0].([]byte)
+			_, err := self.outbuffer.Write(data)
+			if err != nil {
+				log.Error("agent write msg failed: %s", err)
+				self.onConError()
+			}
+			if self.Con != nil {
+				err = self.outbuffer.Flush()
+				if err != nil {
+					log.Error("agent write msg failed: %s", err)
+					self.onConError()
+				}
+			}
+		}
+	}
 }
 
 func (self *Client) Run() uint {
 	core.RegisterService(self)
 	go func() {
 		for m := range self.In() {
-			if m.Type == core.MSG_TYPE_CLOSE {
-				self.Con.Close()
-				self.Close()
-			} else if m.Type == core.MSG_TYPE_NORMAL {
-				cmd := m.Data[0].(int)
-				if cmd == 0 { //connect
-					n := m.Data[1].(int)
-					self.connect(n)
-				} else if cmd == 1 { //send
-					if self.Con == nil {
-						self.connect(2)
-					}
-					if self.Con != nil {
-						data := m.Data[1].([]byte)
-						_, err := self.outbuffer.Write(data) // self.Con.Write(data)
-						if err != nil {
-							log.Error("agent write msg failed: %s", err)
-							self.onConError()
-						}
-						if self.Con != nil {
-							err = self.outbuffer.Flush()
-							if err != nil {
-								log.Error("agent write msg failed: %s", err)
-								self.onConError()
-							}
-						}
-					}
-				}
-			}
+			self.DispatchM(m)
 		}
 	}()
 	return self.Id()

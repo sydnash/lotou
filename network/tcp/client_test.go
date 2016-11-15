@@ -15,11 +15,10 @@ type C struct {
 
 func TestClient(t *testing.T) {
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
-	log.Info("start test")
 	c := &C{Base: core.NewBase()}
 	core.RegisterService(c)
 
-	client := tcp.NewClient("", "4000", c.Id())
+	client := tcp.NewClient("127.0.0.1", "4000", c.Id())
 	c.client = client.Run()
 
 	go func() {
