@@ -25,6 +25,8 @@ func TestType(t *testing.T) {
 	a = append(a, "这也是一个string")
 	a = append(a, &gob.T1{10, "我曹，这都可以？", 1.5, -100})
 	a = append(a, &gob.T2{gob.T1{10, "我曹，这都可以？", 1.5, -100}, "那么这样还可以吗？"})
+	a = append(a, gob.T1{10, "我曹，这都可以？", 1.5, -100})
+	a = append(a, gob.T2{gob.T1{10, "我曹，这都可以？", 1.5, -100}, "那么这样还可以吗？"})
 	a = append(a, true)
 	a = append(a, false)
 	a = append(a, [3]int{1, 2, 3})
@@ -44,6 +46,7 @@ func TestType(t *testing.T) {
 	b = append(b, s)
 	b = append(b, s1)
 	a = append(a, b)
+	a = append(a, a)
 	for _, v := range a {
 		enc.Encode(v)
 	}

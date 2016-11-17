@@ -17,12 +17,31 @@ func NewEncoder() *Encoder {
 	return a
 }
 
+func IntToByteSlice(v uint32) []byte {
+	a := make([]byte, 4)
+	a[3] = byte((v >> 24) & 0xFF)
+	a[2] = byte((v >> 16) & 0XFF)
+	a[1] = byte((v >> 8) & 0XFF)
+	a[0] = byte(v & 0XFF)
+	return a
+}
+func ByteSliceToInt(s []byte) (v uint32) {
+	v = uint32(s[3])<<24 | uint32(s[2])<<16 | uint32(s[1])<<8 | uint32(s[0])
+	return v
+}
+
 func (enc *Encoder) SetBuffer(b []byte) {
 	enc.b = b
 	enc.reset()
 }
 func (enc *Encoder) Buffer() []byte {
 	return enc.b[:enc.w]
+}
+
+func (enc *Encoder) updateLen() {
+	l := enc.b.w
+	b := intToByteSlice(uint32(l))
+	copy(enc.b[:4], b[:])
 }
 
 func (enc *Encoder) reset() {
@@ -174,7 +193,7 @@ func (enc *Encoder) encodeArrayLike(value reflect.Value) {
 	enc.encodeUInt(uint64(num))
 	for i := 0; i < num; i++ {
 		v := value.Index(i)
-		enc.encodeValue(reflect.ValueOf(v.Interface()))
+		enc.encodeValue(reflect.ValueOf(v.Interface())) //if pass v direct, it's type kind will be interface when the slice is []interface{}
 	}
 }
 
