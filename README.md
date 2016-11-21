@@ -4,6 +4,7 @@ a golang game server framework
 
 I want write it as a game server.
 
+lotou模仿了一部分skynet的模式，服务分为多个service，service之间通过消息进行通信，不会进行直接的函数调用。目前通过core对消息进行转发，每一个service都有一个chan用于接收core转发的消息。
 
 ## encoding
 
