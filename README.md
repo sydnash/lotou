@@ -1,10 +1,10 @@
 # lotou
 
-首先：本人初学go语言，希望用go语言来学习游戏服务器编程，欢迎指正，
-如果有兴趣，可以联系我
-QQ：157621271
-wechat：daijun_1234
-申请请写lotou
+首先：本人初学go语言，希望用go语言来学习游戏服务器编程，欢迎指正，  
+如果有兴趣，可以联系我  
+QQ：157621271  
+wechat：daijun_1234  
+申请请写lotou  
 
 a golang game server framework
 
