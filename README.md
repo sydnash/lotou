@@ -24,7 +24,9 @@ encoding is used to encode and decode socket message, here provide to encode typ
 	结构体类型必须先注册到gob中进行，为了保证struct的ID一致，每一个节点都要
 	使用相同的顺序注册所有结构体。
 
-	目前对于slice、map的编码不够高效，为了可以编解码[]interface{}类型的slice，目前会对slice每一个元素都对类型进行编码，希望可以根据elem类型进行适当的调整。
+	目前对于slice、map的编码不够高效，为了可以编解码[]interface{}类型的slice，
+	目前会对slice每一个元素都对类型进行编码，希望可以根据elem类型进行适当的
+	调整。
 
 	内部使用reflect实现。
  [useage](https://github.com/sydnash/lotou/blob/master/encoding/gob/type_test.go)
