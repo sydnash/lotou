@@ -21,7 +21,7 @@ encoding is used to encode and decode socket message, here provide to encode typ
 	
 ## log
 
-log模块用于打印调试和错误信息，目前使用的是异步打印方式，暂不支持同步打印，这种模式会在程序panic的时候有些关键信息无法打印出来，还在考虑是否换位同步打印模式。
+log模块用于打印调试和错误信息，目前使用的是异步打印方式，暂不支持同步打印，这种模式会在程序panic的时候有些关键信息无法打印出来，还在考虑是否换为同步打印模式。
 
 ##network
 
@@ -33,4 +33,4 @@ core提供service之间通信的桥梁，所有的service都会在core进行注�
 
 ## topology
 
-topology，用于支持拓扑结果的服务器，一个master和N个slave，master会左右数据交互中心，不通logic主机上的消息会通过master进行中转。正在实现中...
+topology，用于支持拓扑结构的服务器，一个master和N个slave，master会左右数据交互中心，不通logic主机上的消息会通过master进行中转。正在实现中...
