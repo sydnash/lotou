@@ -48,6 +48,12 @@ func (m *master) normalMSG(dest, src uint, msgEncode string, data ...interface{}
 		//find correct agent and send msg to that node.
 		cmd := data[0].(int)
 		if cmd == tcp.AGENT_DATA {
+			m.decoder.SetBuffer(data[1].([]byte))
+			sdata := m.decoder.Deocde()
+			scmd := sdata[0].(string)
+			if smcd == "registerNode" {
+				nodeId := core.GenerateNodeId()
+			}
 		} else if cmd == tcp.AGENT_CLOSED {
 		}
 	}
