@@ -13,22 +13,22 @@ encoding is used to encode and decode socket message, here provide to encode typ
 2. a gob encode, it encode each value's type, can auto parse to interface{} of that type.  
 
 ### binary
-	binary用于进行二进制编码，主要用户客户端、服务器通信。
-	使用方式和golang的json有点类似。
+binary用于进行二进制编码，主要用户客户端、服务器通信。
+使用方式和golang的json有点类似。
  [useage](https://github.com/sydnash/lotou/blob/master/encoding/binary/binary_test.go)
 
 ### gob
-	gob用于实现服务节点间的通信，由于服务间的通信有可能在本机有可能跨节点，
-	本地消息通信不需要进行编码，跨节点通信的时候则需要进行编码。gob会同时将
-	数据的类型和值编码到package中，这样就不需要对消息进行注册，不过消息中的
-	结构体类型必须先注册到gob中进行，为了保证struct的ID一致，每一个节点都要
-	使用相同的顺序注册所有结构体。
+gob用于实现服务节点间的通信，由于服务间的通信有可能在本机有可能跨节点，
+本地消息通信不需要进行编码，跨节点通信的时候则需要进行编码。gob会同时将
+数据的类型和值编码到package中，这样就不需要对消息进行注册，不过消息中的
+结构体类型必须先注册到gob中进行，为了保证struct的ID一致，每一个节点都要
+使用相同的顺序注册所有结构体。
 
-	目前对于slice、map的编码不够高效，为了可以编解码[]interface{}类型的slice，
-	目前会对slice每一个元素都对类型进行编码，希望可以根据elem类型进行适当的
-	调整。
+目前对于slice、map的编码不够高效，为了可以编解码[]interface{}类型的slice，
+目前会对slice每一个元素都对类型进行编码，希望可以根据elem类型进行适当的
+调整。
 
-	内部使用reflect实现。
+内部使用reflect实现。
  [useage](https://github.com/sydnash/lotou/blob/master/encoding/gob/type_test.go)
 	
 ## log
