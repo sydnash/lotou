@@ -1,10 +1,18 @@
 # lotou
 
+首先：本人初学go语言，希望用go语言来学习游戏服务器编程，欢迎指正，  
+如果有兴趣，可以联系我  
+QQ：157621271  
+wechat：daijun_1234  
+申请请写lotou  
+
 a golang game server framework
 
 I want write it as a game server.
 
-lotou模仿了一部分skynet的模式，服务分为多个service，service之间通过消息进行通信，不会进行直接的函数调用。目前通过core对消息进行转发，每一个service都有一个chan用于接收core转发的消息。
+lotou模仿了一部分skynet的模式，服务分为多个service，service之间通过消息进行通信，不会进行
+直接的函数调用。目前通过core对消息进行转发，每一个service都有一个chan用于接收core转发的消
+息。
 
 ## encoding
 
@@ -45,4 +53,4 @@ core提供service之间通信的桥梁，所有的service都会在core进行注�
 
 ## topology
 
-topology，用于支持拓扑结构的服务器，一个master和N个slave，master会左右数据交互中心，不通logic主机上的消息会通过master进行中转。正在实现中...
+topology，用于支持拓扑结构的服务器，一个master和N个slave，master会作为数据交互中心，不通logic主机上的消息会通过  master进行中转。正在实现中...
