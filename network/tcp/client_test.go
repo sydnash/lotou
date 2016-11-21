@@ -29,7 +29,7 @@ func TestClient(t *testing.T) {
 			if m.Type == core.MSG_TYPE_NORMAL {
 				cmd := m.Data[0].(int)
 				log.Info("recv message: %v", cmd)
-				if len(m.Data) >= 2 {
+				if len(m.Data) >= 3 {
 					log.Info("recv data : %s", string(m.Data[1].([]byte)))
 				}
 			}
@@ -38,9 +38,13 @@ func TestClient(t *testing.T) {
 
 	for {
 		var a []byte = []byte("alsdkjfladjflkasdjf")
+		c.encoder.Reset()
 		c.encoder.Encode(a)
 		c.encoder.UpdateLen()
-		core.Send(c.client, 0, tcp.CLIENT_CMD_SEND, c.encoder.Buffer())
+		t := c.encoder.Buffer()
+		t1 := make([]byte, len(t))
+		copy(t1[:], t[:])
+		core.Send(c.client, 0, tcp.CLIENT_CMD_SEND, t1)
 		time.Sleep(time.Second)
 	}
 	for {

@@ -13,7 +13,7 @@ type Encoder struct {
 
 func NewEncoder() *Encoder {
 	a := &Encoder{}
-	a.reset()
+	a.Reset()
 	return a
 }
 
@@ -32,7 +32,7 @@ func ByteSliceToInt(s []byte) (v uint32) {
 
 func (enc *Encoder) SetBuffer(b []byte) {
 	enc.b = b
-	enc.reset()
+	enc.Reset()
 }
 func (enc *Encoder) Buffer() []byte {
 	return enc.b[:enc.w]
@@ -44,7 +44,7 @@ func (enc *Encoder) UpdateLen() {
 	copy(enc.b[:4], b[:])
 }
 
-func (enc *Encoder) reset() {
+func (enc *Encoder) Reset() {
 	if enc.b == nil {
 		enc.b = make([]byte, 1024, 1024)
 	}

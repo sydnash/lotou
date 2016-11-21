@@ -10,7 +10,7 @@ type Encoder struct {
 	r, w int
 }
 
-func (enc *Encoder) reset() {
+func (enc *Encoder) Reset() {
 	if enc.b == nil {
 		enc.b = make([]byte, 1024, 1024)
 	}
@@ -21,7 +21,7 @@ func (enc *Encoder) reset() {
 
 func NewEncoder() *Encoder {
 	a := &Encoder{}
-	a.reset()
+	a.Reset()
 	return a
 }
 

@@ -44,13 +44,13 @@ func NewClient(host, port string, dest uint) *Client {
 	return c
 }
 
-func (self *Client) Close(dest, src uint) {
+func (self *Client) Close(dest, src uint, encodeType string) {
 	self.Base.Close()
 	if self.Con != nil {
 		self.Con.Close()
 	}
 }
-func (self *Client) Normal(dest, src uint, cmd int, param ...interface{}) {
+func (self *Client) Normal(dest, src uint, encodeType string, cmd int, param ...interface{}) {
 	if cmd == CLIENT_CMD_CONNECT { //connect
 		n := param[0].(int)
 		self.connect(n)
@@ -99,7 +99,7 @@ func (self *Client) connect(n int) {
 		time.Sleep(time.Second * 2)
 	}
 	if self.Con == nil {
-		core.Send(self.Dest, self.Id(), CLIENT_CONNECT_FAILED) //connect failed
+		core.SendSocket(self.Dest, self.Id(), CLIENT_CONNECT_FAILED) //connect failed
 	} else {
 		if self.inbuffer == nil && self.outbuffer == nil {
 			self.inbuffer = bufio.NewReader(self.Con)
@@ -108,21 +108,22 @@ func (self *Client) connect(n int) {
 			self.inbuffer.Reset(self.Con)
 			self.outbuffer.Reset(self.Con)
 		}
-		core.Send(self.Dest, self.Id(), CLIENT_CONNECTED) //connect success
+		core.SendSocket(self.Dest, self.Id(), CLIENT_CONNECTED) //connect success
 		go func() {
 			for {
+				//split package
 				pack, err := Subpackage(self.inbuffer)
 				if err != nil {
 					log.Error("agent read msg failed: %s", err)
 					self.onConError()
 					break
 				}
-				core.Send(self.Dest, self.Id(), CLIENT_DATA, pack) //recv message
+				core.SendSocket(self.Dest, self.Id(), CLIENT_DATA, pack) //recv message
 			}
 		}()
 	}
 }
 func (self *Client) onConError() {
-	core.Send(self.Dest, self.Id(), CLIENT_DISCONNECTED) //disconnected
+	core.SendSocket(self.Dest, self.Id(), CLIENT_DISCONNECTED) //disconnected
 	self.Con = nil
 }

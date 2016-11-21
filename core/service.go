@@ -40,7 +40,7 @@ func (self *Base) RegisterBaseCB(typ int, i interface{}, isMethod bool) {
 func (self *Base) DispatchM(m *Message) (ret bool) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Error("recover base dispatchm:", err)
+			log.Error("recover base dispatchm: %v", err)
 		}
 		return
 	}()
@@ -50,7 +50,7 @@ func (self *Base) DispatchM(m *Message) (ret bool) {
 		return false
 	}
 	cbv := cb.cb
-	n := 2 + len(m.Data)
+	n := 3 + len(m.Data)
 	if cb.hasSelf {
 		n++
 	}
@@ -63,6 +63,8 @@ func (self *Base) DispatchM(m *Message) (ret bool) {
 	param[start] = reflect.ValueOf(m.Src)
 	start++
 	param[start] = reflect.ValueOf(m.Dest)
+	start++
+	param[start] = reflect.ValueOf(m.msgEncodeType)
 	start++
 	for i := start; i < n; i++ {
 		param[i] = reflect.ValueOf(m.Data[i-start])

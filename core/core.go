@@ -44,7 +44,10 @@ func RegisterService(s Service) uint {
 }
 
 func Send(dest uint, src uint, data ...interface{}) bool {
-	return send(dest, src, MSG_TYPE_NORMAL, data...)
+	return send(dest, src, MSG_TYPE_NORMAL, "go", data...)
+}
+func SendSocket(dest, src uint, data ...interface{}) bool {
+	return send(dest, src, MSG_TYPE_NORMAL, "socket", data...)
 }
 
 func getIdByName(name string) (uint, bool) {
@@ -62,7 +65,7 @@ func SendName(name string, src uint, data ...interface{}) bool {
 	if !ok {
 		return false
 	}
-	return send(id, src, MSG_TYPE_NORMAL, data...)
+	return send(id, src, MSG_TYPE_NORMAL, "go", data...)
 }
 
 func Name(id uint, name string) bool {
@@ -77,7 +80,7 @@ func Name(id uint, name string) bool {
 }
 
 func Close(dest uint, src uint) bool {
-	ret := send(dest, src, MSG_TYPE_CLOSE)
+	ret := send(dest, src, MSG_TYPE_CLOSE, "go")
 	remove(dest)
 	return ret
 }
@@ -88,12 +91,12 @@ func remove(id uint) {
 	delete(c.dictory, id)
 }
 
-func send(dest, src uint, msgType int, data ...interface{}) bool {
+func send(dest, src uint, msgType int, msgEncodeType string, data ...interface{}) bool {
 	ser := GetService(dest)
 	if ser == nil {
 		return false
 	}
-	m := &Message{dest, src, msgType, data}
+	m := &Message{dest, src, msgType, msgEncodeType, data}
 	ser.Send(m)
 	return true
 }
@@ -104,10 +107,11 @@ const (
 )
 
 type Message struct {
-	Dest uint
-	Src  uint
-	Type int
-	Data []interface{}
+	Dest          uint
+	Src           uint
+	Type          int
+	msgEncodeType string
+	Data          []interface{}
 }
 
 func SafeGo(f func()) {

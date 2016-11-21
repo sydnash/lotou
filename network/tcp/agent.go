@@ -36,6 +36,9 @@ const (
 	AGENT_DATA
 	AGENT_ARRIVE
 )
+const (
+	AGENT_CMD_SEND = iota
+)
 
 func NewAgent(con *net.TCPConn, dest uint) *Agent {
 	a := &Agent{Con: con, Dest: dest, Base: core.NewBase()}
@@ -51,7 +54,7 @@ func NewAgent(con *net.TCPConn, dest uint) *Agent {
 func (self *Agent) Run() {
 	core.RegisterService(self)
 	go func() {
-		core.Send(self.Dest, self.Id(), AGENT_ARRIVE) //recv message
+		core.SendSocket(self.Dest, self.Id(), AGENT_ARRIVE) //recv message
 		for {
 			m, ok := <-self.In()
 			if ok {
@@ -59,16 +62,19 @@ func (self *Agent) Run() {
 					self.close()
 					break
 				} else if m.Type == core.MSG_TYPE_NORMAL {
-					data := m.Data[0].([]byte)
-					_, err := self.outbuffer.Write(data)
-					if err != nil {
-						log.Error("agent write msg failed: %s", err)
-						self.onConnectError()
-					}
-					err = self.outbuffer.Flush()
-					if err != nil {
-						log.Error("agent write msg failed: %s", err)
-						self.onConnectError()
+					cmd := m.Data[0].(int)
+					if cmd == AGENT_CMD_SEND {
+						data := m.Data[1].([]byte)
+						_, err := self.outbuffer.Write(data)
+						if err != nil {
+							log.Error("agent write msg failed: %s", err)
+							self.onConnectError()
+						}
+						err = self.outbuffer.Flush()
+						if err != nil {
+							log.Error("agent write msg failed: %s", err)
+							self.onConnectError()
+						}
 					}
 				}
 			} else {
@@ -89,18 +95,20 @@ func (self *Agent) Run() {
 				self.timeout.Stop()
 				self.timeout = nil
 			}
-			core.Send(self.Dest, self.Id(), AGENT_DATA, pack) //recv message
+			core.SendSocket(self.Dest, self.Id(), AGENT_DATA, pack) //recv message
 		}
 	}()
 }
 
 func (self *Agent) onConnectError() {
-	core.Send(self.Dest, self.Id(), AGENT_CLOSED)
+	core.SendSocket(self.Dest, self.Id(), AGENT_CLOSED)
 	core.Close(self.Id(), self.Id())
 }
 func (self *Agent) close() {
 	log.Info("close agent. %v", self.Con.RemoteAddr())
 	self.Con.Close()
-	self.timeout.Stop()
+	if self.timeout != nil {
+		self.timeout.Stop()
+	}
 	self.Base.Close()
 }

@@ -13,7 +13,7 @@ type Game struct {
 	*core.Base
 }
 
-func (g *Game) Close(dest, src uint) {
+func (g *Game) Close(dest, src uint, msgType string) {
 	g.Base.Close()
 	log.Info("close: %v, %v", src, dest)
 }
@@ -29,7 +29,7 @@ func init() {
 	log.Init("log", log.FATAL_LEVEL, log.INFO_LEVEL, 10000, 1000)
 	m = &Game{core.NewBase()}
 	core.RegisterService(m)
-	core.Name(m.Id(), "m1")
+	core.Name(m.Id(), ".m1")
 
 	m2 = &Game2{Game: Game{Base: core.NewBase()}}
 	core.RegisterService(m2)
@@ -38,7 +38,7 @@ func init() {
 func TestCore(t *testing.T) {
 	a := make(chan int)
 	go func() {
-		c2 := func(dest, src uint, data ...interface{}) {
+		c2 := func(dest, src uint, msgType string, data ...interface{}) {
 			log.Info("%v, %v, %v", src, dest, data[0].(string))
 		}
 		m.SetSelf(m)
@@ -60,7 +60,7 @@ func TestCore(t *testing.T) {
 
 	go func() {
 		for {
-			if !(core.SendName("m1", m2.Id(), "kdjfajdfkdf", "aksjdflkajsdf")) {
+			if !(core.SendName(".m1", m2.Id(), "kdjfajdfkdf", "aksjdflkajsdf")) {
 				a <- 1
 				break
 			}
