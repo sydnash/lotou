@@ -50,6 +50,19 @@ func (enc *Encoder) grow(n int) {
 		enc.b = buf[:]
 	}
 }
+func intToByteSlice(v uint32) []byte {
+	a := make([]byte, 4)
+	a[3] = byte((v >> 24) & 0xFF)
+	a[2] = byte((v >> 16) & 0XFF)
+	a[1] = byte((v >> 8) & 0XFF)
+	a[0] = byte(v & 0XFF)
+	return a
+}
+func (enc *Encoder) UpdateLen() {
+	l := enc.w
+	b := intToByteSlice(uint32(l))
+	copy(enc.b[:4], b[:])
+}
 
 func encodeInt32(enc *Encoder, v reflect.Value) {
 	a := uint32(v.Interface().(int32))

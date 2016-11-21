@@ -31,6 +31,12 @@ type Agent struct {
 	outbuffer *bufio.Writer
 }
 
+const (
+	AGENT_CLOSED = iota
+	AGENT_DATA
+	AGENT_ARRIVE
+)
+
 func NewAgent(con *net.TCPConn, dest uint) *Agent {
 	a := &Agent{Con: con, Dest: dest, Base: core.NewBase()}
 	a.timeout = time.AfterFunc(time.Second*5, func() {
@@ -45,6 +51,7 @@ func NewAgent(con *net.TCPConn, dest uint) *Agent {
 func (self *Agent) Run() {
 	core.RegisterService(self)
 	go func() {
+		core.Send(self.Dest, self.Id(), AGENT_ARRIVE) //recv message
 		for {
 			m, ok := <-self.In()
 			if ok {
@@ -56,12 +63,12 @@ func (self *Agent) Run() {
 					_, err := self.outbuffer.Write(data)
 					if err != nil {
 						log.Error("agent write msg failed: %s", err)
-						core.Close(self.Id(), self.Id())
+						self.onConnectError()
 					}
 					err = self.outbuffer.Flush()
 					if err != nil {
 						log.Error("agent write msg failed: %s", err)
-						core.Close(self.Id(), self.Id())
+						self.onConnectError()
 					}
 				}
 			} else {
@@ -72,26 +79,25 @@ func (self *Agent) Run() {
 	}()
 	go func() {
 		for {
-			//need to do split package.
-			a := make([]byte, 8192)
-			len, err := self.inbuffer.Read(a)
+			pack, err := Subpackage(self.inbuffer)
 			if err != nil {
 				log.Error("agent read msg failed: %s", err)
-				core.Close(self.Id(), self.Id())
+				self.onConnectError()
 				break
 			}
-			if len > 0 {
+			if self.timeout != nil {
 				self.timeout.Stop()
-				nt := make([]byte, len)
-				copy(nt, a[:len])
-				core.Send(self.Dest, self.Id(), nt)
-			} else {
-				log.Info("agent read msg len 0")
+				self.timeout = nil
 			}
+			core.Send(self.Dest, self.Id(), AGENT_DATA, pack) //recv message
 		}
 	}()
 }
 
+func (self *Agent) onConnectError() {
+	core.Send(self.Dest, self.Id(), AGENT_CLOSED)
+	core.Close(self.Id(), self.Id())
+}
 func (self *Agent) close() {
 	log.Info("close agent. %v", self.Con.RemoteAddr())
 	self.Con.Close()

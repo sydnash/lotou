@@ -17,6 +17,17 @@ type Client struct {
 	outbuffer     *bufio.Writer
 }
 
+const (
+	CLIENT_CONNECT_FAILED = iota
+	CLIENT_CONNECTED
+	CLIENT_DISCONNECTED
+	CLIENT_DATA
+)
+const (
+	CLIENT_CMD_CONNECT = iota
+	CLIENT_CMD_SEND
+)
+
 func NewClient(host, port string, dest uint) *Client {
 	c := &Client{Base: core.NewBase(), Dest: dest}
 	address := net.JoinHostPort(host, port)
@@ -40,10 +51,10 @@ func (self *Client) Close(dest, src uint) {
 	}
 }
 func (self *Client) Normal(dest, src uint, cmd int, param ...interface{}) {
-	if cmd == 0 { //connect
+	if cmd == CLIENT_CMD_CONNECT { //connect
 		n := param[0].(int)
 		self.connect(n)
-	} else if cmd == 1 { //send
+	} else if cmd == CLIENT_CMD_SEND { //send
 		if self.Con == nil {
 			self.connect(2)
 		}
@@ -88,7 +99,7 @@ func (self *Client) connect(n int) {
 		time.Sleep(time.Second * 2)
 	}
 	if self.Con == nil {
-		core.Send(self.Dest, self.Id(), 0) //connect failed
+		core.Send(self.Dest, self.Id(), CLIENT_CONNECT_FAILED) //connect failed
 	} else {
 		if self.inbuffer == nil && self.outbuffer == nil {
 			self.inbuffer = bufio.NewReader(self.Con)
@@ -97,29 +108,21 @@ func (self *Client) connect(n int) {
 			self.inbuffer.Reset(self.Con)
 			self.outbuffer.Reset(self.Con)
 		}
-		core.Send(self.Dest, self.Id(), 1) //connect success
+		core.Send(self.Dest, self.Id(), CLIENT_CONNECTED) //connect success
 		go func() {
 			for {
-				//need to do split package.
-				a := make([]byte, 8192)
-				len, err := self.inbuffer.Read(a)
+				pack, err := Subpackage(self.inbuffer)
 				if err != nil {
 					log.Error("agent read msg failed: %s", err)
 					self.onConError()
 					break
 				}
-				if len > 0 {
-					nt := make([]byte, len)
-					copy(nt, a[:len])
-					core.Send(self.Dest, self.Id(), 3, nt) //recv message
-				} else {
-					log.Info("agent read msg len 0")
-				}
+				core.Send(self.Dest, self.Id(), CLIENT_DATA, pack) //recv message
 			}
 		}()
 	}
 }
 func (self *Client) onConError() {
-	core.Send(self.Dest, self.Id(), 2) //recv message
+	core.Send(self.Dest, self.Id(), CLIENT_DISCONNECTED) //disconnected
 	self.Con = nil
 }

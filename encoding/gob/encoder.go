@@ -17,7 +17,7 @@ func NewEncoder() *Encoder {
 	return a
 }
 
-func IntToByteSlice(v uint32) []byte {
+func intToByteSlice(v uint32) []byte {
 	a := make([]byte, 4)
 	a[3] = byte((v >> 24) & 0xFF)
 	a[2] = byte((v >> 16) & 0XFF)
@@ -38,8 +38,8 @@ func (enc *Encoder) Buffer() []byte {
 	return enc.b[:enc.w]
 }
 
-func (enc *Encoder) updateLen() {
-	l := enc.b.w
+func (enc *Encoder) UpdateLen() {
+	l := enc.w
 	b := intToByteSlice(uint32(l))
 	copy(enc.b[:4], b[:])
 }
