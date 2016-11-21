@@ -5,6 +5,12 @@ import (
 	"sync"
 )
 
+const (
+	NATIVE_PRE     = 0xFF
+	NATIVE_CORE_ID = NATIVE_PRE | 0
+	REMOTE_CORE_ID = 0X00
+)
+
 type Service interface {
 	Send(m *Message)
 	SetId(id uint)
@@ -12,12 +18,15 @@ type Service interface {
 
 type manager struct {
 	id      uint
+	nodeId  uint
 	mutex   sync.Mutex
 	dictory map[uint]Service
 	nameDic map[string]uint
 }
 
-var c *manager
+var (
+	c *manager
+)
 
 func init() {
 	c = new(manager)
@@ -38,9 +47,10 @@ func RegisterService(s Service) uint {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.id++
-	c.dictory[c.id] = s
-	s.SetId(c.id)
-	return c.id
+	id := NATIVE_PRE | c.id&0xFFFFFF
+	c.dictory[id] = s
+	s.SetId(id)
+	return id
 }
 
 func Send(dest uint, src uint, data ...interface{}) bool {
@@ -79,7 +89,7 @@ func Name(id uint, name string) bool {
 	return true
 }
 
-func Close(dest uint, src uint) bool {
+func Clos(dest uint, src uint) bool {
 	ret := send(dest, src, MSG_TYPE_CLOSE, "go")
 	remove(dest)
 	return ret
