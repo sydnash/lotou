@@ -17,11 +17,12 @@ type Service interface {
 }
 
 type manager struct {
-	id      uint
-	nodeId  uint
-	mutex   sync.Mutex
-	dictory map[uint]Service
-	nameDic map[string]uint
+	id        uint
+	nodeId    uint
+	mutex     sync.RWMutex
+	nameMutex sync.RWMutex
+	dictory   map[uint]Service
+	nameDic   map[string]uint
 }
 
 var (
@@ -35,8 +36,8 @@ func init() {
 }
 
 func GetService(id uint) Service {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	ser, ok := c.dictory[id]
 	if !ok {
 		log.Warn("GetService: service %d is not exist.\n", id)
@@ -61,8 +62,8 @@ func SendSocket(dest, src uint, data ...interface{}) bool {
 }
 
 func getIdByName(name string) (uint, bool) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+	c.nameMutex.RLock()
+	defer c.nameMutex.RUnlock()
 	id, ok := c.nameDic[name]
 	if !ok {
 		log.Warn("getIdByName: service: %s is not exist.", name)
@@ -79,14 +80,14 @@ func SendName(name string, src uint, data ...interface{}) bool {
 }
 
 func Name(id uint, name string) bool {
-	c.mutex.Lock()
+	c.nameMutex.Lock()
 	if _, ok := c.nameDic[name]; ok {
-		c.mutex.Unlock()
+		c.nameMutex.Unlock()
 		log.Warn("Name: service %d is not exist.\n", id)
 		return false
 	}
 	c.nameDic[name] = id
-	c.mutex.Unlock()
+	c.nameMutex.Unlock()
 	if name[0] != '.' {
 		GlobalName(id, name)
 	}

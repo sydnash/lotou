@@ -41,8 +41,8 @@ func GlobalName(id uint, name string) bool {
 	return true
 }
 func SyncName(serviceId uint, serviceName string) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+	c.nameMutex.Lock()
+	defer c.nameMutex.Unlock()
 	log.Info("sync name: %s, id:%d", serviceName, serviceId)
 	c.nameDic[serviceName] = serviceId
 }
