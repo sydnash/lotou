@@ -39,7 +39,7 @@ func TestCore(t *testing.T) {
 	a := make(chan int)
 	go func() {
 		c2 := func(dest, src uint, msgType string, data ...interface{}) {
-			log.Info("%v, %v, %v", src, dest, data[0].(string))
+			log.Info("%x, %x, %v", src, dest, data[0].(string))
 		}
 		m.SetSelf(m)
 		m.RegisterBaseCB(core.MSG_TYPE_CLOSE, (*Game).Close, true)

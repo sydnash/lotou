@@ -7,7 +7,7 @@ import (
 
 const (
 	NATIVE_PRE     = 0xFF
-	NATIVE_CORE_ID = NATIVE_PRE | 0
+	NATIVE_CORE_ID = NATIVE_PRE<<24 | 0
 	REMOTE_CORE_ID = 0X00
 )
 
@@ -47,7 +47,7 @@ func RegisterService(s Service) uint {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.id++
-	id := NATIVE_PRE | c.id&0xFFFFFF
+	id := selfNodeId<<24 | c.id&0xFFFFFF
 	c.dictory[id] = s
 	s.SetId(id)
 	return id
@@ -80,16 +80,20 @@ func SendName(name string, src uint, data ...interface{}) bool {
 
 func Name(id uint, name string) bool {
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
 	if _, ok := c.nameDic[name]; ok {
+		c.mutex.Unlock()
 		log.Warn("Name: service %d is not exist.\n", id)
 		return false
 	}
 	c.nameDic[name] = id
+	c.mutex.Unlock()
+	if name[0] != '.' {
+		GlobalName(id, name)
+	}
 	return true
 }
 
-func Clos(dest uint, src uint) bool {
+func Close(dest uint, src uint) bool {
 	ret := send(dest, src, MSG_TYPE_CLOSE, "go")
 	remove(dest)
 	return ret

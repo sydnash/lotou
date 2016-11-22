@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/sydnash/lotou/log"
 	"reflect"
+	"runtime/debug"
 )
 
 type callback struct {
@@ -40,7 +41,7 @@ func (self *Base) RegisterBaseCB(typ int, i interface{}, isMethod bool) {
 func (self *Base) DispatchM(m *Message) (ret bool) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Error("recover base dispatchm: %v", err)
+			log.Error("recover base dispatchm: stack: %v\n, %v", string(debug.Stack()), err)
 		}
 		return
 	}()
@@ -60,9 +61,9 @@ func (self *Base) DispatchM(m *Message) (ret bool) {
 		param[start] = self.self
 		start++
 	}
-	param[start] = reflect.ValueOf(m.Src)
-	start++
 	param[start] = reflect.ValueOf(m.Dest)
+	start++
+	param[start] = reflect.ValueOf(m.Src)
 	start++
 	param[start] = reflect.ValueOf(m.msgEncodeType)
 	start++

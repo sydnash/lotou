@@ -53,8 +53,8 @@ func NewAgent(con *net.TCPConn, dest uint) *Agent {
 
 func (self *Agent) Run() {
 	core.RegisterService(self)
+	core.SendSocket(self.Dest, self.Id(), AGENT_ARRIVE) //recv message
 	go func() {
-		core.SendSocket(self.Dest, self.Id(), AGENT_ARRIVE) //recv message
 		for {
 			m, ok := <-self.In()
 			if ok {
