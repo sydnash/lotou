@@ -54,7 +54,10 @@ func send(level int, desc, format string, param ...interface{}) {
 		return
 	}
 	m := &Msg{level, desc, format, param}
-	glogger.buffer <- m
+	select {
+	case glogger.buffer <- m:
+	default:
+	}
 }
 
 func Debug(format string, param ...interface{}) {
