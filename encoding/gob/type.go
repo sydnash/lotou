@@ -14,7 +14,7 @@ var (
 	kindToReflectType map[reflect.Kind]reflect.Type
 )
 
-func registerStructType(i interface{}) {
+func RegisterStructType(i interface{}) {
 	value := reflect.ValueOf(i)
 	rt, depth := findBaseAndDepth(value.Type())
 	_ = depth

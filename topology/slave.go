@@ -65,11 +65,30 @@ func (s *slave) normalMSG(dest, src uint, msgEncode string, data ...interface{})
 				serviceId := array[1].(uint)
 				serviceName := array[2].(string)
 				core.SyncName(serviceId, serviceName)
+			} else if scmd == "getIdByNameRet" {
+				id := array[1].(uint)
+				ok := array[2].(bool)
+				name := array[3].(string)
+				rid := array[4].(uint)
+				core.GetIdByNameRet(id, ok, name, rid)
+			} else if scmd == "forward" {
+				msg := array[1].(*core.Message)
+				s.forwardM(msg, data[1].([]byte))
 			}
 		} else if cmd == tcp.AGENT_CLOSED {
 		}
 	}
 }
+
+func (s *slave) forwardM(msg *core.Message, data []byte) {
+	isLcoal := core.CheckIsLocalServiceId(msg.Dest)
+	if isLcoal {
+		core.Send(msg.Dest, msg.Src, msg.Data...)
+		return
+	}
+	log.Warn("recv msg not forward to this node.")
+}
+
 func (s *slave) encode(d []interface{}) []byte {
 	s.encoder.Reset()
 	s.encoder.Encode(d)

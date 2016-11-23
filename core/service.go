@@ -65,7 +65,7 @@ func (self *Base) DispatchM(m *Message) (ret bool) {
 	start++
 	param[start] = reflect.ValueOf(m.Src)
 	start++
-	param[start] = reflect.ValueOf(m.msgEncodeType)
+	param[start] = reflect.ValueOf(m.MsgEncodeType)
 	start++
 	for i := start; i < n; i++ {
 		param[i] = reflect.ValueOf(m.Data[i-start])

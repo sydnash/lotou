@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/sydnash/lotou/encoding/gob"
 	"github.com/sydnash/lotou/log"
 	"sync"
 )
@@ -33,6 +34,7 @@ func init() {
 	c = new(manager)
 	c.dictory = make(map[uint]Service)
 	c.nameDic = make(map[string]uint)
+	gob.RegisterStructType(Message{})
 }
 
 func GetService(id uint) Service {
@@ -61,18 +63,18 @@ func SendSocket(dest, src uint, data ...interface{}) bool {
 	return send(dest, src, MSG_TYPE_NORMAL, "socket", data...)
 }
 
-func getIdByName(name string) (uint, bool) {
+func GetIdByName(name string) (uint, bool) {
 	c.nameMutex.RLock()
-	defer c.nameMutex.RUnlock()
 	id, ok := c.nameDic[name]
+	c.nameMutex.RUnlock()
 	if !ok {
-		log.Warn("getIdByName: service: %s is not exist.", name)
-		return 0, false
+		return getGlobalIdByName(name)
 	}
 	return id, true
 }
+
 func SendName(name string, src uint, data ...interface{}) bool {
-	id, ok := getIdByName(name)
+	id, ok := GetIdByName(name)
 	if !ok {
 		return false
 	}
@@ -81,15 +83,10 @@ func SendName(name string, src uint, data ...interface{}) bool {
 
 func Name(id uint, name string) bool {
 	c.nameMutex.Lock()
-	if _, ok := c.nameDic[name]; ok {
-		c.nameMutex.Unlock()
-		log.Warn("Name: service %d is not exist.\n", id)
-		return false
-	}
 	c.nameDic[name] = id
 	c.nameMutex.Unlock()
 	if name[0] != '.' {
-		GlobalName(id, name)
+		globalName(id, name)
 	}
 	return true
 }
@@ -107,12 +104,21 @@ func remove(id uint) {
 }
 
 func send(dest, src uint, msgType int, msgEncodeType string, data ...interface{}) bool {
-	ser := GetService(dest)
-	if ser == nil {
-		return false
+	isLocal := CheckIsLocalServiceId(dest)
+	var ser Service
+	if isLocal {
+		ser = GetService(dest)
+		if ser == nil {
+			return false
+		}
 	}
 	m := &Message{dest, src, msgType, msgEncodeType, data}
-	ser.Send(m)
+
+	if isLocal {
+		ser.Send(m)
+		return true
+	}
+	sendToMaster(m)
 	return true
 }
 
@@ -125,7 +131,7 @@ type Message struct {
 	Dest          uint
 	Src           uint
 	Type          int
-	msgEncodeType string
+	MsgEncodeType string
 	Data          []interface{}
 }
 

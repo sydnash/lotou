@@ -1,8 +1,8 @@
 package gob
 
 func init() {
-	registerStructType(T1{})
-	registerStructType(T2{})
+	RegisterStructType(T1{})
+	RegisterStructType(T2{})
 }
 
 type T1 struct {
