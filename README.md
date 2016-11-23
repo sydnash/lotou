@@ -53,4 +53,6 @@ core提供service之间通信的桥梁，所有的service都会在core进行注�
 
 ## topology
 
-topology，用于支持拓扑结构的服务器，一个master和N个slave，master会作为数据交互中心，不通logic主机上的消息会通过  master进行中转。正在实现中...
+topology，用于支持拓扑结构的服务器，一个master和N个slave，master会作为数据交互中心，不同logic主机上的消息会通过  master进行中转。
+目前可以通过slave master模块，使节点可以给本地节点的服务注册全局名字，可以通过全局名字获取服务ID，同时对发送给非
+本地节点的消息进行转发。
