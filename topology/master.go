@@ -124,7 +124,7 @@ func (m *master) forwardM(msg *core.Message, data []byte) {
 	isLcoal := core.CheckIsLocalServiceId(msg.Dest)
 	log.Debug("master forwardM is send to master: %v", isLcoal)
 	if isLcoal {
-		core.Send(msg.Dest, msg.Src, msg.Data...)
+		core.ForwardLocal(msg)
 		return
 	}
 	agent, ok := m.nodesMap[nodeId]

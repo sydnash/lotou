@@ -73,17 +73,17 @@ func (s *slave) normalMSG(dest, src uint, msgEncode string, data ...interface{})
 				core.GetIdByNameRet(id, ok, name, rid)
 			} else if scmd == "forward" {
 				msg := array[1].(*core.Message)
-				s.forwardM(msg, data[1].([]byte))
+				s.forwardM(msg)
 			}
 		} else if cmd == tcp.AGENT_CLOSED {
 		}
 	}
 }
 
-func (s *slave) forwardM(msg *core.Message, data []byte) {
+func (s *slave) forwardM(msg *core.Message) {
 	isLcoal := core.CheckIsLocalServiceId(msg.Dest)
 	if isLcoal {
-		core.Send(msg.Dest, msg.Src, msg.Data...)
+		core.ForwardLocal(msg)
 		return
 	}
 	log.Warn("recv msg not forward to this node.")

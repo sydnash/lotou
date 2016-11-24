@@ -15,6 +15,10 @@ const (
 type Service interface {
 	Send(m *Message)
 	SetId(id uint)
+	Request(cb interface{}) int
+	Id() uint
+	Call() []interface{}
+	Ret([]interface{})
 }
 
 type manager struct {
@@ -104,6 +108,8 @@ func remove(id uint) {
 }
 
 func send(dest, src uint, msgType int, msgEncodeType string, data ...interface{}) bool {
+	m := &Message{dest, src, msgType, msgEncodeType, data}
+
 	isLocal := CheckIsLocalServiceId(dest)
 	var ser Service
 	if isLocal {
@@ -111,10 +117,6 @@ func send(dest, src uint, msgType int, msgEncodeType string, data ...interface{}
 		if ser == nil {
 			return false
 		}
-	}
-	m := &Message{dest, src, msgType, msgEncodeType, data}
-
-	if isLocal {
 		ser.Send(m)
 		return true
 	}
@@ -124,6 +126,10 @@ func send(dest, src uint, msgType int, msgEncodeType string, data ...interface{}
 
 const (
 	MSG_TYPE_NORMAL = iota
+	MSG_TYPE_REQUEST
+	MSG_TYPE_RESPOND
+	MSG_TYPE_CALL
+	MSG_TYPE_RET
 	MSG_TYPE_CLOSE
 )
 
@@ -154,4 +160,57 @@ func SafeCall(f func()) {
 		}()
 		f()
 	}()
+}
+
+func Request(dest uint, self Service, cb interface{}, data ...interface{}) {
+	rid := self.Request(cb)
+	sid := self.Id()
+	param := make([]interface{}, 2)
+	param[0] = rid
+	param[1] = data
+	send(dest, sid, MSG_TYPE_REQUEST, "go", param...)
+}
+
+func Respond(dest, src uint, rid int, data ...interface{}) {
+	rid = -rid
+	param := make([]interface{}, 2)
+	param[0] = rid
+	param[1] = data
+	send(dest, src, MSG_TYPE_RESPOND, "go", param...)
+}
+
+func Call(dest uint, self Service, data ...interface{}) []interface{} {
+	sid := self.Id()
+	send(dest, sid, MSG_TYPE_CALL, "go", data...)
+	ret := self.Call()
+	return ret
+}
+func Ret(dest, src uint, data ...interface{}) {
+	isLocal := CheckIsLocalServiceId(dest)
+	var ser Service
+	if isLocal {
+		ser = GetService(dest)
+		ser.Ret(data)
+		return
+	}
+	m := &Message{dest, src, MSG_TYPE_RET, "go", data}
+	sendToMaster(m)
+	return
+}
+
+func ForwardLocal(m *Message) {
+	switch m.Type {
+	case MSG_TYPE_NORMAL:
+		fallthrough
+	case MSG_TYPE_REQUEST:
+		fallthrough
+	case MSG_TYPE_CLOSE:
+		fallthrough
+	case MSG_TYPE_CALL:
+		fallthrough
+	case MSG_TYPE_RESPOND:
+		send(m.Dest, m.Src, m.Type, m.MsgEncodeType, m.Data...)
+	case MSG_TYPE_RET:
+		Ret(m.Dest, m.Src, m.Data...)
+	}
 }
