@@ -3,6 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sydnash/lotou/core"
+	"github.com/sydnash/lotou/log"
+	"github.com/sydnash/lotou/topology"
 	"net"
 	"net/http"
 	"reflect"
@@ -142,6 +145,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(sendClient)
 }
 func main() {
+	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
 	http.HandleFunc("/login", loginHandler)
 	http.ListenAndServe(":8080", nil)
 }

@@ -57,7 +57,6 @@ func (s *slave) normalMSG(dest, src uint, msgEncode string, data ...interface{})
 			sdata, _ := s.decoder.Decode()
 			array := sdata.([]interface{})
 			scmd := array[0].(string)
-			log.Debug("recv scmd:%s", scmd)
 			if scmd == "registerNodeRet" {
 				nodeId := array[1].(uint)
 				core.RegisterNodeRet(nodeId)

@@ -66,7 +66,6 @@ func (m *master) normalMSG(dest, src uint, msgEncode string, data ...interface{}
 			sdata, _ := m.decoder.Decode()
 			array := sdata.([]interface{})
 			scmd := array[0].(string)
-			log.Debug("recv cmd:%s", scmd)
 			if scmd == "registerNode" {
 				nodeId := core.GenerateNodeId()
 				m.nodesMap[nodeId] = src
@@ -90,7 +89,6 @@ func (m *master) normalMSG(dest, src uint, msgEncode string, data ...interface{}
 			} else if scmd == "registerName" {
 				serviceId := array[1].(uint)
 				serviceName := array[2].(string)
-				log.Debug("%v", serviceName)
 				core.Name(serviceId, serviceName)
 			} else if scmd == "getIdByName" {
 				name := array[1].(string)
