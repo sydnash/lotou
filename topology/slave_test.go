@@ -24,7 +24,7 @@ func TestSlavea(t *testing.T) {
 	t4, t5 := core.GetIdByName("game1")
 	log.Debug("get id by name:%v, %v, %v", "game1", t4, t5)
 
-	response := func(entype string, data ...interface{}) {
+	response := func(data ...interface{}) {
 		log.Info("respond: %v", data)
 	}
 	_ = response

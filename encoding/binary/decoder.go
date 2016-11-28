@@ -121,7 +121,7 @@ func decodeFloat64(dec *Decoder, v reflect.Value) {
 }
 
 func decodeString(dec *Decoder, v reflect.Value) {
-	var count int = int(readUInt32(dec))
+	var count int = int(readUInt16(dec))
 	str := string(dec.b[dec.r : dec.r+count])
 	dec.r += count
 	v.SetString(str)

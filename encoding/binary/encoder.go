@@ -148,7 +148,7 @@ func encodeString(enc *Encoder, v reflect.Value) {
 func encodeBytes(enc *Encoder, v reflect.Value) {
 	bytes := v.Bytes()
 	count := len(bytes)
-	encodeInt32(enc, reflect.ValueOf(int32(count)))
+	encodeInt16(enc, reflect.ValueOf(int16(count)))
 	enc.grow(count)
 	copy(enc.b[enc.w:], bytes[:])
 	enc.w += count

@@ -82,10 +82,10 @@ func (self *Base) dispatchRespond(m *Message) {
 	}
 	delete(self.requestMap, rid)
 	n := len(data)
-	param := make([]reflect.Value, n+1)
-	param[0] = reflect.ValueOf(m.MsgEncodeType)
+	param := make([]reflect.Value, n)
+	//param[0] = reflect.ValueOf(m.MsgEncodeType)
 	for i := 0; i < n; i++ {
-		param[i+1] = reflect.ValueOf(data[i])
+		param[i] = reflect.ValueOf(data[i])
 	}
 	cb.Call(param)
 }

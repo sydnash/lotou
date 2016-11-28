@@ -82,7 +82,25 @@ func (ps *PlatService) SessionTimeout(acid int) {
 
 func (ps *PlatService) RequestMSG(dest, src uint, rid int, data ...interface{}) {
 	log.Info("request: %x, %x, %v, %v", src, dest, rid, data)
-	core.Respond(src, dest, rid, data...)
+
+	cmd := data[0].(string)
+	psv := reflect.ValueOf(ps)
+	fv := psv.MethodByName(cmd)
+	if fv.IsValid() {
+		in := make([]reflect.Value, len(data)-1)
+		for i := 1; i < len(data); i++ {
+			in[i-1] = reflect.ValueOf(data[i])
+		}
+		ret := fv.Call(in)
+		out := make([]interface{}, len(ret))
+		for i := 0; i < len(ret); i++ {
+			out[i] = ret[i].Interface()
+		}
+		core.Respond(src, dest, rid, out...)
+	} else {
+		//core.Respond(src, dest, rid, ""
+		log.Error("called function not exist.")
+	}
 }
 
 func NewPS() *PlatService {
