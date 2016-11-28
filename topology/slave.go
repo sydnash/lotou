@@ -9,6 +9,8 @@ import (
 
 type slave struct {
 	*core.Base
+	*core.EmptyRequest
+	*core.EmptyCall
 	decoder *gob.Decoder
 	encoder *gob.Encoder
 	client  uint
@@ -26,9 +28,7 @@ func StartSlave(ip, port string) {
 }
 
 func (s *slave) run() {
-	s.SetSelf(s)
-	s.RegisterBaseCB(core.MSG_TYPE_CLOSE, (*slave).close, true)
-	s.RegisterBaseCB(core.MSG_TYPE_NORMAL, (*slave).normalMSG, true)
+	s.SetDispatcher(s)
 	go func() {
 		for msg := range s.In() {
 			s.DispatchM(msg)
@@ -36,7 +36,7 @@ func (s *slave) run() {
 	}()
 }
 
-func (s *slave) normalMSG(dest, src uint, msgEncode string, data ...interface{}) {
+func (s *slave) NormalMSG(dest, src uint, msgEncode string, data ...interface{}) {
 	if msgEncode == "go" {
 		//dest is master's id, src is core's id
 		//data[0] is cmd such as (registerNode, regeisterName, getIdByName...)
@@ -99,8 +99,7 @@ func (s *slave) encode(d []interface{}) []byte {
 	return t1
 }
 
-func (s *slave) close(dest, src uint) {
+func (s *slave) CloseMSG(dest, src uint) {
 	_, _ = dest, src
-	core.Close(s.client, s.Id())
 	s.Close()
 }

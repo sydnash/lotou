@@ -9,6 +9,8 @@ import (
 
 type master struct {
 	*core.Base
+	*core.EmptyRequest
+	*core.EmptyCall
 	decoder  *gob.Decoder
 	encoder  *gob.Encoder
 	nodesMap map[uint]uint
@@ -27,9 +29,7 @@ func StartMaster(ip, port string) {
 }
 
 func (m *master) run() {
-	m.SetSelf(m)
-	m.RegisterBaseCB(core.MSG_TYPE_CLOSE, (*master).close, true)
-	m.RegisterBaseCB(core.MSG_TYPE_NORMAL, (*master).normalMSG, true)
+	m.SetDispatcher(m)
 	go func() {
 		for msg := range m.In() {
 			m.DispatchM(msg)
@@ -37,7 +37,7 @@ func (m *master) run() {
 	}()
 }
 
-func (m *master) normalMSG(dest, src uint, msgEncode string, data ...interface{}) {
+func (m *master) NormalMSG(dest, src uint, msgEncode string, data ...interface{}) {
 	if msgEncode == "go" {
 		//dest is master's id, src is core's id
 		//data[0] is cmd such as (registerNodeRet, regeisterNameRet, getIdByNameRet...)
@@ -120,7 +120,7 @@ func (m *master) normalMSG(dest, src uint, msgEncode string, data ...interface{}
 func (m *master) forwardM(msg *core.Message, data []byte) {
 	nodeId := core.ParseNodeId(msg.Dest)
 	isLcoal := core.CheckIsLocalServiceId(msg.Dest)
-	log.Debug("master forwardM is send to master: %v", isLcoal)
+	log.Debug("master forwardM is send to master: %v, nodeid: %d", isLcoal, nodeId)
 	if isLcoal {
 		core.ForwardLocal(msg)
 		return
@@ -150,7 +150,6 @@ func (m *master) encode(d []interface{}) []byte {
 	return t1
 }
 
-func (m *master) close(dest, src uint) {
-	_, _ = dest, src
+func (m *master) CloseMSG(dest, src uint) {
 	m.Close()
 }

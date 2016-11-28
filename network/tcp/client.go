@@ -10,6 +10,8 @@ import (
 
 type Client struct {
 	*core.Base
+	*core.EmptyRequest
+	*core.EmptyCall
 	Con           *net.TCPConn
 	RemoteAddress *net.TCPAddr
 	Dest          uint
@@ -38,19 +40,19 @@ func NewClient(host, port string, dest uint) *Client {
 	}
 	c.RemoteAddress = tcpAddress
 
-	c.SetSelf(c)
-	c.RegisterBaseCB(core.MSG_TYPE_CLOSE, (*Client).Close, true)
-	c.RegisterBaseCB(core.MSG_TYPE_NORMAL, (*Client).Normal, true)
+	c.SetDispatcher(c)
 	return c
 }
 
-func (self *Client) Close(dest, src uint, encodeType string) {
+func (self *Client) CloseMSG(dest, src uint) {
 	self.Base.Close()
 	if self.Con != nil {
 		self.Con.Close()
 	}
 }
-func (self *Client) Normal(dest, src uint, encodeType string, cmd int, param ...interface{}) {
+func (self *Client) NormalMSG(dest, src uint, encodeType string, param ...interface{}) {
+	cmd := param[0].(int)
+	param = param[1:]
 	if cmd == CLIENT_CMD_CONNECT { //connect
 		n := param[0].(int)
 		self.connect(n)

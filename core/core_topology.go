@@ -28,6 +28,7 @@ func init() {
 	nameChanMap = make(map[uint]chan *nameRet)
 }
 
+//RegisterNode : register slave node to master, and get a node id.
 func RegisterNode() {
 	once.Do(func() {
 		if !isMaster {

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"sync"
 	"time"
 )
 
@@ -33,10 +34,10 @@ type Logger struct {
 	outputPath string
 	maxLine    int
 	logLine    int
-
 	//shell log
 	shellLevel int
 	buffer     chan *Msg
+	logMutex   sync.Mutex
 }
 
 type Msg struct {
@@ -54,10 +55,13 @@ func send(level int, desc, format string, param ...interface{}) {
 		return
 	}
 	m := &Msg{level, desc, format, param}
-	select {
-	case glogger.buffer <- m:
-	default:
-	}
+	//select {
+	//case glogger.buffer <- m:
+	//default:
+	//}
+	glogger.logMutex.Lock()
+	glogger.doPrintf(m.level, m.levelDesc, m.fmt, m.param...)
+	glogger.logMutex.Unlock()
 }
 
 func Debug(format string, param ...interface{}) {

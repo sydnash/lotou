@@ -11,11 +11,16 @@ func f(m *core.Message) {
 
 type Game struct {
 	*core.Base
+	*core.EmptyRequest
+	*core.EmptyCall
 }
 
-func (g *Game) Close(dest, src uint, msgType string) {
+func (g *Game) CloseMSG(dest, src uint) {
 	g.Base.Close()
 	log.Info("close: %v, %v", src, dest)
+}
+func (g *Game) NormalMSG(dest, src uint, enType string, data ...interface{}) {
+	log.Info("%x, %x, %v", src, dest, data[0].(string))
 }
 
 type Game2 struct {
@@ -27,7 +32,7 @@ var m2 *Game2
 
 func init() {
 	log.Init("log", log.FATAL_LEVEL, log.INFO_LEVEL, 10000, 1000)
-	m = &Game{core.NewBase()}
+	m = &Game{Base: core.NewBase()}
 	core.RegisterService(m)
 	core.Name(m.Id(), ".m1")
 
@@ -38,12 +43,7 @@ func init() {
 func TestCore(t *testing.T) {
 	a := make(chan int)
 	go func() {
-		c2 := func(dest, src uint, msgType string, data ...interface{}) {
-			log.Info("%x, %x, %v", src, dest, data[0].(string))
-		}
-		m.SetSelf(m)
-		m.RegisterBaseCB(core.MSG_TYPE_CLOSE, (*Game).Close, true)
-		m.RegisterBaseCB(core.MSG_TYPE_NORMAL, c2, false)
+		m.SetDispatcher(m)
 	OUTER_FOR:
 		for {
 			select {

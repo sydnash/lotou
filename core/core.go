@@ -131,6 +131,7 @@ const (
 	MSG_TYPE_CALL
 	MSG_TYPE_RET
 	MSG_TYPE_CLOSE
+	MSG_TYPE_MAX
 )
 
 type Message struct {

@@ -197,10 +197,19 @@ func (dec *Decoder) decodeStruct(structId uint) (value reflect.Value) {
 
 func (dec *Decoder) decodeSlice(typ reflect.Type) (value reflect.Value) {
 	count := int(dec.decodeUInt())
-	value = reflect.MakeSlice(typ, 0, count)
-	for i := 0; i < count; i++ {
-		v := dec.decodeValue()
-		value = reflect.Append(value, v)
+	if typ == reflect.TypeOf([]byte{}) {
+		v := reflect.New(typ)
+		sli := make([]byte, count)
+		copy(sli, dec.b[dec.r:])
+		dec.r += count
+		v.Elem().Set(reflect.ValueOf(sli))
+		return v.Elem()
+	} else {
+		value = reflect.MakeSlice(typ, 0, count)
+		for i := 0; i < count; i++ {
+			v := dec.decodeValue()
+			value = reflect.Append(value, v)
+		}
 	}
 	return
 }

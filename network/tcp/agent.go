@@ -5,6 +5,7 @@ import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -24,11 +25,14 @@ import (
 
 type Agent struct {
 	*core.Base
-	Con       *net.TCPConn
-	Dest      uint
-	timeout   *time.Timer
-	inbuffer  *bufio.Reader
-	outbuffer *bufio.Writer
+	Con         *net.TCPConn
+	Dest        uint
+	timeout     *time.Timer
+	inbuffer    *bufio.Reader
+	outbuffer   *bufio.Writer
+	ticker      *time.Ticker
+	buffer      [][]byte
+	bufferMutxt sync.Mutex
 }
 
 const (
@@ -48,39 +52,56 @@ func NewAgent(con *net.TCPConn, dest uint) *Agent {
 	})
 	a.inbuffer = bufio.NewReader(a.Con)
 	a.outbuffer = bufio.NewWriter(a.Con)
+	a.buffer = make([][]byte, 0, 100)
 	return a
 }
 
 func (self *Agent) Run() {
 	core.RegisterService(self)
 	core.SendSocket(self.Dest, self.Id(), AGENT_ARRIVE) //recv message
+	self.ticker = time.NewTicker(time.Millisecond * 100)
 	go func() {
+	OUT:
 		for {
-			m, ok := <-self.In()
-			if ok {
-				if m.Type == core.MSG_TYPE_CLOSE {
-					self.close()
-					break
-				} else if m.Type == core.MSG_TYPE_NORMAL {
-					cmd := m.Data[0].(int)
-					if cmd == AGENT_CMD_SEND {
-						data := m.Data[1].([]byte)
-						_, err := self.outbuffer.Write(data)
-						if err != nil {
-							log.Error("agent write msg failed: %s", err)
-							self.onConnectError()
+			<-self.ticker.C
+		SELECT_LOOP:
+			for {
+				select {
+				case m, ok := <-self.In():
+					if ok {
+						if m.Type == core.MSG_TYPE_CLOSE {
+							self.close()
+							break OUT
+						} else if m.Type == core.MSG_TYPE_NORMAL {
+							cmd := m.Data[0].(int)
+							if cmd == AGENT_CMD_SEND {
+								data := m.Data[1].([]byte)
+								_, err := self.outbuffer.Write(data)
+								if err != nil {
+									log.Error("agent write msg failed: %s", err)
+									self.onConnectError()
+								}
+								err = self.outbuffer.Flush()
+								if err != nil {
+									log.Error("agent write msg failed: %s", err)
+									self.onConnectError()
+								}
+							}
 						}
-						err = self.outbuffer.Flush()
-						if err != nil {
-							log.Error("agent write msg failed: %s", err)
-							self.onConnectError()
-						}
+					} else {
+						self.close()
+						break OUT
 					}
+				default:
+					break SELECT_LOOP
 				}
-			} else {
-				self.close()
-				break
 			}
+			self.bufferMutxt.Lock()
+			for _, pack := range self.buffer {
+				core.SendSocket(self.Dest, self.Id(), AGENT_DATA, pack)
+			}
+			self.buffer = self.buffer[0:0]
+			self.bufferMutxt.Unlock()
 		}
 	}()
 	go func() {
@@ -95,7 +116,9 @@ func (self *Agent) Run() {
 				self.timeout.Stop()
 				self.timeout = nil
 			}
-			core.SendSocket(self.Dest, self.Id(), AGENT_DATA, pack) //recv message
+			self.bufferMutxt.Lock()
+			self.buffer = append(self.buffer, pack)
+			self.bufferMutxt.Unlock()
 		}
 	}()
 }
@@ -111,4 +134,5 @@ func (self *Agent) close() {
 		self.timeout.Stop()
 	}
 	self.Base.Close()
+	self.ticker.Stop()
 }

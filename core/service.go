@@ -6,20 +6,14 @@ import (
 	"runtime/debug"
 )
 
-type callback struct {
-	hasSelf bool
-	cb      reflect.Value
-}
 type Base struct {
 	id                  uint
 	in                  chan *Message
-	self                reflect.Value //a pointer a concreat value
-	baseMessageDispatch map[int](*callback)
+	baseMessageDispatch map[int](*reflect.Value)
 	requestId           int
 	requestMap          map[int]reflect.Value
 	callCh              chan []interface{}
-	//callId              int
-	//callMapMutex        sync.Mutex
+	dispatcher          MSGDispatcher
 }
 
 func (self *Base) Id() uint {
@@ -37,40 +31,41 @@ func (self *Base) In() chan *Message {
 func (self *Base) Close() {
 	close(self.in)
 }
-func (self *Base) SetSelf(i interface{}) {
-	self.self = reflect.ValueOf(i)
+func (self *Base) SetDispatcher(dispatcher MSGDispatcher) {
+	self.dispatcher = dispatcher
 }
-func (self *Base) RegisterBaseCB(typ int, i interface{}, isMethod bool) {
-	self.baseMessageDispatch[typ] = &callback{isMethod, reflect.ValueOf(i)}
+
+/*
+func findBasicV(v reflect.Value) reflect.Value {
+	if v.Kind() == reflect.Ptr {
+		return findBasicV(v.Elem())
+	}
+	return v
 }
+func findNestMethodByName(v reflect.Value, name string) reflect.Value {
+	f := v.MethodByName(name)
+	if !f.IsValid() {
+		t := findBasicV(v)
+		n := t.NumField()
+		for i := 0; i < n; i++ {
+			field := t.Field(i)
+			if field.Kind() == reflect.Struct {
+				return findNestMethodByName(field, name)
+			}
+		}
+	} else {
+		return f
+	}
+	return reflect.Value{}
+}
+*/
 
 //request function
 //func (dest, src, encodetype, rid, data...)
-func (self *Base) dispatchRequest(cb *callback, m *Message) {
-	rid := m.Data[0]
+func (self *Base) dispatchRequest(m *Message) {
+	rid := m.Data[0].(int)
 	data := m.Data[1].([]interface{})
-	n := 4 + len(data)
-	if cb.hasSelf {
-		n++
-	}
-	param := make([]reflect.Value, n)
-	start := 0
-	if cb.hasSelf {
-		param[start] = self.self
-		start++
-	}
-	param[start] = reflect.ValueOf(m.Dest)
-	start++
-	param[start] = reflect.ValueOf(m.Src)
-	start++
-	param[start] = reflect.ValueOf(m.MsgEncodeType)
-	start++
-	param[start] = reflect.ValueOf(rid)
-	start++
-	for i := start; i < n; i++ {
-		param[i] = reflect.ValueOf(data[i-start])
-	}
-	cb.cb.Call(param)
+	self.dispatcher.RequestMSG(m.Dest, m.Src, rid, data...)
 }
 
 //func (encodetype, data ...)
@@ -107,48 +102,32 @@ func (self *Base) DispatchM(m *Message) (ret bool) {
 		self.dispatchRespond(m)
 		return true
 	}
-	cb, ok := self.baseMessageDispatch[m.Type]
-	if !ok {
-		log.Warn("message type %d is has no cb", m.Type)
-		return false
+
+	switch m.Type {
+	case MSG_TYPE_CLOSE:
+		self.dispatcher.CloseMSG(m.Dest, m.Src)
+	case MSG_TYPE_NORMAL:
+		self.dispatcher.NormalMSG(m.Dest, m.Src, m.MsgEncodeType, m.Data...)
+	case MSG_TYPE_CALL:
+		self.dispatcher.CallMSG(m.Dest, m.Src, m.Data...)
+	case MSG_TYPE_REQUEST:
+		self.dispatchRequest(m)
+	default:
+		panic("use on supported msg type.")
 	}
-	if m.Type == MSG_TYPE_REQUEST {
-		self.dispatchRequest(cb, m)
-		return true
-	}
-	cbv := cb.cb
-	n := 3 + len(m.Data)
-	if cb.hasSelf {
-		n++
-	}
-	param := make([]reflect.Value, n)
-	start := 0
-	if cb.hasSelf {
-		param[start] = self.self
-		start++
-	}
-	param[start] = reflect.ValueOf(m.Dest)
-	start++
-	param[start] = reflect.ValueOf(m.Src)
-	start++
-	param[start] = reflect.ValueOf(m.MsgEncodeType)
-	start++
-	for i := start; i < n; i++ {
-		param[i] = reflect.ValueOf(m.Data[i-start])
-	}
-	cbv.Call(param)
 	return true
 }
 
 func NewBase() *Base {
 	a := &Base{}
 	a.in = make(chan *Message, 1024)
-	a.baseMessageDispatch = make(map[int](*callback))
+	a.baseMessageDispatch = make(map[int](*reflect.Value))
 	a.requestMap = make(map[int]reflect.Value)
 	a.callCh = make(chan []interface{})
 	return a
 }
 
+//func Request: generate request id and save callback
 func (self *Base) Request(cb interface{}) (id int) {
 	self.requestId++
 	id = self.requestId
@@ -160,20 +139,25 @@ func (self *Base) Request(cb interface{}) (id int) {
 	case reflect.Func:
 		rcb = v
 	case reflect.String:
-		if !self.self.IsValid() {
-			panic("base:request>> self.self must not be nil")
+		dv := reflect.ValueOf(self.dispatcher)
+		if !dv.IsValid() {
+			panic("base:request>> self.dispatcher must not be nil")
 		}
-		rcb = self.self.MethodByName(cb.(string))
+		rcb = dv.MethodByName(cb.(string))
 	default:
 		panic("base:request>> cb must be func or string.")
 	}
 	self.requestMap[id] = rcb
 	return id
 }
+
+//Call : block until dest service return
 func (self *Base) Call() []interface{} {
 	ret := <-self.callCh
 	return ret
 }
+
+//Ret : tell Call something has been returned
 func (self *Base) Ret(data []interface{}) {
 	select {
 	case self.callCh <- data:

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
+	"github.com/sydnash/lotou/simple/json_type"
 	"github.com/sydnash/lotou/topology"
 	"net"
 	"net/http"
@@ -62,36 +63,6 @@ func unpack(in []byte, rlen int, t interface{}) {
 	fmt.Println(t)
 }
 
-type LoginSend struct {
-	AcName      string `json:"acName"`
-	AcPWD       string `json:"acPwd"`
-	AccountType int    `json:"accountType"`
-	QudaoType   int    `json:"qudaoType"`
-	MacAddress  string `json:"mac"`
-	LoginType   int    `json:"loginType"`
-	TitleURL    string `json:"titleUrl"`
-	Coin        string `json:"coin"`
-	Nickname    string `json:"nickname"`
-	Status      int    `json:"status"`
-}
-type LoginRecv struct {
-	IRet        int    `json:"iRet"`
-	Msg         string `json:"msg"`
-	AcName      string `json:"acName"`
-	Session     string `json:"session"`
-	Ip          string `json:"ip"`
-	Port        int    `json:"port"`
-	AccountType int    `json:"accountType"`
-	AccountId   int    `json:"accountId"`
-	Pwd_second  string `json:"pwd_second"`
-	Status      int    `json:"status"`
-}
-
-func (self *LoginRecv) String() string {
-	s := fmt.Sprintf("iRet: %d, msg: %s, acName:%s, session:%s, ip:%s, port:%d, accountType:%d, accountId:%d", self.IRet, self.Msg, self.AcName, self.Session, self.Ip, self.Port, self.AccountType, self.AccountId)
-	return s
-}
-
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	action := r.FormValue(ACTION)
@@ -106,7 +77,34 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	t1, _ := strconv.Atoi(accountType)
 	t2, _ := strconv.Atoi(qudaoType)
-	loginSend := LoginSend{AcName: ac, AccountType: t1, QudaoType: t2, MacAddress: deviceId, LoginType: 2}
+
+	s := &Service{core.NewBase()}
+	core.RegisterService(s)
+	ret := core.Call(platid, s, "Login", ac, t1, t2, deviceId, 2)
+	fmt.Println(ret)
+	//iret int, msg, ip, port, pwd_sec string, session uint64, acid int
+	a := json_type.LoginRecv{}
+	a.IRet = ret[0].(int)
+	if a.IRet != 1 {
+		w.Write([]byte(`{"status":1000001}`))
+		return
+	} else {
+		a.Msg = ret[1].(string)
+		a.Ip = ret[2].(string)
+		var err error
+		a.Port, err = strconv.Atoi(ret[3].(string))
+		_ = err
+		a.Pwd_second = ""
+		a.Session = strconv.FormatUint(ret[5].(uint64), 10)
+		a.AccountId = ret[6].(int)
+		a.AccountType = t1
+		a.Status = 1
+		sendClient, err := json.Marshal(a)
+		w.Write(sendClient)
+		return
+	}
+
+	loginSend := json_type.LoginSend{AcName: ac, AccountType: t1, QudaoType: t2, MacAddress: deviceId, LoginType: 2}
 
 	b, err := json.Marshal(loginSend)
 	if err != nil {
@@ -134,7 +132,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"status":1000001}`))
 		return
 	}
-	a := LoginRecv{}
+	a = json_type.LoginRecv{}
 	unpack(buf, recvLen, &a)
 	if a.IRet != 1 {
 		w.Write([]byte(`{"status":1000001}`))
@@ -144,8 +142,22 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	sendClient, err := json.Marshal(a)
 	w.Write(sendClient)
 }
+
+type Service struct {
+	*core.Base
+}
+
+var platid uint
+
 func main() {
+	//init slave node
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
+	log.Debug("start slave")
+	topology.StartSlave("127.0.0.1", "4000")
+	core.RegisterNode()
+	platid, _ = core.GetIdByName("platservice")
+
+	//start http
 	http.HandleFunc("/login", loginHandler)
 	http.ListenAndServe(":8080", nil)
 }

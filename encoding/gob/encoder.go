@@ -78,29 +78,11 @@ func (enc *Encoder) encodeConcreteValue(rt reflect.Type, depth uint, v reflect.V
 		value = value.Elem()
 	}
 	switch rt.Kind() {
-	case reflect.Int:
-		fallthrough
-	case reflect.Int8:
-		fallthrough
-	case reflect.Int16:
-		fallthrough
-	case reflect.Int32:
-		fallthrough
-	case reflect.Int64:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		enc.encodeInt(value.Int())
-	case reflect.Uint:
-		fallthrough
-	case reflect.Uint8:
-		fallthrough
-	case reflect.Uint16:
-		fallthrough
-	case reflect.Uint32:
-		fallthrough
-	case reflect.Uint64:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		enc.encodeUInt(value.Uint())
-	case reflect.Float64:
-		fallthrough
-	case reflect.Float32:
+	case reflect.Float64, reflect.Float32:
 		tmp := value.Float()
 		tmp64 := math.Float64bits(float64(tmp))
 		enc.encodeUInt(tmp64)
@@ -116,9 +98,7 @@ func (enc *Encoder) encodeConcreteValue(rt reflect.Type, depth uint, v reflect.V
 		enc.encodeString(str)
 	case reflect.Struct:
 		enc.encodeStruct(value)
-	case reflect.Array:
-		fallthrough
-	case reflect.Slice:
+	case reflect.Array, reflect.Slice:
 		enc.encodeArrayLike(value)
 	case reflect.Map:
 		enc.encodeMap(value)
@@ -191,9 +171,17 @@ func (enc *Encoder) encodeStruct(value reflect.Value) {
 func (enc *Encoder) encodeArrayLike(value reflect.Value) {
 	num := value.Len()
 	enc.encodeUInt(uint64(num))
-	for i := 0; i < num; i++ {
-		v := value.Index(i)
-		enc.encodeValue(reflect.ValueOf(v.Interface())) //if pass v direct, it's type kind will be interface when the slice is []interface{}
+
+	if value.Type() == reflect.TypeOf([]byte{}) {
+		enc.grow(num)
+		b := value.Interface().([]byte)
+		copy(enc.b[enc.w:], b[:])
+		enc.w = enc.w + num
+	} else {
+		for i := 0; i < num; i++ {
+			v := value.Index(i)
+			enc.encodeValue(reflect.ValueOf(v.Interface())) //if pass v direct, it's type kind will be interface when the slice is []interface{}
+		}
 	}
 }
 
