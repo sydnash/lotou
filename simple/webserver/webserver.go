@@ -103,44 +103,45 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(sendClient)
 		return
 	}
+	/*
+		loginSend := json_type.LoginSend{AcName: ac, AccountType: t1, QudaoType: t2, MacAddress: deviceId, LoginType: 2}
 
-	loginSend := json_type.LoginSend{AcName: ac, AccountType: t1, QudaoType: t2, MacAddress: deviceId, LoginType: 2}
+		b, err := json.Marshal(loginSend)
+		if err != nil {
+			fmt.Println("json error:", err)
+			w.Write([]byte(`{"status":1000001}`))
+			return
+		}
+		fmt.Println(string(b))
 
-	b, err := json.Marshal(loginSend)
-	if err != nil {
-		fmt.Println("json error:", err)
-		w.Write([]byte(`{"status":1000001}`))
-		return
-	}
-	fmt.Println(string(b))
+		raddress, _ := net.ResolveTCPAddr("tcp", "192.168.23.7:55000")
+		tcpCon, err := net.DialTCP("tcp", nil, raddress)
+		if err != nil {
+			fmt.Println("connect to game server faield:", err)
+			w.Write([]byte(`{"status":1000001}`))
+			return
+		}
+		defer tcpCon.Close()
+		sendPacket := pack(b, 2013)
+		tcpCon.Write(sendPacket)
 
-	raddress, _ := net.ResolveTCPAddr("tcp", "192.168.23.7:55000")
-	tcpCon, err := net.DialTCP("tcp", nil, raddress)
-	if err != nil {
-		fmt.Println("connect to game server faield:", err)
-		w.Write([]byte(`{"status":1000001}`))
-		return
-	}
-	defer tcpCon.Close()
-	sendPacket := pack(b, 2013)
-	tcpCon.Write(sendPacket)
-
-	buf := make([]byte, 1024)
-	recvLen, err := tcpCon.Read(buf)
-	if err != nil {
-		fmt.Println("recv from server faield:", err)
-		w.Write([]byte(`{"status":1000001}`))
-		return
-	}
-	a = json_type.LoginRecv{}
-	unpack(buf, recvLen, &a)
-	if a.IRet != 1 {
-		w.Write([]byte(`{"status":1000001}`))
-		return
-	}
-	a.Status = 1
-	sendClient, err := json.Marshal(a)
-	w.Write(sendClient)
+		buf := make([]byte, 1024)
+		recvLen, err := tcpCon.Read(buf)
+		if err != nil {
+			fmt.Println("recv from server faield:", err)
+			w.Write([]byte(`{"status":1000001}`))
+			return
+		}
+		a = json_type.LoginRecv{}
+		unpack(buf, recvLen, &a)
+		if a.IRet != 1 {
+			w.Write([]byte(`{"status":1000001}`))
+			return
+		}
+		a.Status = 1
+		sendClient, err := json.Marshal(a)
+		w.Write(sendClient)
+	*/
 }
 
 type Service struct {
