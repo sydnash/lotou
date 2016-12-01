@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
+	"github.com/sydnash/lotou/simple/dbserver"
 	"github.com/sydnash/lotou/topology"
 )
 
@@ -17,6 +18,8 @@ func main() {
 	ps := NewPS()
 	ps.Run()
 
+	db := dbserver.NewDB()
+	db.Run()
 	ch := make(chan int)
 	<-ch
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/simple/json_type"
 	"github.com/sydnash/lotou/topology"
-	"net"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -80,7 +79,11 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	s := &Service{core.NewBase()}
 	core.RegisterService(s)
-	ret := core.Call(platid, s, "Login", ac, t1, t2, deviceId, 2)
+	ret, err := core.Call(platid, s, "Login", ac, t1, t2, deviceId, 2)
+	if err != nil {
+		w.Write([]byte(`{"status":1000001}`))
+		return
+	}
 	fmt.Println(ret)
 	//iret int, msg, ip, port, pwd_sec string, session uint64, acid int
 	a := json_type.LoginRecv{}

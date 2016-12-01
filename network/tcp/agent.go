@@ -59,7 +59,7 @@ func NewAgent(con *net.TCPConn, dest uint) *Agent {
 func (self *Agent) Run() {
 	core.RegisterService(self)
 	core.SendSocket(self.Dest, self.Id(), AGENT_ARRIVE) //recv message
-	self.ticker = time.NewTicker(time.Millisecond * 100)
+	self.ticker = time.NewTicker(time.Millisecond * 10)
 	go func() {
 	OUT:
 		for {
@@ -75,6 +75,7 @@ func (self *Agent) Run() {
 						} else if m.Type == core.MSG_TYPE_NORMAL {
 							cmd := m.Data[0].(int)
 							if cmd == AGENT_CMD_SEND {
+								self.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
 								data := m.Data[1].([]byte)
 								_, err := self.outbuffer.Write(data)
 								if err != nil {
@@ -82,6 +83,11 @@ func (self *Agent) Run() {
 									self.onConnectError()
 								}
 								err = self.outbuffer.Flush()
+								/*if neterr, ok := err.(net.Error); ok {
+									if neterr.Timeout() {
+										self.onConnectError()
+									}
+								}*/
 								if err != nil {
 									log.Error("agent write msg failed: %s", err)
 									self.onConnectError()

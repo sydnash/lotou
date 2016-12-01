@@ -104,7 +104,7 @@ func (ps *PlatService) RequestMSG(dest, src uint, rid int, data ...interface{}) 
 }
 
 func NewPS() *PlatService {
-	ps := &PlatService{Base: core.NewBase()}
+	ps := &PlatService{Base: core.NewBaseLen(1024 * 1024)}
 	ps.sessionMap = make(map[int]uint64)
 	ps.SetDispatcher(ps)
 	return ps

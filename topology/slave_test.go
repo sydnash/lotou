@@ -38,7 +38,7 @@ func TestSlavea(t *testing.T) {
 		for {
 
 			core.Request(t4, game, response, "response1", "response2")
-			ret := core.Call(t4, game, "call1", "call2")
+			ret, err := core.Call(t4, game, "call1", "call2")
 			log.Info("ret: %v", ret)
 		}
 	}

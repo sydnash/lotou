@@ -1,9 +1,11 @@
 package core
 
 import (
+	"errors"
 	"github.com/sydnash/lotou/encoding/gob"
 	"github.com/sydnash/lotou/log"
 	"sync"
+	"time"
 )
 
 const (
@@ -19,6 +21,7 @@ type Service interface {
 	Id() uint
 	Call() []interface{}
 	Ret([]interface{})
+	Timeout(f func(), id int)
 }
 
 type manager struct {
@@ -128,6 +131,7 @@ const (
 	MSG_TYPE_NORMAL = iota
 	MSG_TYPE_REQUEST
 	MSG_TYPE_RESPOND
+	MSG_TYPE_TIMEOUT
 	MSG_TYPE_CALL
 	MSG_TYPE_RET
 	MSG_TYPE_CLOSE
@@ -163,13 +167,22 @@ func SafeCall(f func()) {
 	}()
 }
 
-func Request(dest uint, self Service, cb interface{}, data ...interface{}) {
+func Request(dest uint, self Service, cb interface{}, data ...interface{}) int {
 	rid := self.Request(cb)
 	sid := self.Id()
 	param := make([]interface{}, 2)
 	param[0] = rid
 	param[1] = data
 	send(dest, sid, MSG_TYPE_REQUEST, "go", param...)
+	return rid
+}
+func RequestTimeout(dest uint, self Service, cb interface{}, f func(), timeout int, data ...interface{}) {
+	rid := Request(dest, self, cb, data...)
+	self.Timeout(f, rid)
+	sid := self.Id()
+	time.AfterFunc(time.Millisecond*time.Duration(timeout), func() {
+		send(sid, NATIVE_CORE_ID, MSG_TYPE_TIMEOUT, "go", rid)
+	})
 }
 
 func Respond(dest, src uint, rid int, data ...interface{}) {
@@ -180,11 +193,16 @@ func Respond(dest, src uint, rid int, data ...interface{}) {
 	send(dest, src, MSG_TYPE_RESPOND, "go", param...)
 }
 
-func Call(dest uint, self Service, data ...interface{}) []interface{} {
+var CallError = errors.New("dest is not exist.")
+
+func Call(dest uint, self Service, data ...interface{}) (ret []interface{}, err error) {
 	sid := self.Id()
-	send(dest, sid, MSG_TYPE_CALL, "go", data...)
-	ret := self.Call()
-	return ret
+	ok := send(dest, sid, MSG_TYPE_CALL, "go", data...)
+	if !ok {
+		return ret, err
+	}
+	ret = self.Call()
+	return ret, nil
 }
 func Ret(dest, src uint, data ...interface{}) {
 	isLocal := CheckIsLocalServiceId(dest)
