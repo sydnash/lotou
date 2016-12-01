@@ -59,20 +59,18 @@ type SQueryDCInfo struct {
 	Coin      int64
 }
 type CEnterDesk struct {
-	AcId    int32
-	Session int32
-	RoomId  int32
+	RoomId int32
 }
 
 type SDeskPosInfo struct {
 	Pos      int32
-	acId     int32
+	AcId     int32
 	QueBi    int64
 	Name     string
-	isReady  bool
+	IsReady  bool
 	Sex      int32
-	isExit   bool
-	titleUrl string
+	IsExit   bool
+	TitleUrl string
 	Coin     int64
 	JQ       int64
 }

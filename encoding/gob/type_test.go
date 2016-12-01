@@ -30,6 +30,7 @@ func TestType(t *testing.T) {
 	a = append(a, true)
 	a = append(a, false)
 	a = append(a, [3]int{1, 2, 3})
+	a = append(a, []byte{})
 	m := make(map[int]string)
 	m[1] = "map的第一个元素"
 	m[1] = "map的第二个元素"

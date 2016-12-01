@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
+	"github.com/sydnash/lotou/simple/gameserver"
 	"github.com/sydnash/lotou/topology"
 	"math/rand"
 	"time"
@@ -24,6 +25,9 @@ func main() {
 	log.Info("dbid: %x", dbid)
 	hs := NewHS(platid, dbid)
 	hs.Run()
+
+	gs := gameserver.NewGS()
+	gs.Run()
 
 	ch := make(chan int)
 	<-ch

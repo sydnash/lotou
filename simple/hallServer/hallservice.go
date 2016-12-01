@@ -58,6 +58,27 @@ func (hs *HallService) CallMSG(dest, src uint, data ...interface{}) {
 }
 func (hs *HallService) RequestMSG(dest, src uint, rid int, data ...interface{}) {
 	log.Info("request: %x, %x, %v, %v", src, dest, rid, data)
+	cmd := data[0].(string)
+	if cmd == "GameServerLogin" {
+		acId := data[1].(int32)
+		isNeedPlayerInfo := data[2].(bool)
+		client, ok := hs.clientMap[acId]
+		if ok {
+			if isNeedPlayerInfo {
+				jsonstr, err := client.saveInfoToString()
+				if err != nil {
+					core.Respond(src, dest, rid, false, int32(0), []byte{})
+				} else {
+					core.Respond(src, dest, rid, true, client.session, jsonstr)
+				}
+			} else {
+				core.Respond(src, dest, rid, true, client.session, []byte{})
+			}
+		} else {
+			core.Respond(src, dest, rid, false, int32(0), []byte{})
+		}
+		return
+	}
 	core.Respond(src, dest, rid, data...)
 }
 

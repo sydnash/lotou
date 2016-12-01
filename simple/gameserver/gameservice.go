@@ -1,8 +1,13 @@
 package gameserver
 
 import (
+	"encoding/json"
 	"github.com/sydnash/lotou/core"
+	"github.com/sydnash/lotou/encoding/binary"
 	"github.com/sydnash/lotou/log"
+	"github.com/sydnash/lotou/network/tcp"
+	"github.com/sydnash/lotou/simple/btype"
+	"github.com/sydnash/lotou/simple/global"
 	"reflect"
 	"time"
 )
@@ -10,7 +15,7 @@ import (
 type GameService struct {
 	*core.Base
 	ticker    *time.Ticker
-	rooms     map[int]*RoomControl
+	rooms     map[int32]*RoomControl
 	clientMap map[int32]*GameClient
 	decoder   *binary.Decoder
 	encoder   *binary.Encoder
@@ -21,7 +26,7 @@ func (gs *GameService) CloseMSG(dest, src uint) {
 	log.Info("gsservice Close msg")
 	gs.Base.Close()
 }
-func (hs *HallService) NormalMSG(dest, src uint, msgType string, data ...interface{}) {
+func (gs *GameService) NormalMSG(dest, src uint, msgType string, data ...interface{}) {
 	//log.Info("HallService:normalMSG:%x, %x, %v", src, dest, data)
 	if msgType == "socket" {
 		cmd := data[0].(int)
@@ -29,10 +34,10 @@ func (hs *HallService) NormalMSG(dest, src uint, msgType string, data ...interfa
 		if len(data) >= 2 {
 			d = data[1].([]byte)
 		}
-		hs.socketMSG(src, cmd, d)
+		gs.socketMSG(src, cmd, d)
 	} else if msgType == "go" {
 		cmd := data[0].(string)
-		psv := reflect.ValueOf(db)
+		psv := reflect.ValueOf(gs)
 		fv := psv.MethodByName(cmd)
 		if fv.IsValid() {
 			in := make([]reflect.Value, len(data)-1)
@@ -47,23 +52,69 @@ func (hs *HallService) NormalMSG(dest, src uint, msgType string, data ...interfa
 	}
 }
 
-func (hs *HallService) socketMSG(src uint, cmd int, data []byte) {
+func (gs *GameService) socketMSG(src uint, cmd int, data []byte) {
 	switch cmd {
 	case tcp.AGENT_DATA:
-		hs.socketData(src, data)
+		gs.socketData(src, data)
 	}
 }
 
-func (hs *HallService) socketData(src uint, data []byte) {
+func (gs *GameService) socketData(src uint, data []byte) {
 	var basic btype.PHead
-	hs.decoder.SetBuffer(data)
-	hs.decoder.Decode(&basic)
+	gs.decoder.SetBuffer(data)
+	gs.decoder.Decode(&basic)
 	log.Debug("recv package: %v", basic)
 	ctype := basic.Type
 	switch ctype {
 	case btype.C_MSG_ENTER_DESK:
-		hs.enterDesk(basic)
+		gs.enterDesk(src, basic)
 	}
+}
+func (gs *GameService) enterDesk(src uint, basic btype.PHead) {
+	var param btype.CEnterDesk
+	gs.decoder.Decode(&param)
+	cb := func(ok bool, session int32, data []byte) {
+		log.Debug("enterdesk respond:%v, %v, %v", ok, session, data)
+		onEnterFailed := func() {
+			gs.encoder.Reset()
+			basic.Type = btype.S_MSG_ENTER_DESK
+			gs.encoder.Encode(basic)
+			gs.encoder.Encode(false)
+			gs.sendToAgent(src)
+			time.AfterFunc(time.Second*2, func() {
+				core.Close(src, gs.Id())
+			})
+		}
+		log.Debug("enter desk : session :%v,  nsession :%v", session, basic.Session)
+		if !ok || session != basic.Session {
+			onEnterFailed()
+		} else {
+			rc, ok := gs.rooms[param.RoomId]
+			if !ok {
+				onEnterFailed()
+				return
+			}
+
+			canEnter := rc.isCanEnter()
+			if !canEnter {
+				onEnterFailed()
+				return
+			}
+
+			client := &GameClient{}
+			client.gs = gs
+			client.agentId = src
+			playerInfo := global.NewPropertySet()
+			playerInfo.LoadJson(string(data))
+			client.playerInfo = playerInfo
+			client.acId = basic.AcId
+			client.session = session
+
+			rc.enter(client)
+		}
+	}
+	isNeedPlayInfo := true
+	core.Request(gs.hsId, gs, cb, "GameServerLogin", basic.AcId, isNeedPlayInfo)
 }
 
 func (gs *GameService) sendToAgent(dest uint) {
@@ -74,7 +125,7 @@ func (gs *GameService) sendToAgent(dest uint) {
 	core.Send(dest, gs.Id(), tcp.AGENT_CMD_SEND, nb)
 }
 
-func (gs *GameService) getPlayer(src uint, basic *btype.PHead) *HallClient {
+func (gs *GameService) getPlayer(src uint, basic *btype.PHead) *GameClient {
 	client, ok := gs.clientMap[basic.AcId]
 	if ok {
 		if basic.Session == client.session {
@@ -85,18 +136,13 @@ func (gs *GameService) getPlayer(src uint, basic *btype.PHead) *HallClient {
 			gs.encoder.Encode(*basic)
 			gs.sendToAgent(src)
 			time.AfterFunc(time.Second*2, func() {
-				core.Close(src, hs.Id())
+				core.Close(src, gs.Id())
 			})
 		}
 	} else {
-		core.Close(src, hs.Id())
+		core.Close(src, gs.Id())
 	}
 	return nil
-}
-func (gs *GameService) enterDesk(basic btype.PHead) {
-	var param btype.CEnterDesk
-	hs.decoder.Decode(&param)
-	core.Request()
 }
 
 func (gs *GameService) CallMSG(dest, src uint, data ...interface{}) {
@@ -107,7 +153,7 @@ func (gs *GameService) RequestMSG(dest, src uint, rid int, data ...interface{}) 
 	log.Info("request: %x, %x, %v, %v", src, dest, rid, data)
 	cmd := data[0].(string)
 	psv := reflect.ValueOf(gs)
-	fv := psv.MethogsyName(cmd)
+	fv := psv.MethodByName(cmd)
 	if fv.IsValid() {
 		in := make([]reflect.Value, len(data)-1)
 		for i := 1; i < len(data); i++ {
@@ -128,8 +174,8 @@ func (gs *GameService) RequestMSG(dest, src uint, rid int, data ...interface{}) 
 func NewGS() *GameService {
 	gs := &GameService{Base: core.NewBaseLen(1024 * 1024)}
 	gs.initRoom()
-	hs.decoder = binary.NewDecoder()
-	hs.encoder = binary.NewEncoder()
+	gs.decoder = binary.NewDecoder()
+	gs.encoder = binary.NewEncoder()
 	gs.clientMap = make(map[int32]*GameClient)
 	gs.SetDispatcher(gs)
 	return gs
@@ -139,8 +185,7 @@ func (gs *GameService) initRoom() {
 	t1 := `[{"dingqueTime":20000,"roomType":0,"coinMax":1000,"maxFan":8,"diZhuCoin":10,"isNeedRobot":1,"coinType":1001,"firstFapaiTime":10000,"clientMax":500,"clientNum":0,"dapaiTime":20000,"coinSetp":0,"daidaTime":10000,"coinMin":100,"jiesuanTime":0,"zhunbeiTime":10000,"roomId":1,"startMinNum":4},{"dingqueTime":20000,"roomType":0,"coinMax":10000,"maxFan":8,"diZhuCoin":100,"isNeedRobot":1,"coinType":1001,"firstFapaiTime":10000,"clientMax":500,"clientNum":0,"dapaiTime":20000,"coinSetp":1,"daidaTime":10000,"coinMin":1000,"jiesuanTime":10000,"zhunbeiTime":10000,"roomId":2,"startMinNum":4},{"dingqueTime":30000,"roomType":1,"coinMax":1000,"maxFan":8,"diZhuCoin":10,"isNeedRobot":1,"coinType":1002,"duiHuaTime":15000,"firstFapaiTime":10000,"clientMax":5000,"clientNum":0,"jifenBeiLv":10,"dapaiTime":40000,"daidaTime":10000,"coinSetp":0,"baoMingCoin":100,"coinMin":100,"jiesuanTime":15000,"zhunbeiTime":10000,"roomId":3,"startMinNum":4},{"dingqueTime":20000,"roomType":0,"coinMax":100000,"maxFan":8,"diZhuCoin":800,"isNeedRobot":1,"coinType":1001,"firstFapaiTime":10000,"clientMax":500,"clientNum":0,"dapaiTime":20000,"coinSetp":2,"daidaTime":10000,"coinMin":50000,"jiesuanTime":10000,"zhunbeiTime":10000,"roomId":6,"startMinNum":2},{"dingqueTime":20000,"roomType":0,"coinMax":200000,"maxFan":8,"diZhuCoin":2000,"isNeedRobot":1,"coinType":1001,"firstFapaiTime":10000,"clientMax":500,"clientNum":0,"dapaiTime":20000,"coinSetp":3,"daidaTime":10000,"coinMin":100000,"jiesuanTime":10000,"zhunbeiTime":10000,"roomId":7,"startMinNum":2},{"dingqueTime":20000,"roomType":0,"coinMax":-1,"maxFan":8,"diZhuCoin":10000,"isNeedRobot":1,"coinType":1001,"firstFapaiTime":10000,"clientMax":500,"clientNum":0,"dapaiTime":20000,"coinSetp":4,"daidaTime":10000,"coinMin":200000,"jiesuanTime":10000,"zhunbeiTime":10000,"roomId":8,"startMinNum":2}]`
 	var pasre []map[string]int32
 	json.Unmarshal([]byte(t1), &pasre)
-
-	gs.roomControl = make([int]*RoomControl)
+	gs.rooms = make(map[int32]*RoomControl)
 	for _, info := range pasre {
 		roomType, ok := info["roomType"]
 		if !ok {
@@ -150,13 +195,13 @@ func (gs *GameService) initRoom() {
 		case KRoomTypeClassic:
 			roomInfo := &RoomInfo{}
 			roomInfo.RoomType = roomType
-			roomInfo.RoomId = info["room"]
+			roomInfo.RoomId = info["roomId"]
 			roomInfo.CoinMin = int64(info["coinMin"])
 			roomInfo.CoinMax = int64(info["coinMax"])
 			roomInfo.DiZhu = int64(info["diZhuCoin"])
 			roomInfo.MaxFan = info["maxFan"]
-			roomInfo.ClientNum = info["clientNum"]
-			roomInfo.ClientMax = info["clientMax"]
+			roomInfo.ClientNum = int16(info["clientNum"])
+			roomInfo.ClientMax = int16(info["clientMax"])
 			roomInfo.StartMinMax = int16(info["startMinNum"])
 			roomInfo.coinType = info["coinType"]
 			roomInfo.zbTime = info["zhunbeiTime"]
@@ -173,13 +218,13 @@ func (gs *GameService) initRoom() {
 		case KRoomTypeDC:
 			roomInfo := &RoomInfo{}
 			roomInfo.RoomType = roomType
-			roomInfo.RoomId = info["room"]
+			roomInfo.RoomId = info["roomId"]
 			roomInfo.CoinMin = int64(info["coinMin"])
 			roomInfo.CoinMax = int64(info["coinMax"])
 			roomInfo.DiZhu = int64(info["diZhuCoin"])
 			roomInfo.MaxFan = info["maxFan"]
-			roomInfo.ClientNum = info["clientNum"]
-			roomInfo.ClientMax = info["clientMax"]
+			roomInfo.ClientNum = int16(info["clientNum"])
+			roomInfo.ClientMax = int16(info["clientMax"])
 			roomInfo.StartMinMax = int16(info["startMinNum"])
 			roomInfo.coinType = info["coinType"]
 			roomInfo.zbTime = info["zhunbeiTime"]
@@ -207,6 +252,7 @@ func (gs *GameService) addRoom(info *RoomInfo) {
 	if ok {
 		log.Error("GameService:addRoom:%d is exist.", rc.roomInfo.RoomId)
 	}
+	log.Debug("roomid:=======%v", rc.roomInfo.RoomId)
 	gs.rooms[rc.roomInfo.RoomId] = rc
 }
 

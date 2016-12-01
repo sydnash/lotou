@@ -2,8 +2,6 @@ package gameserver
 
 import (
 	"encoding/json"
-	"github.com/sydnash/lotou/core"
-	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/simple/global"
 	"strconv"
 )
@@ -12,6 +10,12 @@ type GameClient struct {
 	playerInfo *global.PropertySet
 	acId       int32
 	session    int32
+	roomId     int32
+	deskId     int32
+	deskPos    int32
+	gs         *GameService
+	agentId    uint
+	dc         *DeskConrol
 }
 
 func (gc *GameClient) saveInfoToString() ([]byte, error) {
@@ -39,13 +43,4 @@ func (gc *GameClient) saveInfoToString() ([]byte, error) {
 	}
 	jsonStr, err := json.Marshal(sendMap)
 	return jsonStr, err
-}
-
-func (gc *GameClient) syncPlayerInfoToDb() {
-	jsonStr, err := gc.saveInfoToString()
-	if err != nil {
-		log.Error("HallClient:update:%s", err)
-	} else {
-		core.Send(gc.server.dbId, gc.server.Id(), "UpdatePlayerData", gc.acId, gc.playerInfo.GetPropertyString(global.KPropertyTypeNickname), jsonStr)
-	}
 }

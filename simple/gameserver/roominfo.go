@@ -33,10 +33,27 @@ type RoomInfo struct {
 
 type RoomControl struct {
 	roomInfo *RoomInfo
+	desks    []*DeskConrol
+}
+
+func (rc *RoomControl) isCanEnter() bool {
+	if rc.roomInfo.ClientNum+1 <= rc.roomInfo.ClientMax {
+		return true
+	}
+	return false
+}
+
+func (rc *RoomControl) enter(client *GameClient) {
+	dc := &DeskConrol{}
+	dc.rc = rc
+	client.roomId = rc.roomInfo.RoomId
+	dc.enter(client)
+	rc.desks = append(rc.desks, dc)
 }
 
 func NewRC(info *RoomInfo) *RoomControl {
 	ret := &RoomControl{}
 	ret.roomInfo = info
+	ret.desks = make([]*DeskConrol, 0, 1000)
 	return ret
 }
