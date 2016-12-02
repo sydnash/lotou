@@ -160,6 +160,7 @@ func NewDC(rc *RoomControl) *DeskConrol {
 		p.hasPeople = false
 		dc.posInfos[i] = p
 	}
+	dc.mjLogicInfo.init()
 	dc.deskState = kDeskStateNone
 	dc.mjLogicInfo.dc = dc
 	dc.curHasPeople = 0

@@ -15,6 +15,8 @@ const (
 	C_MSG_DINGQUE          = 5016
 	S_MSG_DINGQUE          = 5017
 	S_MSG_OPHINT           = 5018
+	C_MSG_OPDO             = 5019
+	S_MSG_OPDO             = 5020
 	S_MSG_DESK_BASIC_INFO  = 5025
 	C_MSG_QUERY_DC_INFO    = 5031
 	S_MSG_RET_DC_INFO      = 5032

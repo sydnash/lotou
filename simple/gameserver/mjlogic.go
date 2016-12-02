@@ -14,13 +14,13 @@ type MjLogicInfo struct {
 	curCQPos    int32
 	mjCQVec     [108]int32
 	curMoPaiPos int32
-	deskOpDesc  [4][]*OpDesc
+	deskOpDesc  [4]*PosOpDesc
 	dc          *DeskConrol
 }
 
 func (mj *MjLogicInfo) init() {
 	for k, _ := range mj.deskOpDesc {
-		mj.deskOpDesc[k] = make([]*OpDesc, 4)
+		mj.deskOpDesc[k] = newPosOpDesc()
 	}
 }
 
@@ -50,7 +50,7 @@ func (mj *MjLogicInfo) getMj(cnt int32) []int32 {
 }
 
 func (mj *MjLogicInfo) addOpDesc(op *OpDesc, pos int32) {
-	mj.deskOpDesc[pos] = append(mj.deskOpDesc[pos], op)
+	mj.deskOpDesc[pos].ops = append(mj.deskOpDesc[pos].ops, op)
 }
 
 type MJLogicPosInfo struct {
@@ -203,12 +203,11 @@ const (
 )
 
 type OpDesc struct {
-	OpType    int32
-	SubType   int32
-	mjIdxs    []int32
-	bePos     []int32
-	whoPos    int32
-	isChoosed bool
+	OpType  int32
+	SubType int32
+	mjIdxs  []int32
+	bePos   []int32
+	whoPos  int32
 }
 
 func newOpDesc() *OpDesc {
@@ -218,9 +217,25 @@ func newOpDesc() *OpDesc {
 	return ret
 }
 
+type PosOpDesc struct {
+	isChoosed bool
+	choosedOp *OpDesc
+	mjId      int32
+	ops       []*OpDesc
+}
+
+func newPosOpDesc() *PosOpDesc {
+	ret := &PosOpDesc{}
+	ret.ops = make([]*OpDesc, 0)
+	return ret
+}
+
 func (dc *DeskConrol) clearAllOP() {
-	for k, v := range dc.mjLogicInfo.deskOpDesc {
-		dc.mjLogicInfo.deskOpDesc[k] = v[:0]
+	for _, v := range dc.mjLogicInfo.deskOpDesc {
+		v.isChoosed = false
+		v.choosedOp = nil
+		v.mjId = -1
+		v.ops = v.ops[:0]
 	}
 }
 func (dc *DeskConrol) checkOPAfterMoPai() {
@@ -236,15 +251,15 @@ func (dc *DeskConrol) checkOPAfterMoPai() {
 func (dc *DeskConrol) sendOpHint() {
 	for _, v := range dc.posInfos {
 		if v.hasPeople {
-			ops := dc.mjLogicInfo.deskOpDesc[v.pos]
-			if len(ops) > 0 {
+			posOpDesc := dc.mjLogicInfo.deskOpDesc[v.pos]
+			if len(posOpDesc.ops) > 0 {
 				gs := v.client.gs
 				gs.encoder.Reset()
 				head := btype.PHead{}
 				head.Type = btype.S_MSG_OPHINT
 				gs.encoder.Encode(head)
-				gs.encoder.Encode(len(ops))
-				for _, op := range ops {
+				gs.encoder.Encode(len(posOpDesc.ops))
+				for _, op := range posOpDesc.ops {
 					gs.encoder.Encode(op.OpType)
 					gs.encoder.Encode(len(op.mjIdxs))
 					for _, idx := range op.mjIdxs {
@@ -255,4 +270,16 @@ func (dc *DeskConrol) sendOpHint() {
 			}
 		}
 	}
+}
+func (dc *DeskConrol) opDo(client *GameClient) {
+	var opType int32
+	var mjId int32
+	client.gs.decoder.Decode(&opType)
+	client.gs.decoder.Decode(&mjId)
+	switch opType {
+	case KOPTypeChuPai:
+		dc.opChuPai(client)
+	}
+}
+func (dc *DeskConrol) opChuPai(client *GameClient) {
 }

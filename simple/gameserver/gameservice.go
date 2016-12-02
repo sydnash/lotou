@@ -74,9 +74,15 @@ func (gs *GameService) socketData(src uint, data []byte) {
 		gs.exitDesk(src, &basic)
 	case btype.C_MSG_DINGQUE:
 		gs.dingQue(src, &basic)
+	case btype.C_MSG_OPDO:
+		gs.opDo(src, &basic)
 	}
 }
 
+func (gs *GameService) opDo(src uint, basic *btype.PHead) {
+	client := gs.getPlayer(src, basic)
+	client.dc.opDo(client)
+}
 func (gs *GameService) dingQue(src uint, basic *btype.PHead) {
 	client := gs.getPlayer(src, basic)
 	client.dc.dingQue(client)
