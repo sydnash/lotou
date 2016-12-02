@@ -127,7 +127,7 @@ func decodeString(dec *Decoder, v reflect.Value) {
 	v.SetString(str)
 }
 func decodeBytes(dec *Decoder, v reflect.Value) {
-	var count int = int(readUInt32(dec))
+	var count int = int(readUInt16(dec))
 	str := string(dec.b[dec.r : dec.r+count])
 	dec.r += count
 	v.SetBytes([]byte(str))
@@ -136,7 +136,9 @@ func decodeStruct(dec *Decoder, v reflect.Value) {
 	num := v.NumField()
 	for i := 0; i < num; i++ {
 		f := v.Field(i)
-		dec.decodeValue(f)
+		if f.CanInterface() {
+			dec.decodeValue(f)
+		}
 	}
 }
 func decodeInterface(dec *Decoder, v reflect.Value) {

@@ -165,7 +165,9 @@ func (enc *Encoder) encodeStruct(value reflect.Value) {
 	num := value.NumField()
 	for i := 0; i < num; i++ {
 		v := value.Field(i)
-		enc.encodeValue(v)
+		if v.CanInterface() {
+			enc.encodeValue(v)
+		}
 	}
 }
 func (enc *Encoder) encodeArrayLike(value reflect.Value) {

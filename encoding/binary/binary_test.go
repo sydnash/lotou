@@ -26,10 +26,11 @@ func TestEncode(t *testing.T) {
 	a = append(a, "this is a string")
 	a = append(a, "这也是一个string")
 	t1 := struct {
-		A string
+		a string
 		B []byte
-	}{A: "结构体的字符串", B: []byte("结构体的字符串")}
+	}{a: "结构体的字符串", B: []byte("结构体的字符串")}
 	a = append(a, t1)
+
 	for _, v := range a {
 		enc.Encode(v)
 	}

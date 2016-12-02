@@ -187,9 +187,11 @@ func (dec *Decoder) decodeStruct(structId uint) (value reflect.Value) {
 
 	num := value.NumField()
 	for i := 0; i < num; i++ {
-		v := dec.decodeValue()
 		f := value.Field(i)
-		f.Set(v)
+		if f.CanInterface() {
+			v := dec.decodeValue()
+			f.Set(v)
+		}
 	}
 
 	return

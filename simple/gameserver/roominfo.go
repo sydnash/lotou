@@ -17,7 +17,7 @@ type RoomInfo struct {
 	StartMinMax   int16
 	Port          int16
 	IP            string
-	zbTime        int32
+	ZbTime        int32
 	DuanPaiTime   int32
 	DingQueTime   int32
 	ChuPaiTime    int32
@@ -43,12 +43,33 @@ func (rc *RoomControl) isCanEnter() bool {
 	return false
 }
 
+func (rc *RoomControl) getDesk() *DeskConrol {
+	for _, dc := range rc.desks {
+		if dc.isCaneEnter() {
+			return dc
+		}
+	}
+	dc := NewDC(rc)
+	rc.desks = append(rc.desks, dc)
+	return dc
+}
+
 func (rc *RoomControl) enter(client *GameClient) {
-	dc := &DeskConrol{}
-	dc.rc = rc
+	rc.roomInfo.ClientNum++
+	dc := rc.getDesk()
 	client.roomId = rc.roomInfo.RoomId
 	dc.enter(client)
-	rc.desks = append(rc.desks, dc)
+}
+func (rc *RoomControl) decreaseClientNum() {
+	rc.roomInfo.ClientNum--
+	if rc.roomInfo.ClientNum < 0 {
+		rc.roomInfo.ClientNum = 0
+	}
+}
+
+func (rc *RoomControl) exit(client *GameClient) {
+	dc := client.dc
+	dc.exit(client)
 }
 
 func NewRC(info *RoomInfo) *RoomControl {

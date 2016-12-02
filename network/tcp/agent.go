@@ -102,12 +102,14 @@ func (self *Agent) Run() {
 					break SELECT_LOOP
 				}
 			}
-			self.bufferMutxt.Lock()
-			for _, pack := range self.buffer {
-				core.SendSocket(self.Dest, self.Id(), AGENT_DATA, pack)
+			if len(self.buffer) > 0 {
+				self.bufferMutxt.Lock()
+				for _, pack := range self.buffer {
+					core.SendSocket(self.Dest, self.Id(), AGENT_DATA, pack)
+				}
+				self.buffer = self.buffer[0:0]
+				self.bufferMutxt.Unlock()
 			}
-			self.buffer = self.buffer[0:0]
-			self.bufferMutxt.Unlock()
 		}
 	}()
 	go func() {

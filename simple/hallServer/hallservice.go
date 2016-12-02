@@ -127,11 +127,20 @@ func (hs *HallService) getPlayer(src uint, basic *btype.PHead) *HallClient {
 			hs.encoder.Reset()
 			hs.encoder.Encode(*basic)
 			hs.sendToAgent(src)
+			log.Debug("session error")
 			time.AfterFunc(time.Second*2, func() {
 				core.Close(src, hs.Id())
 			})
 		}
 	} else {
+		basic.Type = btype.S_MSG_SESSION_ERROR
+		hs.encoder.Reset()
+		hs.encoder.Encode(*basic)
+		hs.sendToAgent(src)
+		log.Debug("session error")
+		time.AfterFunc(time.Second*2, func() {
+			core.Close(src, hs.Id())
+		})
 		core.Close(src, hs.Id())
 	}
 	return nil

@@ -157,7 +157,9 @@ func encodeStruct(enc *Encoder, v reflect.Value) {
 	num := v.NumField()
 	for i := 0; i < num; i++ {
 		f := v.Field(i)
-		enc.encodeValue(f)
+		if f.CanInterface() {
+			enc.encodeValue(f)
+		}
 	}
 }
 func encodeInterface(enc *Encoder, v reflect.Value) {
@@ -182,7 +184,7 @@ func encodeUInt(enc *Encoder, v reflect.Value) {
 }
 func encodeSlice(enc *Encoder, v reflect.Value) {
 	count := v.Len()
-	encodeInt32(enc, reflect.ValueOf(count))
+	encodeInt32(enc, reflect.ValueOf(int32(count)))
 	for i := 0; i < count; i++ {
 		elem := v.Index(i)
 		enc.encodeValue(elem)
@@ -190,7 +192,7 @@ func encodeSlice(enc *Encoder, v reflect.Value) {
 }
 func encodeMap(enc *Encoder, v reflect.Value) {
 	count := v.Len()
-	encodeInt32(enc, reflect.ValueOf(count))
+	encodeInt32(enc, reflect.ValueOf(int32(count)))
 	keys := v.MapKeys()
 	for _, k := range keys {
 		enc.encodeValue(k)

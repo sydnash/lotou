@@ -27,14 +27,13 @@ func TestServer(t *testing.T) {
 					m.decoder.SetBuffer(data)
 					var msg *[]byte = new([]byte)
 					m.decoder.Decode(msg)
-					log.Info("recv message: %v", string(*msg))
 				}
 			}
 		}
 	}()
-	s := tcp.New("", "4000", m.Id())
+	s := tcp.New("", "3333", m.Id())
 	s.Listen()
 
-	for {
-	}
+	ch := make(chan int)
+	<-ch
 }
