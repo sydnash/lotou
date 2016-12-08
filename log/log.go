@@ -150,6 +150,9 @@ func (self *Logger) doPrintf(level int, levelDesc, format string, a ...interface
 	if level >= self.shellLevel {
 		log.Printf(format, a...)
 	}
+	if level == FATAL_LEVEL {
+		panic(fmt.Sprintf(format, a...))
+	}
 }
 
 func (self *Logger) run() {

@@ -48,7 +48,9 @@ func (mj *MjLogicInfo) getMj(cnt int32) []int32 {
 	mj.curCQPos += cnt
 	return ret
 }
-
+func (mj *MjLogicInfo) getLeftMjCnt() int32 {
+	return 108 - mj.curCQPos
+}
 func (mj *MjLogicInfo) addOpDesc(op *OpDesc, pos int32) {
 	mj.deskOpDesc[pos].ops = append(mj.deskOpDesc[pos].ops, op)
 }
@@ -56,6 +58,23 @@ func (mj *MjLogicInfo) addOpDesc(op *OpDesc, pos int32) {
 type MJLogicPosInfo struct {
 	shouPai []int32
 	queId   int32
+}
+
+func (this MJLogicPosInfo) chuPai(mjId int32) int32 {
+	var pos int
+	for k, v := range this.shouPai {
+		if v == mjId {
+			pos = k
+			break
+		}
+	}
+	if pos == len(this.shouPai)-1 {
+		this.shouPai = this.shouPai[:len(this.shouPai)-1]
+	} else {
+		mjId = this.shouPai[pos]
+		this.shouPai = append(this.shouPai[:pos], this.shouPai[pos+1:len(this.shouPai)]...)
+	}
+	return mjId
 }
 
 func NewMJLogicPosInfo() *MJLogicPosInfo {
@@ -199,6 +218,9 @@ const (
 	KOPTypePeng
 	KOPTypeGang
 	KOPTypeHu
+	KOPTypePass
+	_
+	_
 	KOPTypeDuoXiang
 )
 
@@ -222,6 +244,32 @@ type PosOpDesc struct {
 	choosedOp *OpDesc
 	mjId      int32
 	ops       []*OpDesc
+}
+
+func (this *PosOpDesc) hasOp() bool {
+	if len(this.ops) > 0 {
+		return true
+	}
+	return false
+}
+func (this *PosOpDesc) getOpByOpType(optype int32) *OpDesc {
+	for _, op := range this.ops {
+		if op.OpType == optype {
+			return op
+		}
+	}
+	return nil
+}
+func (this *PosOpDesc) chooseOp(op int32) bool {
+	if this.isChoosed {
+		return false
+	}
+	this.choosedOp = this.getOpByOpType(op)
+	if this.choosedOp != nil {
+		this.isChoosed = true
+		return true
+	}
+	return false
 }
 
 func newPosOpDesc() *PosOpDesc {
@@ -278,8 +326,57 @@ func (dc *DeskConrol) opDo(client *GameClient) {
 	client.gs.decoder.Decode(&mjId)
 	switch opType {
 	case KOPTypeChuPai:
-		dc.opChuPai(client)
+		dc.opChuPai(client, mjId)
 	}
 }
-func (dc *DeskConrol) opChuPai(client *GameClient) {
+
+func (dc *DeskConrol) opChuPai(client *GameClient, mjId int32) {
+	pos := client.deskPos
+	posOpDesc := dc.mjLogicInfo.deskOpDesc[pos]
+	posOpDesc.chooseOp(KOPTypeChuPai)
+	if posOpDesc.choosedOp != nil {
+		posOpDesc.mjId = mjId
+		mjId = dc.posInfos[pos].mjLogicPosInfo.chuPai(mjId)
+		gs := client.gs
+		gs.encoder.Reset()
+		head := btype.PHead{}
+		head.Type = btype.S_MSG_OPDO
+		gs.encoder.Encode(head)
+		gs.encoder.Encode(1)
+		gs.encoder.Encode(client.acId)
+		gs.encoder.Encode(KOPTypeChuPai)
+		gs.encoder.Encode(false)
+		gs.encoder.Encode(mjId)
+		gs.encoder.Encode(0)
+		gs.encoder.Encode(1)
+		gs.encoder.Encode(mjId)
+		gs.encoder.Encode(0)
+		gs.encoder.Encode(0)
+		for _, v := range dc.posInfos {
+			if v.hasPeople {
+				gs.sendToAgent(v.client.agentId)
+			}
+		}
+		nextPos := dc.getNextPos(pos)
+		moPaiIds := dc.mjLogicInfo.getMj(1)
+		leftCnt := dc.mjLogicInfo.getLeftMjCnt()
+		dc.posInfos[nextPos].mjLogicPosInfo.fapai(moPaiIds)
+		dc.mjLogicInfo.curMoPaiPos = nextPos
+
+		nc := dc.posInfos[nextPos]
+		gs.encoder.Reset()
+		head.Type = btype.S_MSG_MOPAI
+		gs.encoder.Encode(head)
+		gs.encoder.Encode(nc.client.acId)
+		gs.encoder.Encode(1)
+		gs.encoder.Encode(moPaiIds[0])
+		gs.encoder.Encode(leftCnt)
+		for _, v := range dc.posInfos {
+			if v.hasPeople {
+				gs.sendToAgent(v.client.agentId)
+			}
+		}
+
+		dc.checkOPAfterMoPai()
+	}
 }
