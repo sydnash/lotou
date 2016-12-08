@@ -46,15 +46,13 @@ func TestCore(t *testing.T) {
 		m.SetDispatcher(m)
 	OUTER_FOR:
 		for {
-			select {
-			case msg, ok := <-m.In():
-				if !ok {
-					log.Info("m.In is closed.")
-					a <- 1
-					break OUTER_FOR
-				}
-				m.DispatchM(msg)
+			msg, ok := <-m.In()
+			if !ok {
+				log.Info("m.In is closed.")
+				a <- 1
+				break OUTER_FOR
 			}
+			m.DispatchM(msg)
 		}
 	}()
 
