@@ -61,54 +61,37 @@ func (self *Agent) Run() {
 	core.SendSocket(self.Dest, self.Id(), AGENT_ARRIVE) //recv message
 	self.ticker = time.NewTicker(time.Millisecond * 10)
 	go func() {
-	OUT:
 		for {
-			<-self.ticker.C
-		SELECT_LOOP:
-			for {
-				select {
-				case m, ok := <-self.In():
-					if ok {
-						if m.Type == core.MSG_TYPE_CLOSE {
-							self.close()
-							break OUT
-						} else if m.Type == core.MSG_TYPE_NORMAL {
-							cmd := m.Data[0].(int)
-							if cmd == AGENT_CMD_SEND {
-								self.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
-								data := m.Data[1].([]byte)
-								_, err := self.outbuffer.Write(data)
-								if err != nil {
-									log.Error("agent write msg failed: %s", err)
-									self.onConnectError()
-								}
-								err = self.outbuffer.Flush()
-								/*if neterr, ok := err.(net.Error); ok {
-									if neterr.Timeout() {
-										self.onConnectError()
-									}
-								}*/
-								if err != nil {
-									log.Error("agent write msg failed: %s", err)
-									self.onConnectError()
-								}
-							}
+			m, ok := <-self.In()
+			if ok {
+				if m.Type == core.MSG_TYPE_CLOSE {
+					self.close()
+					break
+				} else if m.Type == core.MSG_TYPE_NORMAL {
+					cmd := m.Data[0].(int)
+					if cmd == AGENT_CMD_SEND {
+						self.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
+						data := m.Data[1].([]byte)
+						_, err := self.outbuffer.Write(data)
+						if err != nil {
+							log.Error("agent write msg failed: %s", err)
+							self.onConnectError()
 						}
-					} else {
-						self.close()
-						break OUT
+						err = self.outbuffer.Flush()
+						/*if neterr, ok := err.(net.Error); ok {
+							if neterr.Timeout() {
+								self.onConnectError()
+							}
+						}*/
+						if err != nil {
+							log.Error("agent write msg failed: %s", err)
+							self.onConnectError()
+						}
 					}
-				default:
-					break SELECT_LOOP
 				}
-			}
-			if len(self.buffer) > 0 {
-				self.bufferMutxt.Lock()
-				for _, pack := range self.buffer {
-					core.SendSocket(self.Dest, self.Id(), AGENT_DATA, pack)
-				}
-				self.buffer = self.buffer[0:0]
-				self.bufferMutxt.Unlock()
+			} else {
+				self.close()
+				break
 			}
 		}
 	}()
@@ -124,9 +107,7 @@ func (self *Agent) Run() {
 				self.timeout.Stop()
 				self.timeout = nil
 			}
-			self.bufferMutxt.Lock()
-			self.buffer = append(self.buffer, pack)
-			self.bufferMutxt.Unlock()
+			core.SendSocket(self.Dest, self.Id(), AGENT_DATA, pack)
 		}
 	}()
 }
