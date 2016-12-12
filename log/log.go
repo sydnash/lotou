@@ -31,7 +31,7 @@ type Msg struct {
 }
 
 type Logger interface {
-	doPrintf(level int, levelDesc, format string, a ...interface{})
+	DoPrintf(level int, levelDesc, format string, a ...interface{})
 }
 
 var glogger Logger
@@ -44,7 +44,7 @@ func do(level int, desc, format string, param ...interface{}) {
 	}
 	m := &Msg{level, desc, format, param}
 	gloggerMut.Lock()
-	glogger.doPrintf(m.level, m.levelDesc, m.fmt, m.param...)
+	glogger.DoPrintf(m.level, m.levelDesc, m.fmt, m.param...)
 	gloggerMut.Unlock()
 
 	if level == FATAL_LEVEL {

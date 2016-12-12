@@ -20,7 +20,7 @@ type SimpleLoger struct {
 	shellLevel int
 }
 
-func (self *SimpleLoger) doPrintf(level int, levelDesc, format string, a ...interface{}) {
+func (self *SimpleLoger) DoPrintf(level int, levelDesc, format string, a ...interface{}) {
 	format = levelDesc + format
 	if level >= self.fileLevel {
 		if self.logLine > self.maxLine {
