@@ -199,6 +199,7 @@ func Call(dest uint, self Service, data ...interface{}) (ret []interface{}, err 
 	sid := self.Id()
 	ok := send(dest, sid, MSG_TYPE_CALL, "go", data...)
 	if !ok {
+		err = CallError
 		return ret, err
 	}
 	ret = self.Call()
