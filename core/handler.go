@@ -34,11 +34,11 @@ func newHandleStorage() *handleStorage {
 	h.curId = 0
 }
 
-func ParseNodeIdFromId(id uint) {
+func parseNodeIdFromId(id uint) {
 	return (id & NODE_ID_MASK) >> NODE_ID_OFF
 }
 
-func CheckIsLocalId(id uint) {
+func checkIsLocalId(id uint) {
 	nodeId := ParseNodeId(id)
 	if nodeId == NODE_ID_MASK {
 		return true
@@ -49,7 +49,7 @@ func CheckIsLocalId(id uint) {
 	return false
 }
 
-func CheckIsLocalName(name string) {
+func checkIsLocalName(name string) {
 	PanicWhen(len(name) == 0)
 	if name[0] == '.' {
 		return true
@@ -65,6 +65,7 @@ func registerService(s Service) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	h.curId++
+	id := h.nodeId<<NODE_ID_OFF | h.curId
 	h.dic[h.curId] = s
 }
 
@@ -76,4 +77,17 @@ func findServiceById(id uint) (s Service, err error) {
 		err = ServiceNotFindError
 	}
 	return s, err
+}
+
+func findServiceByName(name string) (s Service, err error) {
+	PanicWhen(len(name) == 0)
+	h.dicMutex.Lock()
+	defer h.dicMutex.Unlock()
+	for key, value := range h.dic {
+		if key == name {
+			s = value
+			return s, nil
+		}
+	}
+	return nil, ServiceNotFindError
 }
