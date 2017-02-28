@@ -46,6 +46,7 @@ var (
 func init() {
 	gobDecoder = gob.NewDecoder()
 	gobEncoder = gob.NewEncoder()
+	gob.RegisterStructType(Message{})
 }
 
 func pack(data []interface{}) []byte {

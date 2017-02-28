@@ -13,3 +13,6 @@ func StartService(name string, d int, m Module) uint {
 	}
 	return id
 }
+
+func Start(isMulti, isMaster bool) {
+}
