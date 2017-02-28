@@ -13,7 +13,7 @@ const (
 	DEFAULT_NODE_ID    = 0XFF
 )
 
-type handleDic map[uint]Service
+type handleDic map[uint]*service
 
 type handleStorage struct {
 	dicMutex sync.Mutex
@@ -24,32 +24,33 @@ type handleStorage struct {
 
 var (
 	h                   *handleStorage
-	ServiceNotFindError = errors.New("Service is not find.")
+	ServiceNotFindError = errors.New("service is not find.")
 )
 
 func newHandleStorage() *handleStorage {
 	h := &handleStorage{}
 	h.nodeId = DEFAULT_NODE_ID
-	h.dic = make(map[uint]Service)
+	h.dic = make(map[uint]*service)
 	h.curId = 0
+	return h
 }
 
-func parseNodeIdFromId(id uint) {
+func parseNodeIdFromId(id uint) uint {
 	return (id & NODE_ID_MASK) >> NODE_ID_OFF
 }
 
-func checkIsLocalId(id uint) {
-	nodeId := ParseNodeId(id)
+func checkIsLocalId(id uint) bool {
+	nodeId := parseNodeIdFromId(id)
 	if nodeId == NODE_ID_MASK {
 		return true
 	}
-	if nodeId == H.nodeId {
+	if nodeId == h.nodeId {
 		return true
 	}
 	return false
 }
 
-func checkIsLocalName(name string) {
+func checkIsLocalName(name string) bool {
 	PanicWhen(len(name) == 0)
 	if name[0] == '.' {
 		return true
@@ -61,15 +62,17 @@ func init() {
 	h = newHandleStorage()
 }
 
-func registerService(s Service) {
+func registerService(s *service) uint {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	h.curId++
 	id := h.nodeId<<NODE_ID_OFF | h.curId
-	h.dic[h.curId] = s
+	h.dic[id] = s
+	s.setId(id)
+	return id
 }
 
-func findServiceById(id uint) (s Service, err error) {
+func findServiceById(id uint) (s *service, err error) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	s, ok := h.dic[id]
@@ -79,12 +82,12 @@ func findServiceById(id uint) (s Service, err error) {
 	return s, err
 }
 
-func findServiceByName(name string) (s Service, err error) {
+func findServiceByName(name string) (s *service, err error) {
 	PanicWhen(len(name) == 0)
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
-	for key, value := range h.dic {
-		if key == name {
+	for _, value := range h.dic {
+		if value.getName() == name {
 			s = value
 			return s, nil
 		}
