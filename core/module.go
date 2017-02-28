@@ -5,6 +5,7 @@ type Module interface {
 	OnDestroy()
 	OnMainLoop(dt int) //dt is the duration time(unit Millisecond)
 	OnNormalMSG(src uint, data ...interface{})
+	OnSocketMSG(src uint, data ...interface{})
 	SetService(s *service)
 }
 
@@ -48,4 +49,6 @@ func (s *Skeleton) OnMainLoop(dt int) {
 func (s *Skeleton) OnNormalMSG(src uint, data ...interface{}) {
 }
 func (s *Skeleton) OnInit() {
+}
+func (s *Skeleton) OnSocketMSG(src uint, data ...interface{}) {
 }

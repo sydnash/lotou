@@ -53,9 +53,11 @@ func (s *service) dispatchMSG(msg *Message) bool {
 	}
 	switch msg.Type {
 	case MSG_TYPE_NORMAL:
-		s.m.OnNormalMSG(msg.Dst, msg.Data...)
+		s.m.OnNormalMSG(msg.Src, msg.Data...)
 	case MSG_TYPE_CLOSE:
 		return true
+	case MSG_TYPE_SOCKET:
+		s.m.OnSocketMSG(msg.Src, msg.Data...)
 	}
 	return false
 }
@@ -86,7 +88,10 @@ EXIT:
 			if !ok {
 				break EXIT
 			}
-			s.dispatchMSG(msg)
+			isClose := s.dispatchMSG(msg)
+			if isClose {
+				break EXIT
+			}
 		case <-s.loopTicker.C:
 			s.m.OnMainLoop(s.loopDuration)
 		}

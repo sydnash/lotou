@@ -51,30 +51,23 @@ func (a *Agent) OnInit() {
 	a.outbuffer = bufio.NewWriter(a.Con)
 	a.closeChan = make(chan byte)
 	go func() {
-	EXIT:
 		for {
-			select {
-			case <-a.closeChan:
-				break EXIT
-			default:
-				pack, err := Subpackage(self.inbuffer)
-				if err != nil {
-					log.Error("agent read msg failed: %s", err)
-					self.onConnectError()
-					break
-				}
-				if self.timeout != nil {
-					self.timeout.Stop()
-					self.timeout = nil
-				}
-				a.RawSend(a.Dest, core.MSG_TYPE_SOKECT, AGENT_DATA, pack)
+			pack, err := Subpackage(a.inbuffer)
+			if err != nil {
+				log.Error("agent read msg failed: %s", err)
+				a.onConnectError()
+				break
 			}
+			if !a.hasDataArrived {
+				a.hasDataArrived = true
+			}
+			a.RawSend(a.Dest, core.MSG_TYPE_SOCKET, AGENT_DATA, pack)
 		}
 	}()
 }
 
 func NewAgent(con *net.TCPConn, dest uint) *Agent {
-	a := &Agent{Con: con, Dest: dest, Base: core.NewSkeleton()}
+	a := &Agent{Con: con, Dest: dest, Skeleton: core.NewSkeleton()}
 	return a
 }
 
@@ -94,12 +87,11 @@ func (a *Agent) OnNormalMSG(src uint, data ...interface{}) {
 		msg := data[1].([]byte)
 		if _, err := a.outbuffer.Write(msg); err != nil {
 			log.Error("agent write msg failed: %s", err)
-			self.onConnectError()
+			a.onConnectError()
 		}
-		err = a.outbuffer.Flush()
-		if err != nil {
+		if err := a.outbuffer.Flush(); err != nil {
 			log.Error("agent write msg failed: %s", err)
-			self.onConnectError()
+			a.onConnectError()
 		}
 	}
 }

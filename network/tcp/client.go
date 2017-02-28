@@ -9,9 +9,7 @@ import (
 )
 
 type Client struct {
-	*core.Base
-	*core.EmptyRequest
-	*core.EmptyCall
+	*core.Skeleton
 	Con           *net.TCPConn
 	RemoteAddress *net.TCPAddr
 	Dest          uint
@@ -31,62 +29,61 @@ const (
 )
 
 func NewClient(host, port string, dest uint) *Client {
-	c := &Client{Base: core.NewBase(), Dest: dest}
+	c := &Client{Skeleton: core.NewSkeleton(), Dest: dest}
 	address := net.JoinHostPort(host, port)
 	tcpAddress, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
-		log.Error("create client error: %s", err)
+		log.Error("tcp resolve failed.")
 		return nil
 	}
 	c.RemoteAddress = tcpAddress
-
-	c.SetDispatcher(c)
 	return c
 }
 
-func (self *Client) CloseMSG(dest, src uint) {
-	self.Base.Close()
-	if self.Con != nil {
-		self.Con.Close()
+func (c *Client) OnInit() {
+}
+
+func (c *Client) OnDestroy() {
+	if c.Con != nil {
+		c.Con.Close()
 	}
 }
-func (self *Client) NormalMSG(dest, src uint, encodeType string, param ...interface{}) {
+func (c *Client) onConnect(n int) {
+	c.connect(n)
+}
+func (c *Client) onSend(src uint, param ...interface{}) {
+	if c.Con == nil {
+		c.connect(2)
+	}
+	if c.Con != nil {
+		data := param[0].([]byte)
+		c.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
+		_, err := c.outbuffer.Write(data)
+		if err != nil {
+			log.Error("agent write msg failed: %s", err)
+			c.onConError()
+		}
+		if c.Con != nil {
+			err = c.outbuffer.Flush()
+			if err != nil {
+				log.Error("agent write msg failed: %s", err)
+				c.onConError()
+			}
+		}
+	}
+}
+
+func (c *Client) OnNormalMSG(src uint, param ...interface{}) {
 	cmd := param[0].(int)
 	param = param[1:]
 	if cmd == CLIENT_CMD_CONNECT { //connect
 		n := param[0].(int)
-		self.connect(n)
+		c.onConnect(n)
 	} else if cmd == CLIENT_CMD_SEND { //send
-		if self.Con == nil {
-			self.connect(2)
-		}
-		if self.Con != nil {
-			data := param[0].([]byte)
-			_, err := self.outbuffer.Write(data)
-			if err != nil {
-				log.Error("agent write msg failed: %s", err)
-				self.onConError()
-			}
-			if self.Con != nil {
-				err = self.outbuffer.Flush()
-				if err != nil {
-					log.Error("agent write msg failed: %s", err)
-					self.onConError()
-				}
-			}
-		}
+		c.onSend(src, param...)
 	}
 }
 
-func (self *Client) Run() uint {
-	core.RegisterService(self)
-	go func() {
-		for m := range self.In() {
-			self.DispatchM(m)
-		}
-	}()
-	return self.Id()
-}
 func (self *Client) connect(n int) {
 	for i := 0; i < n; n++ {
 		if self.Con == nil {
@@ -101,7 +98,7 @@ func (self *Client) connect(n int) {
 		time.Sleep(time.Second * 2)
 	}
 	if self.Con == nil {
-		core.SendSocket(self.Dest, self.Id(), CLIENT_CONNECT_FAILED) //connect failed
+		self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, CLIENT_CONNECT_FAILED) //connect failed
 	} else {
 		if self.inbuffer == nil && self.outbuffer == nil {
 			self.inbuffer = bufio.NewReader(self.Con)
@@ -110,7 +107,7 @@ func (self *Client) connect(n int) {
 			self.inbuffer.Reset(self.Con)
 			self.outbuffer.Reset(self.Con)
 		}
-		core.SendSocket(self.Dest, self.Id(), CLIENT_CONNECTED) //connect success
+		self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, CLIENT_CONNECTED) //connect success
 		go func() {
 			for {
 				//split package
@@ -120,12 +117,13 @@ func (self *Client) connect(n int) {
 					self.onConError()
 					break
 				}
-				core.SendSocket(self.Dest, self.Id(), CLIENT_DATA, pack) //recv message
+				self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, CLIENT_DATA, pack) //recv message
 			}
 		}()
 	}
 }
 func (self *Client) onConError() {
-	core.SendSocket(self.Dest, self.Id(), CLIENT_DISCONNECTED) //disconnected
+	self.RawSend(self.Dest, core.MSG_TYPE_NORMAL, CLIENT_DISCONNECTED) //disconnected
+	self.OnDestroy()
 	self.Con = nil
 }

@@ -6,6 +6,7 @@ when a tcp connect comming in
 create a agent
 */
 import (
+	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"net"
 	"time"
@@ -43,9 +44,10 @@ func (self *Server) Listen() error {
 			if err != nil {
 				log.Warn("tcp server: accept tcp faield %s", err)
 				time.Sleep(time.Second * 3)
+				continue
 			}
 			a := NewAgent(tcpCon, self.Dest)
-			a.Run()
+			core.StartService("", 10, a)
 		}
 	}()
 
