@@ -39,7 +39,14 @@ func (s *service) pushMSG(m *Message) {
 	s.msgChan <- m
 }
 
-func (s *service) dispatchMSG(msg *Message) {
+func (s *service) destroy() {
+	close(s.msgChan)
+	if s.loopTicker != nil {
+		s.loopTicker.Stop()
+	}
+}
+
+func (s *service) dispatchMSG(msg *Message) bool {
 	if msg.EncType == MSG_ENC_TYPE_GO {
 		t := unpack(msg.Data[0].([]byte))
 		msg.Data = t.([]interface{})
@@ -47,7 +54,10 @@ func (s *service) dispatchMSG(msg *Message) {
 	switch msg.Type {
 	case MSG_TYPE_NORMAL:
 		s.m.OnNormalMSG(msg.Dst, msg.Data...)
+	case MSG_TYPE_CLOSE:
+		return true
 	}
+	return false
 }
 
 func (s *service) loop() {
@@ -58,10 +68,14 @@ EXIT:
 			if !ok {
 				break EXIT
 			}
-			s.dispatchMSG(msg)
+			isClose := s.dispatchMSG(msg)
+			if isClose {
+				break EXIT
+			}
 		}
 	}
 	s.m.OnDestroy()
+	s.destroy()
 }
 
 func (s *service) loopWithLoop() {
@@ -79,6 +93,7 @@ EXIT:
 	}
 	s.loopTicker.Stop()
 	s.m.OnDestroy()
+	s.destroy()
 }
 
 func (s *service) run() {

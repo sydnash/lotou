@@ -13,7 +13,9 @@ type Game struct {
 
 func (g *Game) OnMainLoop(dt int) {
 	g.Send(g.Dst, MSG_TYPE_NORMAL, g.Name)
+	g.RawSend(g.Dst, MSG_TYPE_NORMAL, g.Name, g.Id)
 }
+
 func (g *Game) OnNormalMSG(src uint, data ...interface{}) {
 	fmt.Println(src, data)
 }

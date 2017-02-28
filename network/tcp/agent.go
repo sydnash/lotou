@@ -24,15 +24,15 @@ import (
 */
 
 type Agent struct {
-	*core.Base
-	Con         *net.TCPConn
-	Dest        uint
-	timeout     *time.Timer
-	inbuffer    *bufio.Reader
-	outbuffer   *bufio.Writer
-	ticker      *time.Ticker
-	buffer      [][]byte
-	bufferMutxt sync.Mutex
+	*core.Skeleton
+	Con                  *net.TCPConn
+	Dest                 uint
+	hasDataArrived       bool
+	leftTimeBeforArrived int
+	inbuffer             *bufio.Reader
+	outbuffer            *bufio.Writer
+	bufferMutxt          sync.Mutex
+	closeChan            chan byte
 }
 
 const (
@@ -44,84 +44,76 @@ const (
 	AGENT_CMD_SEND = iota
 )
 
-func NewAgent(con *net.TCPConn, dest uint) *Agent {
-	a := &Agent{Con: con, Dest: dest, Base: core.NewBase()}
-	a.timeout = time.AfterFunc(time.Second*5, func() {
-		log.Info("there is no data comming, close this connect.")
-		core.Close(a.Id(), a.Id())
-	})
+func (a *Agent) OnInit() {
+	a.hasDataArrived = false
+	a.leftTimeBeforArrived = 5000
 	a.inbuffer = bufio.NewReader(a.Con)
 	a.outbuffer = bufio.NewWriter(a.Con)
-	a.buffer = make([][]byte, 0, 100)
+	a.closeChan = make(chan byte)
+	go func() {
+	EXIT:
+		for {
+			select {
+			case <-a.closeChan:
+				break EXIT
+			default:
+				pack, err := Subpackage(self.inbuffer)
+				if err != nil {
+					log.Error("agent read msg failed: %s", err)
+					self.onConnectError()
+					break
+				}
+				if self.timeout != nil {
+					self.timeout.Stop()
+					self.timeout = nil
+				}
+				a.RawSend(a.Dest, core.MSG_TYPE_SOKECT, AGENT_DATA, pack)
+			}
+		}
+	}()
+}
+
+func NewAgent(con *net.TCPConn, dest uint) *Agent {
+	a := &Agent{Con: con, Dest: dest, Base: core.NewSkeleton()}
 	return a
 }
 
-func (self *Agent) Run() {
-	core.RegisterService(self)
-	core.SendSocket(self.Dest, self.Id(), AGENT_ARRIVE) //recv message
-	self.ticker = time.NewTicker(time.Millisecond * 10)
-	go func() {
-		for {
-			m, ok := <-self.In()
-			if ok {
-				if m.Type == core.MSG_TYPE_CLOSE {
-					self.close()
-					break
-				} else if m.Type == core.MSG_TYPE_NORMAL {
-					cmd := m.Data[0].(int)
-					if cmd == AGENT_CMD_SEND {
-						self.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
-						data := m.Data[1].([]byte)
-						_, err := self.outbuffer.Write(data)
-						if err != nil {
-							log.Error("agent write msg failed: %s", err)
-							self.onConnectError()
-						}
-						err = self.outbuffer.Flush()
-						/*if neterr, ok := err.(net.Error); ok {
-							if neterr.Timeout() {
-								self.onConnectError()
-							}
-						}*/
-						if err != nil {
-							log.Error("agent write msg failed: %s", err)
-							self.onConnectError()
-						}
-					}
-				}
-			} else {
-				self.close()
-				break
-			}
+func (a *Agent) OnMainLoop(dt int) {
+	if !a.hasDataArrived {
+		a.leftTimeBeforArrived -= dt
+		if a.leftTimeBeforArrived < 0 {
+			a.close()
 		}
-	}()
-	go func() {
-		for {
-			pack, err := Subpackage(self.inbuffer)
-			if err != nil {
-				log.Error("agent read msg failed: %s", err)
-				self.onConnectError()
-				break
-			}
-			if self.timeout != nil {
-				self.timeout.Stop()
-				self.timeout = nil
-			}
-			core.SendSocket(self.Dest, self.Id(), AGENT_DATA, pack)
+	}
+}
+
+func (a *Agent) OnNormalMSG(src uint, data ...interface{}) {
+	cmd := data[0].(int)
+	if cmd == AGENT_CMD_SEND {
+		a.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
+		msg := data[1].([]byte)
+		if _, err := a.outbuffer.Write(msg); err != nil {
+			log.Error("agent write msg failed: %s", err)
+			self.onConnectError()
 		}
-	}()
+		err = a.outbuffer.Flush()
+		if err != nil {
+			log.Error("agent write msg failed: %s", err)
+			self.onConnectError()
+		}
+	}
+}
+
+func (a *Agent) OnDestroy() {
+	a.close()
 }
 
 func (self *Agent) onConnectError() {
-	core.SendSocket(self.Dest, self.Id(), AGENT_CLOSED)
-	core.Close(self.Id(), self.Id())
+	self.RawSend(self.Dest, core.MSG_TYPE_NORMAL, AGENT_CLOSED)
+	self.SendClose(self.Id)
 }
 func (self *Agent) close() {
 	log.Info("close agent. %v", self.Con.RemoteAddr())
 	self.Con.Close()
-	if self.timeout != nil {
-		self.timeout.Stop()
-	}
-	self.Base.Close()
-	self.ticker.Stop()
+	close(self.closeChan)
 }
