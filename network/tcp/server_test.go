@@ -36,9 +36,9 @@ func (m *M) OnSocketMSG(src uint, data ...interface{}) {
 
 func TestServer(t *testing.T) {
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
-	m := &M{Skeleton: core.NewSkeleton()}
+	m := &M{Skeleton: core.NewSkeleton(0)}
 	m.decoder = binary.NewDecoder()
-	core.StartService(".m", 0, m)
+	core.StartService(".m", m)
 
 	s := tcp.New("", "3333", m.Id)
 	s.Listen()

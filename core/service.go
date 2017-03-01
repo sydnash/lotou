@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/sydnash/lotou/encoding/gob"
 	"time"
 )
 
@@ -40,6 +41,7 @@ func (s *service) pushMSG(m *Message) {
 }
 
 func (s *service) destroy() {
+	unregisterService(s)
 	close(s.msgChan)
 	if s.loopTicker != nil {
 		s.loopTicker.Stop()
@@ -48,7 +50,7 @@ func (s *service) destroy() {
 
 func (s *service) dispatchMSG(msg *Message) bool {
 	if msg.EncType == MSG_ENC_TYPE_GO {
-		t := unpack(msg.Data[0].([]byte))
+		t := gob.Unpack(msg.Data[0].([]byte))
 		msg.Data = t.([]interface{})
 	}
 	switch msg.Type {

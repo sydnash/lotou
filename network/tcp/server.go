@@ -47,7 +47,7 @@ func (self *Server) Listen() error {
 				continue
 			}
 			a := NewAgent(tcpCon, self.Dest)
-			core.StartService("", 10, a)
+			core.StartService("", a)
 		}
 	}()
 

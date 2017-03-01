@@ -2,7 +2,6 @@ package core
 
 import (
 	"github.com/sydnash/lotou/encoding/gob"
-	"sync"
 )
 
 const (
@@ -15,6 +14,7 @@ const (
 	MSG_TYPE_CLOSE
 	MSG_TYPE_SOCKET
 	MSG_TYPE_ERR
+	MSG_TYPE_DISTRIBUTE
 	MSG_TYPE_MAX
 )
 
@@ -36,55 +36,62 @@ func NewMessage(src, dst uint, msgType, encType int, data ...interface{}) *Messa
 	return msg
 }
 
-var (
-	gobDecoder   *gob.Decoder
-	gobEncoder   *gob.Encoder
-	encoderMutex sync.Mutex
-	decoderMutex sync.Mutex
-)
-
 func init() {
-	gobDecoder = gob.NewDecoder()
-	gobEncoder = gob.NewEncoder()
 	gob.RegisterStructType(Message{})
 }
 
-func pack(data []interface{}) []byte {
-	encoderMutex.Lock()
-	defer encoderMutex.Unlock()
-	gobEncoder.Reset()
-	gobEncoder.Encode(data)
-	gobEncoder.UpdateLen()
-	buf := gobEncoder.Buffer()
-	ret := make([]byte, len(buf))
-	copy(ret, buf)
-	return ret
-}
-func unpack(data []byte) interface{} {
-	decoderMutex.Lock()
-	defer decoderMutex.Unlock()
-	gobDecoder.SetBuffer(data)
-	sdata, ok := gobDecoder.Decode()
-	PanicWhen(!ok)
-	return sdata
-}
-
 func sendNoEnc(src *service, dst uint, msgType int, data ...interface{}) error {
-	dsts, err := findServiceById(dst)
-	if err != nil {
-		return err
-	}
-	msg := NewMessage(src.getId(), dst, msgType, MSG_ENC_TYPE_NO, data...)
-	dsts.pushMSG(msg)
-	return nil
+	return rawSend(false, src.getId(), dst, msgType, data...)
 }
 
 func send(src *service, dst uint, msgType int, data ...interface{}) error {
+	return rawSend(true, src.getId(), dst, msgType, data...)
+}
+
+func rawSend(isEnc bool, src, dst uint, msgType int, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
+	isLocal := checkIsLocalId(dst)
+	if err != nil && isLocal {
+		return err
+	}
+	var msg *Message
+	if isEnc {
+		msg = NewMessage(src, dst, msgType, MSG_ENC_TYPE_GO, gob.Pack(data))
+	} else {
+		msg = NewMessage(src, dst, msgType, MSG_ENC_TYPE_NO, data...)
+	}
+	if err != nil {
+		sendToMaster("forward", msg)
+		return nil
+	}
+	dsts.pushMSG(msg)
+	return nil
+}
+
+func sendName(src uint, dst string, msgType int, data ...interface{}) error {
+	dsts, err := findServiceByName(dst)
 	if err != nil {
 		return err
 	}
-	msg := NewMessage(src.getId(), dst, msgType, MSG_ENC_TYPE_GO, pack(data))
-	dsts.pushMSG(msg)
-	return nil
+	return rawSend(true, src, dsts.getId(), msgType, data...)
+}
+
+func ForwardLocal(m *Message) {
+	dsts, err := findServiceById(m.Dst)
+	if err != nil {
+		return
+	}
+	switch m.Type {
+	case MSG_TYPE_NORMAL:
+		dsts.pushMSG(m)
+	}
+}
+func DistributeMSG(src uint, data ...interface{}) {
+	h.dicMutex.Lock()
+	defer h.dicMutex.Unlock()
+	for dst, _ := range h.dic {
+		if dst != src {
+			rawSend(false, src, dst, MSG_TYPE_DISTRIBUTE, data...)
+		}
+	}
 }

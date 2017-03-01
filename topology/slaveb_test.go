@@ -1,5 +1,6 @@
 package topology_test
 
+/*
 import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
@@ -30,3 +31,5 @@ func TestSlaveb(t *testing.T) {
 	}
 
 }
+
+*/

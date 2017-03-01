@@ -32,7 +32,6 @@ type Agent struct {
 	inbuffer             *bufio.Reader
 	outbuffer            *bufio.Writer
 	bufferMutxt          sync.Mutex
-	closeChan            chan byte
 }
 
 const (
@@ -49,7 +48,6 @@ func (a *Agent) OnInit() {
 	a.leftTimeBeforArrived = 5000
 	a.inbuffer = bufio.NewReader(a.Con)
 	a.outbuffer = bufio.NewWriter(a.Con)
-	a.closeChan = make(chan byte)
 	go func() {
 		for {
 			pack, err := Subpackage(a.inbuffer)
@@ -67,7 +65,7 @@ func (a *Agent) OnInit() {
 }
 
 func NewAgent(con *net.TCPConn, dest uint) *Agent {
-	a := &Agent{Con: con, Dest: dest, Skeleton: core.NewSkeleton()}
+	a := &Agent{Con: con, Dest: dest, Skeleton: core.NewSkeleton(10)}
 	return a
 }
 
@@ -75,7 +73,7 @@ func (a *Agent) OnMainLoop(dt int) {
 	if !a.hasDataArrived {
 		a.leftTimeBeforArrived -= dt
 		if a.leftTimeBeforArrived < 0 {
-			a.close()
+			a.SendClose(a.Id)
 		}
 	}
 }
@@ -90,7 +88,7 @@ func (a *Agent) OnNormalMSG(src uint, data ...interface{}) {
 			a.onConnectError()
 		}
 		if err := a.outbuffer.Flush(); err != nil {
-			log.Error("agent write msg failed: %s", err)
+			log.Error("agent flush msg failed: %s", err)
 			a.onConnectError()
 		}
 	}
@@ -101,11 +99,11 @@ func (a *Agent) OnDestroy() {
 }
 
 func (self *Agent) onConnectError() {
-	self.RawSend(self.Dest, core.MSG_TYPE_NORMAL, AGENT_CLOSED)
+	log.Info("send close")
+	self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, AGENT_CLOSED)
 	self.SendClose(self.Id)
 }
 func (self *Agent) close() {
 	log.Info("close agent. %v", self.Con.RemoteAddr())
 	self.Con.Close()
-	close(self.closeChan)
 }

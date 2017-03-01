@@ -1,11 +1,15 @@
 package core
 
-func StartService(name string, d int, m Module) uint {
+func StartService(name string, m Module) uint {
 	s := newService(name)
 	s.m = m
 	id := registerService(s)
 	m.SetService(s)
 	m.OnInit()
+	if !checkIsLocalName(name) {
+		globalName(id, name)
+	}
+	d := m.GetDuration()
 	if d > 0 {
 		s.runWithLoop(d)
 	} else {
@@ -13,6 +17,10 @@ func StartService(name string, d int, m Module) uint {
 	}
 	return id
 }
+func ParseNodeId(id uint) uint {
+	return parseNodeIdFromId(id)
+}
 
-func Start(isMulti, isMaster bool) {
+func CheckIsLocalServiceId(id uint) bool {
+	return checkIsLocalId(id)
 }

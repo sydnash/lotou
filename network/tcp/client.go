@@ -29,7 +29,7 @@ const (
 )
 
 func NewClient(host, port string, dest uint) *Client {
-	c := &Client{Skeleton: core.NewSkeleton(), Dest: dest}
+	c := &Client{Skeleton: core.NewSkeleton(0), Dest: dest}
 	address := net.JoinHostPort(host, port)
 	tcpAddress, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
@@ -123,7 +123,7 @@ func (self *Client) connect(n int) {
 	}
 }
 func (self *Client) onConError() {
-	self.RawSend(self.Dest, core.MSG_TYPE_NORMAL, CLIENT_DISCONNECTED) //disconnected
+	self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, CLIENT_DISCONNECTED) //disconnected
 	self.OnDestroy()
 	self.Con = nil
 }

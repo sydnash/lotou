@@ -11,6 +11,7 @@ const (
 	NODE_ID_OFF        = 24
 	INVALID_SERVICE_ID = (0XFF << NODE_ID_OFF) & NODE_ID_MASK
 	DEFAULT_NODE_ID    = 0XFF
+	INIT_NODE_ID       = 0
 )
 
 type handleDic map[uint]*service
@@ -41,7 +42,7 @@ func parseNodeIdFromId(id uint) uint {
 
 func checkIsLocalId(id uint) bool {
 	nodeId := parseNodeIdFromId(id)
-	if nodeId == NODE_ID_MASK {
+	if nodeId == DEFAULT_NODE_ID {
 		return true
 	}
 	if nodeId == h.nodeId {
@@ -51,7 +52,9 @@ func checkIsLocalId(id uint) bool {
 }
 
 func checkIsLocalName(name string) bool {
-	PanicWhen(len(name) == 0)
+	if len(name) == 0 {
+		return true
+	}
 	if name[0] == '.' {
 		return true
 	}
@@ -70,6 +73,12 @@ func registerService(s *service) uint {
 	h.dic[id] = s
 	s.setId(id)
 	return id
+}
+
+func unregisterService(s *service) {
+	h.dicMutex.Lock()
+	defer h.dicMutex.Unlock()
+	delete(h.dic, s.getId())
 }
 
 func findServiceById(id uint) (s *service, err error) {

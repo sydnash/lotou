@@ -49,13 +49,13 @@ func TestClient(t *testing.T) {
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
 
 	for i := 0; i < 1; i++ {
-		c := &C{Skeleton: core.NewSkeleton()}
-		core.StartService(".client", 1000, c)
+		c := &C{Skeleton: core.NewSkeleton(1000)}
+		core.StartService(".client", c)
 		c.encoder = binary.NewEncoder()
 		c.decoder = binary.NewDecoder()
 
 		client := tcp.NewClient("127.0.0.1", "3333", c.Id)
-		c.client = core.StartService(".cc", 0, client)
+		c.client = core.StartService(".cc", client)
 	}
 
 	for {

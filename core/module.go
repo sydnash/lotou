@@ -7,22 +7,28 @@ type Module interface {
 	OnNormalMSG(src uint, data ...interface{})
 	OnSocketMSG(src uint, data ...interface{})
 	SetService(s *service)
+	GetDuration() int
 }
 
 type Skeleton struct {
 	s    *service
 	Id   uint
 	Name string
+	D    int
 }
 
-func NewSkeleton() *Skeleton {
-	return &Skeleton{}
+func NewSkeleton(d int) *Skeleton {
+	return &Skeleton{D: d}
 }
 
 func (s *Skeleton) SetService(ser *service) {
 	s.s = ser
 	s.Id = ser.getId()
 	s.Name = ser.getName()
+}
+
+func (s *Skeleton) GetDuration() int {
+	return s.D
 }
 
 //use gob encode(not golang's standard library, see "github.com/sydnash/lotou/encoding/gob"
