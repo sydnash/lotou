@@ -51,8 +51,8 @@ func (s *Skeleton) SendClose(dst uint) {
 	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE)
 }
 
-func (s *Skeleton) Request(dst uint, timeout int, cb interface{}, data ...interface{}) {
-	s.s.request(dst, timeout, cb, data...)
+func (s *Skeleton) Request(dst uint, timeout int, responseCb interface{}, timeoutCb interface{}, data ...interface{}) {
+	s.s.request(dst, timeout, responseCb, timeoutCb, data...)
 }
 
 func (s *Skeleton) Respond(dst uint, rid int, data ...interface{}) {

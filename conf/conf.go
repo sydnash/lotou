@@ -15,4 +15,5 @@ var (
 	MasterListenIp   string = "127.0.0.1"
 	SlaveConnectIp   string = "127.0.0.1"
 	MultiNodePort    string = "4000"
+	CallTimeOut      int    = 10000
 )

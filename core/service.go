@@ -1,12 +1,18 @@
 package core
 
 import (
+	"errors"
+	"github.com/sydnash/lotou/conf"
 	"github.com/sydnash/lotou/encoding/gob"
 	"reflect"
 	"sync"
 	"time"
 )
 
+type requestCB struct {
+	respond reflect.Value
+	timeout reflect.Value
+}
 type service struct {
 	id           uint
 	name         string
@@ -15,18 +21,22 @@ type service struct {
 	loopDuration int //unit is Millisecond
 	m            Module
 	requestId    int
-	requestMap   map[int]reflect.Value
+	requestMap   map[int]requestCB
 	requestMutex sync.Mutex
 	callId       int
 	callChanMap  map[int]chan []interface{}
 	callMutex    sync.Mutex
 }
 
+var (
+	ServiceCallTimeout = errors.New("call time out")
+)
+
 func newService(name string) *service {
 	s := &service{name: name}
 	s.msgChan = make(chan *Message, 1024)
 	s.requestId = 0
-	s.requestMap = make(map[int]reflect.Value)
+	s.requestMap = make(map[int]requestCB)
 	s.callChanMap = make(map[int]chan []interface{})
 	return s
 }
@@ -79,6 +89,8 @@ func (s *service) dispatchMSG(msg *Message) bool {
 		s.dispatchCall(msg)
 	case MSG_TYPE_DISTRIBUTE:
 		s.m.OnDistributeMSG(msg.Data...)
+	case MSG_TYPE_TIMEOUT:
+		s.dispatchTimeout(msg)
 	}
 	return false
 }
@@ -131,19 +143,34 @@ func (s *service) runWithLoop(d int) {
 	go s.loopWithLoop()
 }
 
-func (s *service) request(dst uint, timeout int, cb interface{}, data ...interface{}) {
+func (s *service) request(dst uint, timeout int, respondCb interface{}, timeoutCb interface{}, data ...interface{}) {
 	s.requestMutex.Lock()
 	id := s.requestId
 	s.requestId++
-	v := reflect.ValueOf(cb)
-	s.requestMap[id] = v
+	cbp := requestCB{reflect.ValueOf(respondCb), reflect.ValueOf(timeoutCb)}
+	s.requestMap[id] = cbp
 	s.requestMutex.Unlock()
-	PanicWhen(v.Kind() != reflect.Func)
+	PanicWhen(cbp.respond.Kind() != reflect.Func)
+	PanicWhen(cbp.timeout.Kind() != reflect.Func)
 
 	param := make([]interface{}, 2)
 	param[0] = id
 	param[1] = data
 	rawSend(true, s.getId(), dst, MSG_TYPE_REQUEST, param...)
+
+	time.AfterFunc(time.Duration(timeout)*time.Millisecond, func() {
+		rawSend(false, INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, id)
+	})
+}
+
+func (s *service) dispatchTimeout(m *Message) {
+	rid := m.Data[0].(int)
+	cbp, ok := s.getDeleteRequestCb(rid)
+	if !ok {
+		return
+	}
+	cb := cbp.timeout
+	cb.Call([]reflect.Value{})
 }
 
 func (s *service) dispatchRequest(m *Message) {
@@ -159,18 +186,23 @@ func (s *service) respond(dst uint, rid int, data ...interface{}) {
 	rawSend(true, s.getId(), dst, MSG_TYPE_RESPOND, param...)
 }
 
+func (s *service) getDeleteRequestCb(id int) (requestCB, bool) {
+	s.requestMutex.Lock()
+	cb, ok := s.requestMap[id]
+	delete(s.requestMap, id)
+	s.requestMutex.Unlock()
+	return cb, ok
+}
+
 func (s *service) dispatchRespond(m *Message) {
 	rid := m.Data[0].(int)
 	data := m.Data[1].([]interface{})
 
-	s.requestMutex.Lock()
-	cb, ok := s.requestMap[rid]
-	delete(s.requestMap, rid)
-	s.requestMutex.Unlock()
-
+	cbp, ok := s.getDeleteRequestCb(rid)
 	if !ok {
 		return
 	}
+	cb := cbp.respond
 	n := len(data)
 	param := make([]reflect.Value, n+1)
 	param[0] = reflect.ValueOf(false)
@@ -197,13 +229,18 @@ func (s *service) call(dst uint, data ...interface{}) ([]interface{}, error) {
 	s.callMutex.Lock()
 	s.callChanMap[id] = ch
 	s.callMutex.Unlock()
-
+	time.AfterFunc(time.Duration(conf.CallTimeOut)*time.Millisecond, func() {
+		s.dispatchRet(id, ServiceCallTimeout)
+	})
 	ret := <-ch
 	s.callMutex.Lock()
 	delete(s.callChanMap, id)
 	s.callMutex.Unlock()
 
 	close(ch)
+	if err, ok := ret[0].(error); ok {
+		return ret[1:], err
+	}
 	return ret, nil
 }
 

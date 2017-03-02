@@ -7,7 +7,12 @@ import (
 	"github.com/sydnash/lotou/topology"
 )
 
-func Start() {
+type ModuleParam struct {
+	N string
+	M core.Module
+}
+
+func Start(data ...*ModuleParam) {
 	log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
 
 	core.InitNode(conf.CoreIsStandalone, conf.CoreIsMaster)
@@ -19,5 +24,9 @@ func Start() {
 			topology.StartSlave(conf.SlaveConnectIp, conf.MultiNodePort)
 		}
 		core.RegisterNode()
+	}
+
+	for _, m := range data {
+		core.StartService(m.N, m.M)
 	}
 }
