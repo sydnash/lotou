@@ -1,6 +1,7 @@
 package topology_test
 
 import (
+	"fmt"
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/topology"
@@ -13,7 +14,15 @@ var (
 
 func (g *Game) OnMainLoop(dt int) {
 	if remoteId != 0 {
+		log.Info("send")
 		g.RawSend(remoteId, core.MSG_TYPE_NORMAL, 1, 2, 3, 4)
+
+		t := func(timeout bool, data ...interface{}) {
+			fmt.Println("request respond ", timeout, data)
+		}
+		g.Request(remoteId, 10, t, "hello")
+
+		fmt.Println(g.Call(remoteId, "hello"))
 	}
 }
 
@@ -23,8 +32,10 @@ func TestSlavea(t *testing.T) {
 	remoteId = 0
 	core.InitNode(false, false)
 	topology.StartSlave("127.0.0.1", "4000")
-	core.RegisterNode()
 
+	log.Info("start register node")
+	core.RegisterNode()
+	log.Info("start create service")
 	game := &Game{core.NewSkeleton(1000)}
 	core.StartService("game2", game)
 	log.Info("game2's id: %v", game.Id)

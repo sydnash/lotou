@@ -99,7 +99,6 @@ func (a *Agent) OnDestroy() {
 }
 
 func (self *Agent) onConnectError() {
-	log.Info("send close")
 	self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, AGENT_CLOSED)
 	self.SendClose(self.Id)
 }

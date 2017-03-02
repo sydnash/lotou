@@ -6,6 +6,8 @@ type Module interface {
 	OnMainLoop(dt int) //dt is the duration time(unit Millisecond)
 	OnNormalMSG(src uint, data ...interface{})
 	OnSocketMSG(src uint, data ...interface{})
+	OnRequestMSG(src uint, rid int, data ...interface{})
+	OnCallMSG(src uint, rid int, data ...interface{})
 	SetService(s *service)
 	GetDuration() int
 }
@@ -35,17 +37,33 @@ func (s *Skeleton) GetDuration() int {
 //only support basic types and Message
 //user defined struct should encode and decode by user
 func (s *Skeleton) Send(dst uint, msgType int, data ...interface{}) {
-	send(s.s, dst, msgType, data...)
+	send(s.s.getId(), dst, msgType, data...)
 }
 
 //not encode data, be careful use
 //variables that passed by reference may be changed by others
 func (s *Skeleton) RawSend(dst uint, msgType int, data ...interface{}) {
-	sendNoEnc(s.s, dst, msgType, data...)
+	sendNoEnc(s.s.getId(), dst, msgType, data...)
 }
 
 func (s *Skeleton) SendClose(dst uint) {
-	sendNoEnc(s.s, dst, MSG_TYPE_CLOSE)
+	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE)
+}
+
+func (s *Skeleton) Request(dst uint, timeout int, cb interface{}, data ...interface{}) {
+	s.s.request(dst, timeout, cb, data...)
+}
+
+func (s *Skeleton) Respond(dst uint, rid int, data ...interface{}) {
+	s.s.respond(dst, rid, data...)
+}
+
+func (s *Skeleton) Call(dst uint, data ...interface{}) ([]interface{}, error) {
+	return s.s.call(dst, data...)
+}
+
+func (s *Skeleton) Ret(dst uint, cid int, data ...interface{}) {
+	s.s.ret(dst, cid, data...)
 }
 
 func (s *Skeleton) OnDestroy() {
@@ -57,4 +75,8 @@ func (s *Skeleton) OnNormalMSG(src uint, data ...interface{}) {
 func (s *Skeleton) OnInit() {
 }
 func (s *Skeleton) OnSocketMSG(src uint, data ...interface{}) {
+}
+func (s *Skeleton) OnRequestMSG(src uint, rid int, data ...interface{}) {
+}
+func (s *Skeleton) OnCallMSG(src uint, rid int, data ...interface{}) {
 }

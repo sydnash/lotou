@@ -11,9 +11,23 @@ type Game struct {
 	Dst uint
 }
 
+func (g *Game) OnRequestMSG(src uint, rid int, data ...interface{}) {
+	g.Respond(src, rid, "world")
+}
+func (g *Game) OnCallMSG(src uint, cid int, data ...interface{}) {
+	g.Ret(src, cid, "world")
+}
+
 func (g *Game) OnMainLoop(dt int) {
 	g.Send(g.Dst, MSG_TYPE_NORMAL, g.Name, []byte{1, 2, 3, 4, 56})
 	g.RawSend(g.Dst, MSG_TYPE_NORMAL, g.Name, g.Id)
+
+	t := func(timeout bool, data ...interface{}) {
+		fmt.Println("request respond ", timeout, data)
+	}
+	g.Request(g.Dst, 10, t, "hello")
+
+	fmt.Println(g.Call(g.Dst, "hello"))
 }
 
 func (g *Game) OnNormalMSG(src uint, data ...interface{}) {

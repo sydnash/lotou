@@ -43,9 +43,6 @@ func (s *slave) OnSocketMSG(dst uint, data ...interface{}) {
 			nodeId := array[1].(uint)
 			core.RegisterNodeRet(nodeId)
 		} else if scmd == "nameDeleted" {
-			//serviceId := array[1].(uint)
-			//serviceName := array[2].(string)
-			//core.SyncName(serviceId, serviceName)
 			names := array[1].([]string)
 			core.DistributeMSG(s.Id, "nameDeleted", names)
 		} else if scmd == "getIdByNameRet" {

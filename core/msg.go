@@ -40,12 +40,12 @@ func init() {
 	gob.RegisterStructType(Message{})
 }
 
-func sendNoEnc(src *service, dst uint, msgType int, data ...interface{}) error {
-	return rawSend(false, src.getId(), dst, msgType, data...)
+func sendNoEnc(src uint, dst uint, msgType int, data ...interface{}) error {
+	return rawSend(false, src, dst, msgType, data...)
 }
 
-func send(src *service, dst uint, msgType int, data ...interface{}) error {
-	return rawSend(true, src.getId(), dst, msgType, data...)
+func send(src uint, dst uint, msgType int, data ...interface{}) error {
+	return rawSend(true, src, dst, msgType, data...)
 }
 
 func rawSend(isEnc bool, src, dst uint, msgType int, data ...interface{}) error {
@@ -82,16 +82,25 @@ func ForwardLocal(m *Message) {
 		return
 	}
 	switch m.Type {
-	case MSG_TYPE_NORMAL:
+	case MSG_TYPE_NORMAL, MSG_TYPE_REQUEST, MSG_TYPE_RESPOND, MSG_TYPE_CALL:
 		dsts.pushMSG(m)
+	case MSG_TYPE_RET:
+		if m.EncType == MSG_ENC_TYPE_GO {
+			t := gob.Unpack(m.Data[0].([]byte))
+			m.Data = t.([]interface{})
+		}
+		cid := m.Data[0].(int)
+		data := m.Data[1].([]interface{})
+		dsts.dispatchRet(cid, data...)
 	}
 }
 func DistributeMSG(src uint, data ...interface{}) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
-	for dst, _ := range h.dic {
+	for dst, ser := range h.dic {
 		if dst != src {
-			rawSend(false, src, dst, MSG_TYPE_DISTRIBUTE, data...)
+			msg := NewMessage(src, dst, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, data...)
+			ser.pushMSG(msg)
 		}
 	}
 }

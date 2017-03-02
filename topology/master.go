@@ -41,6 +41,11 @@ func (m *master) OnNormalMSG(src uint, data ...interface{}) {
 		id := data[1].(uint)
 		name := data[2].(string)
 		m.onRegisterName(id, name)
+	} else if cmd == "getIdByName" {
+		name := data[1].(string)
+		rid := data[2].(uint)
+		id, ok := m.globalNameMap[name]
+		core.GetIdByNameRet(id, ok, name, rid)
 	}
 }
 
@@ -51,7 +56,6 @@ func (m *master) onRegisterNode(src uint) {
 	ret := make([]interface{}, 2, 2)
 	ret[0] = "registerNodeRet"
 	ret[1] = nodeId
-	log.Info("registerNodeRet %v", nodeId)
 	sendData := gob.Pack(ret)
 	m.RawSend(src, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
 }

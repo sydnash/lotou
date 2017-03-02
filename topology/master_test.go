@@ -31,6 +31,12 @@ func (g *Game) CallMSG(dest, src uint, data ...interface{}) {
 	core.Ret(src, dest, data...)
 }
 */
+func (g *Game) OnRequestMSG(src uint, rid int, data ...interface{}) {
+	g.Respond(src, rid, "world")
+}
+func (g *Game) OnCallMSG(src uint, cid int, data ...interface{}) {
+	g.Ret(src, cid, "world")
+}
 
 func (g *Game) OnNormalMSG(src uint, data ...interface{}) {
 	log.Info("%v, %v", src, data)
