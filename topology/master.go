@@ -62,6 +62,7 @@ func (m *master) onRegisterNode(src uint) {
 
 func (m *master) onRegisterName(serviceId uint, serviceName string) {
 	m.globalNameMap[serviceName] = serviceId
+	m.distributeM("nameAdd", serviceName, serviceId)
 }
 
 func (m *master) onGetIdByName(src uint, name string, rId uint) {
@@ -118,15 +119,19 @@ func (m *master) OnSocketMSG(src uint, data ...interface{}) {
 				deletedNames = append(deletedNames, name)
 			}
 		}
-		ret := make([]interface{}, 2, 2)
-		ret[0] = "nameDeleted"
-		ret[1] = deletedNames
-		sendData := gob.Pack(ret)
-		for _, agent := range m.nodesMap {
-			m.RawSend(agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
-		}
-		core.DistributeMSG(m.Id, ret...)
+		m.distributeM("nameDeleted", deletedNames)
 	}
+}
+
+func (m *master) distributeM(data ...interface{}) {
+	for _, agent := range m.nodesMap {
+		param := make([]interface{}, 2, 2)
+		param[0] = "distibute"
+		param[1] = data
+		sendData := gob.Pack(param)
+		m.RawSend(agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
+	}
+	core.DistributeMSG(m.Id, data...)
 }
 
 func (m *master) forwardM(msg *core.Message, data []byte) {

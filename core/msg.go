@@ -82,7 +82,7 @@ func ForwardLocal(m *Message) {
 		return
 	}
 	switch m.Type {
-	case MSG_TYPE_NORMAL, MSG_TYPE_REQUEST, MSG_TYPE_RESPOND, MSG_TYPE_CALL:
+	case MSG_TYPE_NORMAL, MSG_TYPE_REQUEST, MSG_TYPE_RESPOND, MSG_TYPE_CALL, MSG_TYPE_DISTRIBUTE:
 		dsts.pushMSG(m)
 	case MSG_TYPE_RET:
 		if m.EncType == MSG_ENC_TYPE_GO {

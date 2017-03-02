@@ -13,6 +13,7 @@ const (
 	WARN_LEVEL
 	ERROR_LEVEL
 	FATAL_LEVEL
+	LEVEL_MAX
 )
 
 const (

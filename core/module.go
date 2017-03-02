@@ -8,6 +8,7 @@ type Module interface {
 	OnSocketMSG(src uint, data ...interface{})
 	OnRequestMSG(src uint, rid int, data ...interface{})
 	OnCallMSG(src uint, rid int, data ...interface{})
+	OnDistributeMSG(data ...interface{})
 	SetService(s *service)
 	GetDuration() int
 }
@@ -79,4 +80,6 @@ func (s *Skeleton) OnSocketMSG(src uint, data ...interface{}) {
 func (s *Skeleton) OnRequestMSG(src uint, rid int, data ...interface{}) {
 }
 func (s *Skeleton) OnCallMSG(src uint, rid int, data ...interface{}) {
+}
+func (s *Skeleton) OnDistributeMSG(data ...interface{}) {
 }

@@ -42,6 +42,9 @@ func (g *Game) OnNormalMSG(src uint, data ...interface{}) {
 	log.Info("%v, %v", src, data)
 	//g.RawSend(src, core.MSG_TYPE_NORMAL, "222")
 }
+func (g *Game) OnDistributeMSG(data ...interface{}) {
+	log.Info("%v", data)
+}
 func TestMaster(t *testing.T) {
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
 

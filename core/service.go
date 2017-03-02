@@ -77,6 +77,8 @@ func (s *service) dispatchMSG(msg *Message) bool {
 		s.dispatchRespond(msg)
 	case MSG_TYPE_CALL:
 		s.dispatchCall(msg)
+	case MSG_TYPE_DISTRIBUTE:
+		s.m.OnDistributeMSG(msg.Data...)
 	}
 	return false
 }

@@ -42,9 +42,9 @@ func (s *slave) OnSocketMSG(dst uint, data ...interface{}) {
 		if scmd == "registerNodeRet" {
 			nodeId := array[1].(uint)
 			core.RegisterNodeRet(nodeId)
-		} else if scmd == "nameDeleted" {
-			names := array[1].([]string)
-			core.DistributeMSG(s.Id, "nameDeleted", names)
+		} else if scmd == "distibute" {
+			data := array[1].([]interface{})
+			core.DistributeMSG(s.Id, data...)
 		} else if scmd == "getIdByNameRet" {
 			id := array[1].(uint)
 			ok := array[2].(bool)
