@@ -135,12 +135,12 @@ EXIT:
 }
 
 func (s *service) run() {
-	go s.loop()
+	SafeGo(s.loop)
 }
 
 func (s *service) runWithLoop(d int) {
 	s.loopTicker = time.NewTicker(time.Duration(d) * time.Millisecond)
-	go s.loopWithLoop()
+	SafeGo(s.loopWithLoop)
 }
 
 func (s *service) request(dst uint, timeout int, respondCb interface{}, timeoutCb interface{}, data ...interface{}) {
