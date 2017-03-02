@@ -23,6 +23,8 @@ const (
 	MSG_ENC_TYPE_GO
 )
 
+//Message is the based struct of msg through all service
+//by convenient, the first value of Data is string as the method
 type Message struct {
 	Src     uint
 	Dst     uint
