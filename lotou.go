@@ -5,6 +5,8 @@ import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/topology"
+	"os"
+	"os/signal"
 )
 
 type ModuleParam struct {
@@ -29,4 +31,9 @@ func Start(data ...*ModuleParam) {
 	for _, m := range data {
 		core.StartService(m.N, m.M)
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, os.Kill)
+	sig := <-c
+	log.Info("lotou closing down (signal: %v)", sig)
 }

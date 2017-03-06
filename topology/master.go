@@ -158,6 +158,6 @@ func (m *master) forwardM(msg *core.Message, data []byte) {
 
 func (m *master) OnDestroy() {
 	for _, v := range m.nodesMap {
-		m.SendClose(v)
+		m.SendClose(v, false)
 	}
 }

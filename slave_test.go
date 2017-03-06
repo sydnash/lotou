@@ -31,7 +31,4 @@ func TestSlave(t *testing.T) {
 
 	game := &Game{core.NewSkeleton(1000), 0}
 	lotou.Start(&lotou.ModuleParam{"game2", game})
-
-	ch := make(chan int)
-	<-ch
 }

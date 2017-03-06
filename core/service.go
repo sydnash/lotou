@@ -78,7 +78,10 @@ func (s *service) dispatchMSG(msg *Message) bool {
 	case MSG_TYPE_NORMAL:
 		s.m.OnNormalMSG(msg.Src, msg.Data...)
 	case MSG_TYPE_CLOSE:
-		return true
+		if msg.Data[0].(bool) {
+			return true
+		}
+		s.m.OnCloseNotify()
 	case MSG_TYPE_SOCKET:
 		s.m.OnSocketMSG(msg.Src, msg.Data...)
 	case MSG_TYPE_REQUEST:

@@ -26,6 +26,7 @@ type handleStorage struct {
 var (
 	h                   *handleStorage
 	ServiceNotFindError = errors.New("service is not find.")
+	exitGroup           sync.WaitGroup
 )
 
 func newHandleStorage() *handleStorage {

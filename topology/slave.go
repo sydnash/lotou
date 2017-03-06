@@ -68,5 +68,5 @@ func (s *slave) forwardM(msg *core.Message) {
 }
 
 func (s *slave) OnDestroy() {
-	s.SendClose(s.client)
+	s.SendClose(s.client, false)
 }
