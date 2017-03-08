@@ -52,7 +52,7 @@ func (s *Skeleton) RawSend(dst uint, msgType int, data ...interface{}) {
 //then service can do choose close immediate or close after self clean.
 //if isForce is true, then it close immediate
 func (s *Skeleton) SendClose(dst uint, isForce bool) {
-	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE)
+	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE, isForce)
 }
 
 func (s *Skeleton) Request(dst uint, timeout int, responseCb interface{}, timeoutCb interface{}, data ...interface{}) {

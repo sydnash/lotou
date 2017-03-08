@@ -37,5 +37,5 @@ func TestMaster(t *testing.T) {
 	conf.CoreIsStandalone = false
 	conf.CoreIsMaster = true
 	game := &Game{core.NewSkeleton(0), 0}
-	lotou.Start(&lotou.ModuleParam{"game1", game})
+	lotou.Start(nil, &lotou.ModuleParam{"game1", game})
 }

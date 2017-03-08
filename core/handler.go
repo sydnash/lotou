@@ -11,7 +11,8 @@ const (
 	NODE_ID_OFF        = 24
 	INVALID_SERVICE_ID = (0XFF << NODE_ID_OFF) & NODE_ID_MASK
 	DEFAULT_NODE_ID    = 0XFF
-	INIT_NODE_ID       = 0
+	MASTER_NODE_ID     = 0
+	INIT_SERVICE_ID    = 10
 )
 
 type handleDic map[uint]*service
@@ -33,7 +34,7 @@ func newHandleStorage() *handleStorage {
 	h := &handleStorage{}
 	h.nodeId = DEFAULT_NODE_ID
 	h.dic = make(map[uint]*service)
-	h.curId = 0
+	h.curId = INIT_SERVICE_ID
 	return h
 }
 
@@ -73,13 +74,18 @@ func registerService(s *service) uint {
 	id := h.nodeId<<NODE_ID_OFF | h.curId
 	h.dic[id] = s
 	s.setId(id)
+	exitGroup.Add(1)
 	return id
 }
 
 func unregisterService(s *service) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
+	if _, ok := h.dic[s.getId()]; !ok {
+		return
+	}
 	delete(h.dic, s.getId())
+	exitGroup.Done()
 }
 
 func findServiceById(id uint) (s *service, err error) {

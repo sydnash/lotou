@@ -53,6 +53,7 @@ func send(src uint, dst uint, msgType int, data ...interface{}) error {
 func rawSend(isEnc bool, src, dst uint, msgType int, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
 	isLocal := checkIsLocalId(dst)
+
 	if err != nil && isLocal {
 		return err
 	}

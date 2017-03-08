@@ -26,6 +26,19 @@ func ParseNodeId(id uint) uint {
 	return parseNodeIdFromId(id)
 }
 
+func SendCloseToAll() {
+	h.dicMutex.Lock()
+	defer h.dicMutex.Unlock()
+	for id, s := range h.dic {
+		msg := NewMessage(INVALID_SERVICE_ID, id, MSG_TYPE_CLOSE, MSG_ENC_TYPE_NO, false)
+		s.pushMSG(msg)
+	}
+}
+
+func Wait() {
+	exitGroup.Wait()
+}
+
 func CheckIsLocalServiceId(id uint) bool {
 	return checkIsLocalId(id)
 }
