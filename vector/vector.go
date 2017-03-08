@@ -36,6 +36,11 @@ func (v *Vector) Clone() *Vector {
 	return t
 }
 
+func (v *Vector) Copy(src *Vector) {
+	v.s = make([]interface{}, len(src.s))
+	copy(v.s[:], src.s[:])
+}
+
 //Delete delete value at position i
 //if i is out of range, Delete will panic
 func (v *Vector) Delete(i int) {

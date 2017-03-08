@@ -82,4 +82,8 @@ func TestDelete(t *testing.T) {
 	v.PopFront()
 
 	errorOnDeepEqual(v.s, []interface{}{4, 3, 6, 6, 2, 5}, "reverse", t)
+
+	n := New()
+	n.Copy(v)
+	errorOnDeepEqual(n.s, []interface{}{4, 3, 6, 6, 2, 5}, "Copy", t)
 }
