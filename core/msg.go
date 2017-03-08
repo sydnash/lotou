@@ -53,6 +53,7 @@ func send(src uint, dst uint, msgType int, data ...interface{}) error {
 func rawSend(isEnc bool, src, dst uint, msgType int, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
 	isLocal := checkIsLocalId(dst)
+
 	if err != nil && isLocal {
 		return err
 	}
@@ -101,8 +102,12 @@ func DistributeMSG(src uint, data ...interface{}) {
 	defer h.dicMutex.Unlock()
 	for dst, ser := range h.dic {
 		if dst != src {
-			msg := NewMessage(src, dst, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, data...)
-			ser.pushMSG(msg)
+			localSendWithNoMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, data)
 		}
 	}
+}
+
+func localSendWithNoMutex(src uint, dstService *service, msgType, encType int, data ...interface{}) {
+	msg := NewMessage(src, dstService.getId(), msgType, encType, data...)
+	dstService.pushMSG(msg)
 }

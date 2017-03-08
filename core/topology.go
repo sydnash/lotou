@@ -35,7 +35,7 @@ func InitNode(_isStandalone, _isMaster bool) {
 	isStandalone = _isStandalone
 	isMaster = _isMaster
 	if !isStandalone && isMaster {
-		h.nodeId = INIT_NODE_ID
+		h.nodeId = MASTER_NODE_ID
 	}
 }
 

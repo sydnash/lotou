@@ -73,7 +73,7 @@ func (a *Agent) OnMainLoop(dt int) {
 	if !a.hasDataArrived {
 		a.leftTimeBeforArrived -= dt
 		if a.leftTimeBeforArrived < 0 {
-			a.SendClose(a.Id)
+			a.SendClose(a.Id, false)
 		}
 	}
 }
@@ -100,7 +100,7 @@ func (a *Agent) OnDestroy() {
 
 func (self *Agent) onConnectError() {
 	self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, AGENT_CLOSED)
-	self.SendClose(self.Id)
+	self.SendClose(self.Id, false)
 }
 func (self *Agent) close() {
 	log.Info("close agent. %v", self.Con.RemoteAddr())

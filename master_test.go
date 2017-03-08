@@ -6,7 +6,6 @@ import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"testing"
-	"time"
 )
 
 type Game struct {
@@ -38,10 +37,5 @@ func TestMaster(t *testing.T) {
 	conf.CoreIsStandalone = false
 	conf.CoreIsMaster = true
 	game := &Game{core.NewSkeleton(0), 0}
-	lotou.Start(&lotou.ModuleParam{"game1", game})
-
-	log.Info("test")
-	for {
-		time.Sleep(time.Minute * 10)
-	}
+	lotou.Start(nil, &lotou.ModuleParam{"game1", game})
 }

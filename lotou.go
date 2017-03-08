@@ -5,6 +5,9 @@ import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/topology"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 type ModuleParam struct {
@@ -12,7 +15,9 @@ type ModuleParam struct {
 	M core.Module
 }
 
-func Start(data ...*ModuleParam) {
+type CloseFunc func()
+
+func Start(f CloseFunc, data ...*ModuleParam) {
 	log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
 
 	core.InitNode(conf.CoreIsStandalone, conf.CoreIsMaster)
@@ -29,4 +34,20 @@ func Start(data ...*ModuleParam) {
 	for _, m := range data {
 		core.StartService(m.N, m.M)
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+
+	if f == nil {
+		f = core.SendCloseToAll
+	}
+	go func() {
+		for {
+			sig := <-c
+			log.Info("lotou closing down (signal: %v)", sig)
+			f()
+		}
+	}()
+
+	core.Wait()
 }

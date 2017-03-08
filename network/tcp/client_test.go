@@ -48,7 +48,7 @@ func (c *C) OnSocketMSG(src uint, data ...interface{}) {
 func TestClient(t *testing.T) {
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 1000; i++ {
 		c := &C{Skeleton: core.NewSkeleton(1000)}
 		core.StartService(".client", c)
 		c.encoder = binary.NewEncoder()
@@ -61,5 +61,4 @@ func TestClient(t *testing.T) {
 	for {
 		time.Sleep(time.Minute)
 	}
-
 }

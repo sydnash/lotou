@@ -9,6 +9,7 @@ type Module interface {
 	OnRequestMSG(src uint, rid int, data ...interface{})
 	OnCallMSG(src uint, rid int, data ...interface{})
 	OnDistributeMSG(data ...interface{})
+	OnCloseNotify()
 	SetService(s *service)
 	GetDuration() int
 }
@@ -47,8 +48,11 @@ func (s *Skeleton) RawSend(dst uint, msgType int, data ...interface{}) {
 	sendNoEnc(s.s.getId(), dst, msgType, data...)
 }
 
-func (s *Skeleton) SendClose(dst uint) {
-	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE)
+//if isForce is false, then it will just notify the sevice it need to close
+//then service can do choose close immediate or close after self clean.
+//if isForce is true, then it close immediate
+func (s *Skeleton) SendClose(dst uint, isForce bool) {
+	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE, isForce)
 }
 
 func (s *Skeleton) Request(dst uint, timeout int, responseCb interface{}, timeoutCb interface{}, data ...interface{}) {
@@ -82,4 +86,7 @@ func (s *Skeleton) OnRequestMSG(src uint, rid int, data ...interface{}) {
 func (s *Skeleton) OnCallMSG(src uint, rid int, data ...interface{}) {
 }
 func (s *Skeleton) OnDistributeMSG(data ...interface{}) {
+}
+func (s *Skeleton) OnCloseNotify() {
+	s.SendClose(s.s.getId(), true)
 }

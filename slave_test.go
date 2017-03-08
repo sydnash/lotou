@@ -11,7 +11,7 @@ import (
 
 func (g *Game) OnMainLoop(dt int) {
 	if g.remoteId != 0 {
-		log.Info("send")
+		log.Info("send remoteId: %v", g.remoteId)
 		g.RawSend(g.remoteId, core.MSG_TYPE_NORMAL, 1, 2, 3, 4)
 
 		t := func(timeout bool, data string) {
@@ -30,8 +30,5 @@ func TestSlave(t *testing.T) {
 	conf.CoreIsMaster = false
 
 	game := &Game{core.NewSkeleton(1000), 0}
-	lotou.Start(&lotou.ModuleParam{"game2", game})
-
-	ch := make(chan int)
-	<-ch
+	lotou.Start(nil, &lotou.ModuleParam{"game2", game})
 }
