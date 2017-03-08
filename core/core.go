@@ -29,9 +29,8 @@ func ParseNodeId(id uint) uint {
 func SendCloseToAll() {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
-	for id, s := range h.dic {
-		msg := NewMessage(INVALID_SERVICE_ID, id, MSG_TYPE_CLOSE, MSG_ENC_TYPE_NO, false)
-		s.pushMSG(msg)
+	for _, ser := range h.dic {
+		localSendWithNoMutex(INVALID_SERVICE_ID, ser, MSG_TYPE_CLOSE, MSG_ENC_TYPE_NO, false)
 	}
 }
 
