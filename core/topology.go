@@ -53,10 +53,14 @@ func RegisterNodeRet(id uint) {
 	registerNodeChan <- id
 }
 
+//globalName regist name to master
+//it will notify all exist service through distribute msg.
 func globalName(id uint, name string) {
 	sendToMaster("registerName", id, name)
 }
 
+//sendToMaster send msg to master
+//if node is not a master node, it send to .slave node first, .slave will forward msg to master.
 func sendToMaster(data ...interface{}) {
 	if !isStandalone {
 		if isMaster {
@@ -69,6 +73,8 @@ func sendToMaster(data ...interface{}) {
 	}
 }
 
+//NameToId couldn't guarantee get the correct id for name.
+//it will return err if the named server is until now.
 func NameToId(name string) (uint, error) {
 	ser, err := findServiceByName(name)
 	if err == nil {

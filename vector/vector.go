@@ -66,10 +66,12 @@ func (v *Vector) At(i int) interface{} {
 	return v.s[i]
 }
 
+//Extend extend j space at tail
 func (v *Vector) Extend(j int) {
 	v.s = append(v.s, make([]interface{}, j)...)
 }
 
+//ExtendAt extend j space after position i.
 func (v *Vector) ExtendAt(i, j int) {
 	v.s = append(v.s[:i], append(make([]interface{}, j), v.s[i:]...)...)
 }
@@ -98,4 +100,11 @@ func (v *Vector) Reverse() {
 	for left, right := 0, len(v.s)-1; left < right; left, right = left+1, right-1 {
 		v.s[left], v.s[right] = v.s[right], v.s[left]
 	}
+}
+
+func (v *Vector) Clear() {
+	for i, _ := range v.s {
+		v.s[i] = nil
+	}
+	v.s = v.s[0:0]
 }

@@ -24,7 +24,7 @@ const (
 )
 
 //Message is the based struct of msg through all service
-//by convenient, the first value of Data is string as the method
+//by convention, the first value of Data is a string as the method name
 type Message struct {
 	Src     uint
 	Dst     uint
@@ -64,6 +64,7 @@ func rawSend(isEnc bool, src, dst uint, msgType int, data ...interface{}) error 
 		msg = NewMessage(src, dst, msgType, MSG_ENC_TYPE_NO, data...)
 	}
 	if err != nil {
+		//didn't find service and dst id is remote id, send a forward msg to master.
 		sendToMaster("forward", msg)
 		return nil
 	}

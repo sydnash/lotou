@@ -70,5 +70,4 @@ func TestType(t *testing.T) {
 			idx++
 		}
 	}
-
 }

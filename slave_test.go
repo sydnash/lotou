@@ -12,7 +12,7 @@ import (
 func (g *Game) OnMainLoop(dt int) {
 	if g.remoteId != 0 {
 		log.Info("send remoteId: %v", g.remoteId)
-		g.RawSend(g.remoteId, core.MSG_TYPE_NORMAL, 1, 2, 3, 4)
+		g.RawSend(g.remoteId, core.MSG_TYPE_NORMAL, 1, 2, 3, 4, "wori 0", "cao")
 
 		t := func(timeout bool, data string) {
 			fmt.Println("request respond ", timeout, data)

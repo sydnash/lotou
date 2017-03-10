@@ -5,6 +5,10 @@ import (
 	"runtime/debug"
 )
 
+//StartService start a given module with specific name
+//call module's OnInit interface after register
+//and register name to master if name is a global name
+//start msg loop
 func StartService(name string, m Module) uint {
 	s := newService(name)
 	s.m = m
@@ -22,10 +26,13 @@ func StartService(name string, m Module) uint {
 	}
 	return id
 }
+
+//Parse Node Id parse node id from service id
 func ParseNodeId(id uint) uint {
 	return parseNodeIdFromId(id)
 }
 
+//SendCloseToAll simple send a close msg to all service
 func SendCloseToAll() {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
@@ -42,6 +49,7 @@ func CheckIsLocalServiceId(id uint) bool {
 	return checkIsLocalId(id)
 }
 
+//SafeGo start a groutine, and handle all panic within it.
 func SafeGo(f func()) {
 	go func() {
 		defer func() {

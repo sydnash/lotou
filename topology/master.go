@@ -104,6 +104,8 @@ func (m *master) OnSocketMSG(src uint, data ...interface{}) {
 			m.forwardM(msg, data[1].([]byte))
 		}
 	} else if cmd == tcp.AGENT_CLOSED {
+		//on agent disconnected
+		//delet node from nodesMap
 		var nodeId uint = 0
 		for id, v := range m.nodesMap {
 			if v == src {
@@ -112,6 +114,7 @@ func (m *master) OnSocketMSG(src uint, data ...interface{}) {
 		}
 		delete(m.nodesMap, nodeId)
 
+		//notify other services delete name's id on agent which is disconnected.
 		deletedNames := []string{}
 		for name, id := range m.globalNameMap {
 			nid := core.ParseNodeId(id)
@@ -147,6 +150,7 @@ func (m *master) forwardM(msg *core.Message, data []byte) {
 		log.Debug("node:%v is disconnected.", nodeId)
 		return
 	}
+	//if has no encode data, encode it first.
 	if data == nil {
 		ret := make([]interface{}, 2, 2)
 		ret[0] = "forward"

@@ -161,9 +161,11 @@ func (s *service) request(dst uint, timeout int, respondCb interface{}, timeoutC
 	param[1] = data
 	rawSend(true, s.getId(), dst, MSG_TYPE_REQUEST, param...)
 
-	time.AfterFunc(time.Duration(timeout)*time.Millisecond, func() {
-		rawSend(false, INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, id)
-	})
+	if timeout > 0 {
+		time.AfterFunc(time.Duration(timeout)*time.Millisecond, func() {
+			rawSend(false, INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, id)
+		})
+	}
 }
 
 func (s *service) dispatchTimeout(m *Message) {
@@ -232,9 +234,11 @@ func (s *service) call(dst uint, data ...interface{}) ([]interface{}, error) {
 	s.callMutex.Lock()
 	s.callChanMap[id] = ch
 	s.callMutex.Unlock()
-	time.AfterFunc(time.Duration(conf.CallTimeOut)*time.Millisecond, func() {
-		s.dispatchRet(id, ServiceCallTimeout)
-	})
+	if conf.CallTimeOut > 0 {
+		time.AfterFunc(time.Duration(conf.CallTimeOut)*time.Millisecond, func() {
+			s.dispatchRet(id, ServiceCallTimeout)
+		})
+	}
 	ret := <-ch
 	s.callMutex.Lock()
 	delete(s.callChanMap, id)
