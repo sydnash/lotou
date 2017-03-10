@@ -23,7 +23,15 @@ func NewCallHelper() *CallHelper {
 	return ret
 }
 
-func (c CallHelper) AddFunc(name string, f reflect.Value) {
+func (c CallHelper) AddFunc(name string, fun interface{}) {
+	f := reflect.ValueOf(fun)
+	core.PanicWhen(f.Kind() != reflect.Func)
+	c.funcMap[name] = f
+}
+
+func (c CallHelper) AddMethod(name string, v interface{}, mname string) {
+	self := reflect.ValueOf(v)
+	f := self.MethodByName(mname)
 	core.PanicWhen(f.Kind() != reflect.Func)
 	c.funcMap[name] = f
 }
