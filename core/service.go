@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/sydnash/lotou/conf"
 	"github.com/sydnash/lotou/encoding/gob"
+	"github.com/sydnash/lotou/timer"
 	"reflect"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ type service struct {
 	callId       int
 	callChanMap  map[int]chan []interface{}
 	callMutex    sync.Mutex
+	ts           *timer.TimerSchedule
 }
 
 var (
@@ -129,6 +131,7 @@ EXIT:
 				break EXIT
 			}
 		case <-s.loopTicker.C:
+			s.ts.Update(s.loopDuration)
 			s.m.OnMainLoop(s.loopDuration)
 		}
 	}
@@ -142,6 +145,7 @@ func (s *service) run() {
 }
 
 func (s *service) runWithLoop(d int) {
+	s.loopDuration = d
 	s.loopTicker = time.NewTicker(time.Duration(d) * time.Millisecond)
 	SafeGo(s.loopWithLoop)
 }
@@ -153,8 +157,8 @@ func (s *service) request(dst uint, timeout int, respondCb interface{}, timeoutC
 	cbp := requestCB{reflect.ValueOf(respondCb), reflect.ValueOf(timeoutCb)}
 	s.requestMap[id] = cbp
 	s.requestMutex.Unlock()
-	PanicWhen(cbp.respond.Kind() != reflect.Func)
-	PanicWhen(cbp.timeout.Kind() != reflect.Func)
+	PanicWhen(cbp.respond.Kind() != reflect.Func, "respond cb must function.")
+	PanicWhen(cbp.timeout.Kind() != reflect.Func, "timeout cb must function.")
 
 	param := make([]interface{}, 2)
 	param[0] = id
@@ -218,7 +222,7 @@ func (s *service) dispatchRespond(m *Message) {
 }
 
 func (s *service) call(dst uint, data ...interface{}) ([]interface{}, error) {
-	PanicWhen(dst == s.getId())
+	PanicWhen(dst == s.getId(), "dst must equal to s's id")
 	s.callMutex.Lock()
 	id := s.callId
 	s.callId++
@@ -278,4 +282,9 @@ func (s *service) dispatchRet(cid int, data ...interface{}) {
 	if ok {
 		ch <- data
 	}
+}
+
+func (s *service) schedule(interval, repeat int, cb timer.TimerCallback) *timer.Timer {
+	PanicWhen(s.loopDuration <= 0, "loopDuraton must greater than zero.")
+	return s.ts.Schedule(interval, repeat, cb)
 }

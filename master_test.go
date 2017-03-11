@@ -31,6 +31,11 @@ func (g *Game) OnInit() {
 	log.Info("OnInit: name:%v  id:%v", g.Name, g.Id)
 	g.remoteId, _ = core.NameToId("game1")
 	log.Info("name2id: game1:%v", g.remoteId)
+	if g.D > 0 {
+		g.Schedule(100, 0, func(dt int) {
+			log.Info("time schedule.")
+		})
+	}
 }
 
 func TestMaster(t *testing.T) {

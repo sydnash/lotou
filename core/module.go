@@ -1,5 +1,9 @@
 package core
 
+import (
+	"github.com/sydnash/lotou/timer"
+)
+
 type Module interface {
 	//OnInit is called within StartService
 	OnInit()
@@ -79,6 +83,13 @@ func (s *Skeleton) Respond(dst uint, rid int, data ...interface{}) {
 //after receiver call Ret, it will return
 func (s *Skeleton) Call(dst uint, data ...interface{}) ([]interface{}, error) {
 	return s.s.call(dst, data...)
+}
+
+func (s *Skeleton) Schedule(interval, repeat int, cb timer.TimerCallback) *timer.Timer {
+	if s.s == nil {
+		panic("Schedule must call after OnInit is called(contain OnInit)")
+	}
+	return s.s.schedule(interval, repeat, cb)
 }
 
 //Ret used to ret call msg

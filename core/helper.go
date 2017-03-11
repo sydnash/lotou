@@ -1,7 +1,7 @@
 package core
 
-func PanicWhen(b bool) {
+func PanicWhen(b bool, s string) {
 	if b {
-		panic("")
+		panic(s)
 	}
 }
