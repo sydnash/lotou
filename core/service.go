@@ -10,12 +10,13 @@ import (
 	"time"
 )
 
+type ServiceID uint
 type requestCB struct {
 	respond reflect.Value
 	timeout reflect.Value
 }
 type service struct {
-	id           uint
+	id           ServiceID
 	name         string
 	msgChan      chan *Message
 	loopTicker   *time.Ticker
@@ -51,11 +52,11 @@ func (s *service) getName() string {
 	return s.name
 }
 
-func (s *service) setId(id uint) {
+func (s *service) setId(id ServiceID) {
 	s.id = id
 }
 
-func (s *service) getId() uint {
+func (s *service) getId() ServiceID {
 	return s.id
 }
 
@@ -78,14 +79,14 @@ func (s *service) dispatchMSG(msg *Message) bool {
 	}
 	switch msg.Type {
 	case MSG_TYPE_NORMAL:
-		s.m.OnNormalMSG(msg.Src, msg.Data...)
+		s.m.OnNormalMSG(ServiceID(msg.Src), msg.Data...)
 	case MSG_TYPE_CLOSE:
 		if msg.Data[0].(bool) {
 			return true
 		}
 		s.m.OnCloseNotify()
 	case MSG_TYPE_SOCKET:
-		s.m.OnSocketMSG(msg.Src, msg.Data...)
+		s.m.OnSocketMSG(ServiceID(msg.Src), msg.Data...)
 	case MSG_TYPE_REQUEST:
 		s.dispatchRequest(msg)
 	case MSG_TYPE_RESPOND:
@@ -150,7 +151,9 @@ func (s *service) runWithLoop(d int) {
 	SafeGo(s.loopWithLoop)
 }
 
-func (s *service) request(dst uint, timeout int, respondCb interface{}, timeoutCb interface{}, data ...interface{}) {
+//respndCb is a function like: func(isok bool, ...interface{})  the first param must be a bool
+//timeoutCb is a function with no param : func()
+func (s *service) request(dst ServiceID, timeout int, respondCb interface{}, timeoutCb interface{}, data ...interface{}) {
 	s.requestMutex.Lock()
 	id := s.requestId
 	s.requestId++
@@ -185,10 +188,10 @@ func (s *service) dispatchTimeout(m *Message) {
 func (s *service) dispatchRequest(m *Message) {
 	rid := m.Data[0].(int)
 	data := m.Data[1].([]interface{})
-	s.m.OnRequestMSG(m.Src, rid, data...)
+	s.m.OnRequestMSG(ServiceID(m.Src), rid, data...)
 }
 
-func (s *service) respond(dst uint, rid int, data ...interface{}) {
+func (s *service) respond(dst ServiceID, rid int, data ...interface{}) {
 	param := make([]interface{}, 2)
 	param[0] = rid
 	param[1] = data
@@ -221,7 +224,7 @@ func (s *service) dispatchRespond(m *Message) {
 	cb.Call(param)
 }
 
-func (s *service) call(dst uint, data ...interface{}) ([]interface{}, error) {
+func (s *service) call(dst ServiceID, data ...interface{}) ([]interface{}, error) {
 	PanicWhen(dst == s.getId(), "dst must equal to s's id")
 	s.callMutex.Lock()
 	id := s.callId
@@ -258,10 +261,10 @@ func (s *service) call(dst uint, data ...interface{}) ([]interface{}, error) {
 func (s *service) dispatchCall(m *Message) {
 	cid := m.Data[0].(int)
 	data := m.Data[1].([]interface{})
-	s.m.OnCallMSG(m.Src, cid, data...)
+	s.m.OnCallMSG(ServiceID(m.Src), cid, data...)
 }
 
-func (s *service) ret(dst uint, cid int, data ...interface{}) {
+func (s *service) ret(dst ServiceID, cid int, data ...interface{}) {
 	var dstService *service
 	dstService, err := findServiceById(dst)
 	if err != nil {

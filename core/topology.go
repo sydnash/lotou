@@ -5,7 +5,7 @@ import (
 )
 
 type nameRet struct {
-	id   uint
+	id   ServiceID
 	ok   bool
 	name string
 }
@@ -55,8 +55,8 @@ func RegisterNodeRet(id uint) {
 
 //globalName regist name to master
 //it will notify all exist service through distribute msg.
-func globalName(id uint, name string) {
-	sendToMaster("registerName", id, name)
+func globalName(id ServiceID, name string) {
+	sendToMaster("registerName", uint(id), name)
 }
 
 //sendToMaster send msg to master
@@ -75,7 +75,7 @@ func sendToMaster(data ...interface{}) {
 
 //NameToId couldn't guarantee get the correct id for name.
 //it will return err if the named server is until now.
-func NameToId(name string) (uint, error) {
+func NameToId(name string) (ServiceID, error) {
 	ser, err := findServiceByName(name)
 	if err == nil {
 		return ser.getId(), nil
@@ -102,7 +102,7 @@ func NameToId(name string) (uint, error) {
 	return INVALID_SERVICE_ID, ServiceNotFindError
 }
 
-func GetIdByNameRet(id uint, ok bool, name string, rid uint) {
+func GetIdByNameRet(id ServiceID, ok bool, name string, rid uint) {
 	nameMapMutex.Lock()
 	ch := nameChanMap[rid]
 	delete(nameChanMap, rid)

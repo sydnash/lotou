@@ -10,7 +10,7 @@ import (
 //call module's OnInit interface after register
 //and register name to master if name is a global name
 //start msg loop
-func StartService(name string, m Module) uint {
+func StartService(name string, m Module) ServiceID {
 	s := newService(name)
 	s.m = m
 	id := registerService(s)
@@ -33,8 +33,12 @@ func StartService(name string, m Module) uint {
 }
 
 //Parse Node Id parse node id from service id
-func ParseNodeId(id uint) uint {
+func ParseNodeId(id ServiceID) uint {
 	return parseNodeIdFromId(id)
+}
+
+func Send(dst ServiceID, msgType int, data ...interface{}) error {
+	return rawSend(true, INVALID_SERVICE_ID, dst, msgType, data...)
 }
 
 //SendCloseToAll simple send a close msg to all service
@@ -50,7 +54,7 @@ func Wait() {
 	exitGroup.Wait()
 }
 
-func CheckIsLocalServiceId(id uint) bool {
+func CheckIsLocalServiceId(id ServiceID) bool {
 	return checkIsLocalId(id)
 }
 

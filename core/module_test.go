@@ -8,13 +8,13 @@ import (
 
 type Game struct {
 	*Skeleton
-	Dst uint
+	Dst ServiceID
 }
 
-func (g *Game) OnRequestMSG(src uint, rid int, data ...interface{}) {
+func (g *Game) OnRequestMSG(src ServiceID, rid int, data ...interface{}) {
 	g.Respond(src, rid, "world")
 }
-func (g *Game) OnCallMSG(src uint, cid int, data ...interface{}) {
+func (g *Game) OnCallMSG(src ServiceID, cid int, data ...interface{}) {
 	g.Ret(src, cid, "world")
 }
 
@@ -25,12 +25,13 @@ func (g *Game) OnMainLoop(dt int) {
 	t := func(timeout bool, data ...interface{}) {
 		fmt.Println("request respond ", timeout, data)
 	}
-	g.Request(g.Dst, 10, t, "hello")
+	g.Request(g.Dst, 10, t, func() {
+	}, "hello")
 
 	fmt.Println(g.Call(g.Dst, "hello"))
 }
 
-func (g *Game) OnNormalMSG(src uint, data ...interface{}) {
+func (g *Game) OnNormalMSG(src ServiceID, data ...interface{}) {
 	fmt.Println(src, data)
 }
 

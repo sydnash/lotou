@@ -26,7 +26,7 @@ import (
 type Agent struct {
 	*core.Skeleton
 	Con                  *net.TCPConn
-	Dest                 uint
+	Dest                 core.ServiceID
 	hasDataArrived       bool
 	leftTimeBeforArrived int
 	inbuffer             *bufio.Reader
@@ -64,7 +64,7 @@ func (a *Agent) OnInit() {
 	}()
 }
 
-func NewAgent(con *net.TCPConn, dest uint) *Agent {
+func NewAgent(con *net.TCPConn, dest core.ServiceID) *Agent {
 	a := &Agent{Con: con, Dest: dest, Skeleton: core.NewSkeleton(10)}
 	return a
 }
@@ -78,7 +78,7 @@ func (a *Agent) OnMainLoop(dt int) {
 	}
 }
 
-func (a *Agent) OnNormalMSG(src uint, data ...interface{}) {
+func (a *Agent) OnNormalMSG(src core.ServiceID, data ...interface{}) {
 	cmd := data[0].(int)
 	if cmd == AGENT_CMD_SEND {
 		a.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))

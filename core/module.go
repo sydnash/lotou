@@ -12,13 +12,13 @@ type Module interface {
 	//OnMainLoop is called ever main loop, the delta time is specific by GetDuration()
 	OnMainLoop(dt int) //dt is the duration time(unit Millisecond)
 	//OnNormalMSG is called when received msg from Send() or RawSend() with MSG_TYPE_NORMAL
-	OnNormalMSG(src uint, data ...interface{})
+	OnNormalMSG(src ServiceID, data ...interface{})
 	//OnSocketMSG is called when received msg from Send() or RawSend() with MSG_TYPE_SOCKET
-	OnSocketMSG(src uint, data ...interface{})
+	OnSocketMSG(src ServiceID, data ...interface{})
 	//OnRequestMSG is called when received msg from Request()
-	OnRequestMSG(src uint, rid int, data ...interface{})
+	OnRequestMSG(src ServiceID, rid int, data ...interface{})
 	//OnCallMSG is called when received msg from Call()
-	OnCallMSG(src uint, rid int, data ...interface{})
+	OnCallMSG(src ServiceID, rid int, data ...interface{})
 	//OnDistributeMSG is called when received msg from Send() or RawSend() with MSG_TYPE_DISTRIBUTE
 	OnDistributeMSG(data ...interface{})
 	//OnCloseNotify is called when received msg from SendClose() with false param.
@@ -29,7 +29,7 @@ type Module interface {
 
 type Skeleton struct {
 	s    *service
-	Id   uint
+	Id   ServiceID
 	Name string
 	D    int
 }
@@ -51,37 +51,37 @@ func (s *Skeleton) GetDuration() int {
 //use gob encode(not golang's standard library, see "github.com/sydnash/lotou/encoding/gob"
 //only support basic types and Message
 //user defined struct should encode and decode by user
-func (s *Skeleton) Send(dst uint, msgType int, data ...interface{}) {
+func (s *Skeleton) Send(dst ServiceID, msgType int, data ...interface{}) {
 	send(s.s.getId(), dst, msgType, data...)
 }
 
 //RawSend not encode variables, be careful use
 //variables that passed by reference may be changed by others
-func (s *Skeleton) RawSend(dst uint, msgType int, data ...interface{}) {
+func (s *Skeleton) RawSend(dst ServiceID, msgType int, data ...interface{}) {
 	sendNoEnc(s.s.getId(), dst, msgType, data...)
 }
 
 //if isForce is false, then it will just notify the sevice it need to close
 //then service can do choose close immediate or close after self clean.
 //if isForce is true, then it close immediate
-func (s *Skeleton) SendClose(dst uint, isForce bool) {
+func (s *Skeleton) SendClose(dst ServiceID, isForce bool) {
 	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE, isForce)
 }
 
 //Request send a request msg to dst, and start timeout function if timeout > 0
 //after receiver call Respond, the responseCb will be called
-func (s *Skeleton) Request(dst uint, timeout int, responseCb interface{}, timeoutCb interface{}, data ...interface{}) {
+func (s *Skeleton) Request(dst ServiceID, timeout int, responseCb interface{}, timeoutCb interface{}, data ...interface{}) {
 	s.s.request(dst, timeout, responseCb, timeoutCb, data...)
 }
 
 //Respond used to respond request msg
-func (s *Skeleton) Respond(dst uint, rid int, data ...interface{}) {
+func (s *Skeleton) Respond(dst ServiceID, rid int, data ...interface{}) {
 	s.s.respond(dst, rid, data...)
 }
 
 //Call send a call msg to dst, and start a timeout function with the conf.CallTimeOut
 //after receiver call Ret, it will return
-func (s *Skeleton) Call(dst uint, data ...interface{}) ([]interface{}, error) {
+func (s *Skeleton) Call(dst ServiceID, data ...interface{}) ([]interface{}, error) {
 	return s.s.call(dst, data...)
 }
 
@@ -93,7 +93,7 @@ func (s *Skeleton) Schedule(interval, repeat int, cb timer.TimerCallback) *timer
 }
 
 //Ret used to ret call msg
-func (s *Skeleton) Ret(dst uint, cid int, data ...interface{}) {
+func (s *Skeleton) Ret(dst ServiceID, cid int, data ...interface{}) {
 	s.s.ret(dst, cid, data...)
 }
 
@@ -101,15 +101,15 @@ func (s *Skeleton) OnDestroy() {
 }
 func (s *Skeleton) OnMainLoop(dt int) {
 }
-func (s *Skeleton) OnNormalMSG(src uint, data ...interface{}) {
+func (s *Skeleton) OnNormalMSG(src ServiceID, data ...interface{}) {
 }
 func (s *Skeleton) OnInit() {
 }
-func (s *Skeleton) OnSocketMSG(src uint, data ...interface{}) {
+func (s *Skeleton) OnSocketMSG(src ServiceID, data ...interface{}) {
 }
-func (s *Skeleton) OnRequestMSG(src uint, rid int, data ...interface{}) {
+func (s *Skeleton) OnRequestMSG(src ServiceID, rid int, data ...interface{}) {
 }
-func (s *Skeleton) OnCallMSG(src uint, rid int, data ...interface{}) {
+func (s *Skeleton) OnCallMSG(src ServiceID, rid int, data ...interface{}) {
 }
 func (s *Skeleton) OnDistributeMSG(data ...interface{}) {
 }

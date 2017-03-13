@@ -33,8 +33,8 @@ type Message struct {
 	Data    []interface{}
 }
 
-func NewMessage(src, dst uint, msgType, encType int, data ...interface{}) *Message {
-	msg := &Message{src, dst, msgType, encType, data}
+func NewMessage(src, dst ServiceID, msgType, encType int, data ...interface{}) *Message {
+	msg := &Message{uint(src), uint(dst), msgType, encType, data}
 	return msg
 }
 
@@ -42,15 +42,15 @@ func init() {
 	gob.RegisterStructType(Message{})
 }
 
-func sendNoEnc(src uint, dst uint, msgType int, data ...interface{}) error {
+func sendNoEnc(src ServiceID, dst ServiceID, msgType int, data ...interface{}) error {
 	return rawSend(false, src, dst, msgType, data...)
 }
 
-func send(src uint, dst uint, msgType int, data ...interface{}) error {
+func send(src ServiceID, dst ServiceID, msgType int, data ...interface{}) error {
 	return rawSend(true, src, dst, msgType, data...)
 }
 
-func rawSend(isEnc bool, src, dst uint, msgType int, data ...interface{}) error {
+func rawSend(isEnc bool, src, dst ServiceID, msgType int, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
 	isLocal := checkIsLocalId(dst)
 
@@ -72,7 +72,7 @@ func rawSend(isEnc bool, src, dst uint, msgType int, data ...interface{}) error 
 	return nil
 }
 
-func sendName(src uint, dst string, msgType int, data ...interface{}) error {
+func sendName(src ServiceID, dst string, msgType int, data ...interface{}) error {
 	dsts, err := findServiceByName(dst)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func sendName(src uint, dst string, msgType int, data ...interface{}) error {
 }
 
 func ForwardLocal(m *Message) {
-	dsts, err := findServiceById(m.Dst)
+	dsts, err := findServiceById(ServiceID(m.Dst))
 	if err != nil {
 		return
 	}
@@ -98,17 +98,17 @@ func ForwardLocal(m *Message) {
 		dsts.dispatchRet(cid, data...)
 	}
 }
-func DistributeMSG(src uint, data ...interface{}) {
+func DistributeMSG(src ServiceID, data ...interface{}) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	for dst, ser := range h.dic {
-		if dst != src {
+		if ServiceID(dst) != src {
 			localSendWithoutMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, data)
 		}
 	}
 }
 
-func localSendWithoutMutex(src uint, dstService *service, msgType, encType int, data ...interface{}) {
+func localSendWithoutMutex(src ServiceID, dstService *service, msgType, encType int, data ...interface{}) {
 	msg := NewMessage(src, dstService.getId(), msgType, encType, data...)
 	dstService.pushMSG(msg)
 }

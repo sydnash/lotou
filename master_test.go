@@ -10,17 +10,17 @@ import (
 
 type Game struct {
 	*core.Skeleton
-	remoteId uint
+	remoteId core.ServiceID
 }
 
-func (g *Game) OnRequestMSG(src uint, rid int, data ...interface{}) {
+func (g *Game) OnRequestMSG(src core.ServiceID, rid int, data ...interface{}) {
 	g.Respond(src, rid, "world")
 }
-func (g *Game) OnCallMSG(src uint, cid int, data ...interface{}) {
+func (g *Game) OnCallMSG(src core.ServiceID, cid int, data ...interface{}) {
 	g.Ret(src, cid, "world")
 }
 
-func (g *Game) OnNormalMSG(src uint, data ...interface{}) {
+func (g *Game) OnNormalMSG(src core.ServiceID, data ...interface{}) {
 	log.Info("%v, %v", src, data)
 	//g.RawSend(src, core.MSG_TYPE_NORMAL, "222")
 }

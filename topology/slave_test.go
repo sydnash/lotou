@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	remoteId uint = 100
+	remoteId core.ServiceID = 100
 )
 
 func (g *Game) OnMainLoop(dt int) {
@@ -48,26 +48,4 @@ func TestSlavea(t *testing.T) {
 
 	ch := make(chan int)
 	<-ch
-
-	/*
-		response := func(data ...interface{}) {
-			log.Info("respond: %v", data)
-		}
-		_ = response
-		go func() {
-			for msg := range game.In() {
-				game.DispatchM(msg)
-			}
-		}()
-		core.Send(t4, game.Id(), "测试中", "同时测试中文")
-		if t5 {
-			for {
-				core.Request(t4, game, response, "response1", "response2")
-				ret, err := core.Call(t4, game, "call1", "call2")
-				log.Info("ret: %v", ret)
-			}
-		}
-		for {
-		}
-	*/
 }
