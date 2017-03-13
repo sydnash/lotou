@@ -9,7 +9,7 @@ import (
 
 type slave struct {
 	*core.Skeleton
-	client uint
+	client core.ServiceID
 }
 
 func StartSlave(ip, port string) {
@@ -19,7 +19,7 @@ func StartSlave(ip, port string) {
 	m.client = core.StartService("", c)
 }
 
-func (s *slave) OnNormalMSG(dst uint, data ...interface{}) {
+func (s *slave) OnNormalMSG(dst core.ServiceID, data ...interface{}) {
 	//dest is master's id, src is core's id
 	//data[0] is cmd such as (registerNode, regeisterName, getIdByName...)
 	//data[1] is dest nodeService's id
@@ -27,7 +27,7 @@ func (s *slave) OnNormalMSG(dst uint, data ...interface{}) {
 	t1 := gob.Pack(data)
 	s.RawSend(s.client, core.MSG_TYPE_NORMAL, tcp.CLIENT_CMD_SEND, t1)
 }
-func (s *slave) OnSocketMSG(dst uint, data ...interface{}) {
+func (s *slave) OnSocketMSG(dst core.ServiceID, data ...interface{}) {
 	//dest is master's id, src is agent's id
 	//data[0] is socket status
 	//data[1] is a gob encode data
@@ -50,7 +50,7 @@ func (s *slave) OnSocketMSG(dst uint, data ...interface{}) {
 			ok := array[2].(bool)
 			name := array[3].(string)
 			rid := array[4].(uint)
-			core.GetIdByNameRet(id, ok, name, rid)
+			core.GetIdByNameRet(core.ServiceID(id), ok, name, rid)
 		} else if scmd == "forward" {
 			msg := array[1].(*core.Message)
 			s.forwardM(msg)
@@ -59,7 +59,7 @@ func (s *slave) OnSocketMSG(dst uint, data ...interface{}) {
 }
 
 func (s *slave) forwardM(msg *core.Message) {
-	isLcoal := core.CheckIsLocalServiceId(msg.Dst)
+	isLcoal := core.CheckIsLocalServiceId(core.ServiceID(msg.Dst))
 	if isLcoal {
 		core.ForwardLocal(msg)
 		return

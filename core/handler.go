@@ -7,12 +7,12 @@ import (
 
 //definition for node id
 const (
-	NODE_ID_MASK       = 0xFF000000
-	NODE_ID_OFF        = 24
-	INVALID_SERVICE_ID = (0XFF << NODE_ID_OFF) & NODE_ID_MASK
-	DEFAULT_NODE_ID    = 0XFF
-	MASTER_NODE_ID     = 0
-	INIT_SERVICE_ID    = 10
+	NODE_ID_MASK                 = 0xFF000000
+	NODE_ID_OFF                  = 24
+	INVALID_SERVICE_ID           = (0XFF << NODE_ID_OFF) & NODE_ID_MASK
+	DEFAULT_NODE_ID              = 0XFF
+	MASTER_NODE_ID               = 0
+	INIT_SERVICE_ID    ServiceID = 10
 )
 
 type handleDic map[uint]*service
@@ -34,15 +34,15 @@ func newHandleStorage() *handleStorage {
 	h := &handleStorage{}
 	h.nodeId = DEFAULT_NODE_ID
 	h.dic = make(map[uint]*service)
-	h.curId = INIT_SERVICE_ID
+	h.curId = uint(INIT_SERVICE_ID)
 	return h
 }
 
-func parseNodeIdFromId(id uint) uint {
-	return (id & NODE_ID_MASK) >> NODE_ID_OFF
+func parseNodeIdFromId(id ServiceID) uint {
+	return (uint(id) & NODE_ID_MASK) >> NODE_ID_OFF
 }
 
-func checkIsLocalId(id uint) bool {
+func checkIsLocalId(id ServiceID) bool {
 	nodeId := parseNodeIdFromId(id)
 	if nodeId == DEFAULT_NODE_ID {
 		return true
@@ -67,31 +67,33 @@ func init() {
 	h = newHandleStorage()
 }
 
-func registerService(s *service) uint {
+func registerService(s *service) ServiceID {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	h.curId++
 	id := h.nodeId<<NODE_ID_OFF | h.curId
 	h.dic[id] = s
-	s.setId(id)
+	sid := ServiceID(id)
+	s.setId(sid)
 	exitGroup.Add(1)
-	return id
+	return ServiceID(sid)
 }
 
 func unregisterService(s *service) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
-	if _, ok := h.dic[s.getId()]; !ok {
+	id := uint(s.getId())
+	if _, ok := h.dic[id]; !ok {
 		return
 	}
-	delete(h.dic, s.getId())
+	delete(h.dic, id)
 	exitGroup.Done()
 }
 
-func findServiceById(id uint) (s *service, err error) {
+func findServiceById(id ServiceID) (s *service, err error) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
-	s, ok := h.dic[id]
+	s, ok := h.dic[uint(id)]
 	if !ok {
 		err = ServiceNotFindError
 	}
