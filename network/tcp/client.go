@@ -60,13 +60,13 @@ func (c *Client) onSend(src uint, param ...interface{}) {
 		c.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
 		_, err := c.outbuffer.Write(data)
 		if err != nil {
-			log.Error("agent write msg failed: %s", err)
+			log.Error("client onSend failed: %s", err)
 			c.onConError()
 		}
 		if c.Con != nil {
 			err = c.outbuffer.Flush()
 			if err != nil {
-				log.Error("agent write msg failed: %s", err)
+				log.Error("client onSend failed: %s", err)
 				c.onConError()
 			}
 		}
@@ -113,7 +113,7 @@ func (self *Client) connect(n int) {
 				//split package
 				pack, err := Subpackage(self.inbuffer)
 				if err != nil {
-					log.Error("agent read msg failed: %s", err)
+					log.Error("cliend read msg failed: %s", err)
 					self.onConError()
 					break
 				}
