@@ -25,21 +25,21 @@ func NewCallHelper() *CallHelper {
 
 func (c CallHelper) AddFunc(name string, fun interface{}) {
 	f := reflect.ValueOf(fun)
-	core.PanicWhen(f.Kind() != reflect.Func)
+	core.PanicWhen(f.Kind() != reflect.Func, "fun must be a function type.")
 	c.funcMap[name] = f
 }
 
 func (c CallHelper) AddMethod(name string, v interface{}, mname string) {
 	self := reflect.ValueOf(v)
 	f := self.MethodByName(mname)
-	core.PanicWhen(f.Kind() != reflect.Func)
+	core.PanicWhen(f.Kind() != reflect.Func, "method must be a function type.")
 	c.funcMap[name] = f
 }
 
 func (c CallHelper) Call(name string, param ...interface{}) []reflect.Value {
 	f, ok := c.funcMap[name]
 	if !ok {
-		return []reflect.Value{reflect.ValueOf(FuncNotFound)}
+		panic(FuncNotFound)
 	}
 	len := len(param)
 	p := make([]reflect.Value, len, len)

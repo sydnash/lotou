@@ -101,7 +101,7 @@ func findServiceById(id ServiceID) (s *service, err error) {
 }
 
 func findServiceByName(name string) (s *service, err error) {
-	PanicWhen(len(name) == 0)
+	PanicWhen(len(name) == 0, "name must not empty.")
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	for _, value := range h.dic {

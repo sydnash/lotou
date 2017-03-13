@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/sydnash/lotou/log"
+	"github.com/sydnash/lotou/timer"
 	"runtime/debug"
 )
 
@@ -14,11 +15,15 @@ func StartService(name string, m Module) ServiceID {
 	s.m = m
 	id := registerService(s)
 	m.SetService(s)
+	d := m.GetDuration()
+	s.loopDuration = d
+	if d > 0 {
+		s.ts = timer.NewTS()
+	}
 	m.OnInit()
 	if !checkIsLocalName(name) {
 		globalName(id, name)
 	}
-	d := m.GetDuration()
 	if d > 0 {
 		s.runWithLoop(d)
 	} else {
