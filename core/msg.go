@@ -104,12 +104,12 @@ func DistributeMSG(src ServiceID, data ...interface{}) {
 	defer h.dicMutex.Unlock()
 	for dst, ser := range h.dic {
 		if ServiceID(dst) != src {
-			localSendWithNoMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, data)
+			localSendWithoutMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, data)
 		}
 	}
 }
 
-func localSendWithNoMutex(src ServiceID, dstService *service, msgType, encType int32, data ...interface{}) {
+func localSendWithoutMutex(src ServiceID, dstService *service, msgType, encType int32, data ...interface{}) {
 	msg := NewMessage(src, dstService.getId(), msgType, encType, data...)
 	dstService.pushMSG(msg)
 }

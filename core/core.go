@@ -46,7 +46,7 @@ func SendCloseToAll() {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	for _, ser := range h.dic {
-		localSendWithNoMutex(INVALID_SERVICE_ID, ser, MSG_TYPE_CLOSE, MSG_ENC_TYPE_NO, false)
+		localSendWithoutMutex(INVALID_SERVICE_ID, ser, MSG_TYPE_CLOSE, MSG_ENC_TYPE_NO, false)
 	}
 }
 

@@ -32,6 +32,4 @@ func TestHelper(t *testing.T) {
 
 	b := []interface{}{2}
 	callHelper.Call("t2", b...)
-
-	callHelper.Call("t3")
 }
