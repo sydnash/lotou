@@ -51,13 +51,13 @@ func (s *Skeleton) GetDuration() int {
 //use gob encode(not golang's standard library, see "github.com/sydnash/lotou/encoding/gob"
 //only support basic types and Message
 //user defined struct should encode and decode by user
-func (s *Skeleton) Send(dst ServiceID, msgType int, data ...interface{}) {
+func (s *Skeleton) Send(dst ServiceID, msgType int32, data ...interface{}) {
 	send(s.s.getId(), dst, msgType, data...)
 }
 
 //RawSend not encode variables, be careful use
 //variables that passed by reference may be changed by others
-func (s *Skeleton) RawSend(dst ServiceID, msgType int, data ...interface{}) {
+func (s *Skeleton) RawSend(dst ServiceID, msgType int32, data ...interface{}) {
 	sendNoEnc(s.s.getId(), dst, msgType, data...)
 }
 

@@ -9,14 +9,14 @@ import (
 
 type master struct {
 	*core.Skeleton
-	nodesMap      map[uint]core.ServiceID //nodeid : agent
+	nodesMap      map[uint64]core.ServiceID //nodeid : agentSID
 	globalNameMap map[string]core.ServiceID
 	tcpServer     *tcp.Server
 }
 
 func StartMaster(ip, port string) {
 	m := &master{Skeleton: core.NewSkeleton(0)}
-	m.nodesMap = make(map[uint]core.ServiceID)
+	m.nodesMap = make(map[uint64]core.ServiceID)
 	m.globalNameMap = make(map[string]core.ServiceID)
 	core.StartService(".master", m)
 
@@ -39,7 +39,7 @@ func (m *master) OnNormalMSG(src core.ServiceID, data ...interface{}) {
 		msg := data[1].(*core.Message)
 		m.forwardM(msg, nil)
 	} else if cmd == "registerName" {
-		id := data[1].(uint)
+		id := data[1].(uint64)
 		name := data[2].(string)
 		m.onRegisterName(core.ServiceID(id), name)
 	} else if cmd == "getIdByName" {
@@ -83,7 +83,6 @@ func (m *master) OnSocketMSG(src core.ServiceID, data ...interface{}) {
 	//data[0] is socket status
 	//data[1] is a gob encode data
 	//it's first encode value is cmd such as (registerNode, regeisterName, getIdByName, forword...)
-	//it's second encode value is dest service's id.
 	//find correct agent and send msg to that node.
 	cmd := data[0].(int)
 	if cmd == tcp.AGENT_DATA {
@@ -93,7 +92,7 @@ func (m *master) OnSocketMSG(src core.ServiceID, data ...interface{}) {
 		if scmd == "registerNode" {
 			m.onRegisterNode(src)
 		} else if scmd == "registerName" {
-			serviceId := array[1].(uint)
+			serviceId := array[1].(uint64)
 			serviceName := array[2].(string)
 			m.onRegisterName(core.ServiceID(serviceId), serviceName)
 		} else if scmd == "getIdByName" {
@@ -107,7 +106,7 @@ func (m *master) OnSocketMSG(src core.ServiceID, data ...interface{}) {
 	} else if cmd == tcp.AGENT_CLOSED {
 		//on agent disconnected
 		//delet node from nodesMap
-		var nodeId uint = 0
+		var nodeId uint64 = 0
 		for id, v := range m.nodesMap {
 			if v == src {
 				nodeId = id

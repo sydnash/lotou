@@ -13,15 +13,15 @@ type nameRet struct {
 var (
 	once                   sync.Once
 	isStandalone, isMaster bool
-	registerNodeChan       chan uint
+	registerNodeChan       chan uint64
 	nameChanMap            map[uint]chan *nameRet
 	nameMapMutex           sync.Mutex
 	nameRequestId          uint
-	beginNodeId            uint
+	beginNodeId            uint64
 )
 
 func init() {
-	registerNodeChan = make(chan uint)
+	registerNodeChan = make(chan uint64)
 
 	nameChanMap = make(map[uint]chan *nameRet)
 	nameRequestId = 0
@@ -49,14 +49,14 @@ func RegisterNode() {
 	})
 }
 
-func RegisterNodeRet(id uint) {
+func RegisterNodeRet(id uint64) {
 	registerNodeChan <- id
 }
 
 //globalName regist name to master
 //it will notify all exist service through distribute msg.
 func globalName(id ServiceID, name string) {
-	sendToMaster("registerName", uint(id), name)
+	sendToMaster("registerName", uint64(id), name)
 }
 
 //sendToMaster send msg to master
@@ -110,7 +110,7 @@ func GetIdByNameRet(id ServiceID, ok bool, name string, rid uint) {
 	ch <- &nameRet{id, ok, name}
 }
 
-func GenerateNodeId() uint {
+func GenerateNodeId() uint64 {
 	ret := beginNodeId
 	beginNodeId++
 	return ret

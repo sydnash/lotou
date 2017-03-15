@@ -10,7 +10,15 @@ import (
 	"time"
 )
 
-type ServiceID uint
+type ServiceID uint64
+
+func (id ServiceID) parseNodeId() uint64 {
+	return (uint64(id) & NODE_ID_MASK) >> NODE_ID_OFF
+}
+func (id ServiceID) parseBaseId() uint64 {
+	return uint64(id) & (^uint64(NODE_ID_MASK))
+}
+
 type requestCB struct {
 	respond reflect.Value
 	timeout reflect.Value
