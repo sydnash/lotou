@@ -18,7 +18,7 @@ func StartMaster(ip, port string) {
 	m := &master{Skeleton: core.NewSkeleton(0)}
 	m.nodesMap = make(map[uint64]core.ServiceID)
 	m.globalNameMap = make(map[string]core.ServiceID)
-	core.StartService(".master", m)
+	core.StartService(".router", m)
 
 	m.tcpServer = tcp.NewServer(ip, port, m.Id)
 	m.tcpServer.Listen()

@@ -13,10 +13,10 @@ type Game struct {
 	remoteId core.ServiceID
 }
 
-func (g *Game) OnRequestMSG(src core.ServiceID, rid int, data ...interface{}) {
+func (g *Game) OnRequestMSG(src core.ServiceID, rid uint64, data ...interface{}) {
 	g.Respond(src, rid, "world")
 }
-func (g *Game) OnCallMSG(src core.ServiceID, cid int, data ...interface{}) {
+func (g *Game) OnCallMSG(src core.ServiceID, cid uint64, data ...interface{}) {
 	g.Ret(src, cid, "world")
 }
 

@@ -14,7 +14,7 @@ type slave struct {
 
 func StartSlave(ip, port string) {
 	m := &slave{Skeleton: core.NewSkeleton(0)}
-	core.StartService(".slave", m)
+	core.StartService(".router", m)
 	c := tcp.NewClient(ip, port, m.Id)
 	m.client = core.StartService("", c)
 }
@@ -22,8 +22,6 @@ func StartSlave(ip, port string) {
 func (s *slave) OnNormalMSG(dst core.ServiceID, data ...interface{}) {
 	//dest is master's id, src is core's id
 	//data[0] is cmd such as (registerNode, regeisterName, getIdByName...)
-	//data[1] is dest nodeService's id
-	//parse node's id, and choose correct agent and send msg to that node.
 	t1 := gob.Pack(data)
 	s.RawSend(s.client, core.MSG_TYPE_NORMAL, tcp.CLIENT_CMD_SEND, t1)
 }

@@ -94,7 +94,7 @@ func ForwardLocal(m *Message) {
 			t := gob.Unpack(m.Data[0].([]byte))
 			m.Data = t.([]interface{})
 		}
-		cid := m.Data[0].(int)
+		cid := m.Data[0].(uint64)
 		data := m.Data[1].([]interface{})
 		dsts.dispatchRet(cid, data...)
 	}

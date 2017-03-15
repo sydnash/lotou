@@ -16,9 +16,9 @@ type Module interface {
 	//OnSocketMSG is called when received msg from Send() or RawSend() with MSG_TYPE_SOCKET
 	OnSocketMSG(src ServiceID, data ...interface{})
 	//OnRequestMSG is called when received msg from Request()
-	OnRequestMSG(src ServiceID, rid int, data ...interface{})
+	OnRequestMSG(src ServiceID, rid uint64, data ...interface{})
 	//OnCallMSG is called when received msg from Call()
-	OnCallMSG(src ServiceID, rid int, data ...interface{})
+	OnCallMSG(src ServiceID, rid uint64, data ...interface{})
 	//OnDistributeMSG is called when received msg from Send() or RawSend() with MSG_TYPE_DISTRIBUTE
 	OnDistributeMSG(data ...interface{})
 	//OnCloseNotify is called when received msg from SendClose() with false param.
@@ -75,7 +75,7 @@ func (s *Skeleton) Request(dst ServiceID, timeout int, responseCb interface{}, t
 }
 
 //Respond used to respond request msg
-func (s *Skeleton) Respond(dst ServiceID, rid int, data ...interface{}) {
+func (s *Skeleton) Respond(dst ServiceID, rid uint64, data ...interface{}) {
 	s.s.respond(dst, rid, data...)
 }
 
@@ -93,7 +93,7 @@ func (s *Skeleton) Schedule(interval, repeat int, cb timer.TimerCallback) *timer
 }
 
 //Ret used to ret call msg
-func (s *Skeleton) Ret(dst ServiceID, cid int, data ...interface{}) {
+func (s *Skeleton) Ret(dst ServiceID, cid uint64, data ...interface{}) {
 	s.s.ret(dst, cid, data...)
 }
 
@@ -107,9 +107,9 @@ func (s *Skeleton) OnInit() {
 }
 func (s *Skeleton) OnSocketMSG(src ServiceID, data ...interface{}) {
 }
-func (s *Skeleton) OnRequestMSG(src ServiceID, rid int, data ...interface{}) {
+func (s *Skeleton) OnRequestMSG(src ServiceID, rid uint64, data ...interface{}) {
 }
-func (s *Skeleton) OnCallMSG(src ServiceID, rid int, data ...interface{}) {
+func (s *Skeleton) OnCallMSG(src ServiceID, rid uint64, data ...interface{}) {
 }
 func (s *Skeleton) OnDistributeMSG(data ...interface{}) {
 }

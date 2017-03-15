@@ -43,7 +43,7 @@ func InitNode(_isStandalone, _isMaster bool) {
 func RegisterNode() {
 	once.Do(func() {
 		if !isStandalone && !isMaster {
-			sendName(INVALID_SERVICE_ID, ".slave", MSG_TYPE_NORMAL, "registerNode")
+			sendToMaster("registerNode")
 			h.nodeId = <-registerNodeChan
 		}
 	})
@@ -63,13 +63,11 @@ func globalName(id ServiceID, name string) {
 //if node is not a master node, it send to .slave node first, .slave will forward msg to master.
 func sendToMaster(data ...interface{}) {
 	if !isStandalone {
-		if isMaster {
-			//sync name
-			sendName(INVALID_SERVICE_ID, ".master", MSG_TYPE_NORMAL, data...)
-		} else {
-			//name to master
-			sendName(INVALID_SERVICE_ID, ".slave", MSG_TYPE_NORMAL, data...)
+		router, err := findServiceByName(".router")
+		if err != nil {
+			return
 		}
+		localSendWithoutMutex(INVALID_SERVICE_ID, router, MSG_TYPE_NORMAL, MSG_ENC_TYPE_NO, data...)
 	}
 }
 
