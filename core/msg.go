@@ -64,7 +64,7 @@ func rawSend(isNeedEnc bool, src, dst ServiceID, msgType int32, data ...interfac
 		msg = NewMessage(src, dst, msgType, MSG_ENC_TYPE_NO, data...)
 	}
 	if err != nil {
-		//didn't find service and dst id is remote id, send a forward msg to master.
+		//doesn't find service and dstid is remote id, send a forward msg to master.
 		route("forward", msg)
 		return nil
 	}

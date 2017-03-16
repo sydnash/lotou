@@ -14,8 +14,8 @@ func StartService(name string, m Module) ServiceID {
 	s := newService(name)
 	s.m = m
 	id := registerService(s)
-	m.SetService(s)
-	d := m.GetDuration()
+	m.setService(s)
+	d := m.getDuration()
 	s.loopDuration = d
 	if d > 0 {
 		s.ts = timer.NewTS()

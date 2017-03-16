@@ -23,8 +23,9 @@ type Module interface {
 	OnDistributeMSG(data ...interface{})
 	//OnCloseNotify is called when received msg from SendClose() with false param.
 	OnCloseNotify()
-	SetService(s *service)
-	GetDuration() int
+
+	setService(s *service)
+	getDuration() int
 }
 
 type Skeleton struct {
@@ -45,13 +46,13 @@ func NewSkeleton(d int) *Skeleton {
 	return ret
 }
 
-func (s *Skeleton) SetService(ser *service) {
+func (s *Skeleton) setService(ser *service) {
 	s.s = ser
 	s.Id = ser.getId()
 	s.Name = ser.getName()
 }
 
-func (s *Skeleton) GetDuration() int {
+func (s *Skeleton) getDuration() int {
 	return s.D
 }
 
