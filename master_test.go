@@ -13,6 +13,7 @@ type Game struct {
 	remoteId core.ServiceID
 }
 
+/*
 func (g *Game) OnRequestMSG(src core.ServiceID, rid uint64, data ...interface{}) {
 	g.Respond(src, rid, "world")
 }
@@ -23,7 +24,7 @@ func (g *Game) OnCallMSG(src core.ServiceID, cid uint64, data ...interface{}) {
 func (g *Game) OnNormalMSG(src core.ServiceID, data ...interface{}) {
 	log.Info("%v, %v", src, data)
 	//g.RawSend(src, core.MSG_TYPE_NORMAL, "222")
-}
+}*/
 func (g *Game) OnDistributeMSG(data ...interface{}) {
 	log.Info("%v", data)
 }
@@ -36,6 +37,15 @@ func (g *Game) OnInit() {
 			log.Info("time schedule.")
 		})
 	}
+	g.SubscribeFunc(core.MSG_TYPE_NORMAL, "testNormal", func(src core.ServiceID, data ...interface{}) {
+		log.Info("%v, %v", src, data)
+	})
+	g.SubscribeFunc(core.MSG_TYPE_REQUEST, "testRequest", func(src core.ServiceID, data ...interface{}) string {
+		return "world"
+	})
+	g.SubscribeFunc(core.MSG_TYPE_CALL, "testCall", func(src core.ServiceID, data ...interface{}) string {
+		return "world"
+	})
 }
 
 func TestMaster(t *testing.T) {

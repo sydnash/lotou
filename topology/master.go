@@ -46,7 +46,7 @@ func (m *master) OnNormalMSG(src core.ServiceID, data ...interface{}) {
 		name := data[1].(string)
 		rid := data[2].(uint)
 		id, ok := m.globalNameMap[name]
-		core.GetIdByNameRet(id, ok, name, rid)
+		core.DispatchGetIdByNameRet(id, ok, name, rid)
 	}
 }
 

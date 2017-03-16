@@ -28,14 +28,21 @@ type Module interface {
 }
 
 type Skeleton struct {
-	s    *service
-	Id   ServiceID
-	Name string
-	D    int
+	s                 *service
+	Id                ServiceID
+	Name              string
+	D                 int
+	normalDispatcher  *CallHelper
+	requestDispatcher *CallHelper
+	callDispatcher    *CallHelper
 }
 
 func NewSkeleton(d int) *Skeleton {
-	return &Skeleton{D: d}
+	ret := &Skeleton{D: d}
+	ret.normalDispatcher = NewCallHelper()
+	ret.requestDispatcher = NewCallHelper()
+	ret.callDispatcher = NewCallHelper()
+	return ret
 }
 
 func (s *Skeleton) SetService(ser *service) {
@@ -102,15 +109,64 @@ func (s *Skeleton) OnDestroy() {
 func (s *Skeleton) OnMainLoop(dt int) {
 }
 func (s *Skeleton) OnNormalMSG(src ServiceID, data ...interface{}) {
+	id := data[0]
+	data[0] = src
+	s.normalDispatcher.Call(id, data...)
 }
 func (s *Skeleton) OnInit() {
 }
 func (s *Skeleton) OnSocketMSG(src ServiceID, data ...interface{}) {
 }
 func (s *Skeleton) OnRequestMSG(src ServiceID, rid uint64, data ...interface{}) {
+	id := data[0]
+	data[0] = src
+	ret := s.requestDispatcher.Call(id, data...)
+	s.Respond(src, rid, ret...)
 }
 func (s *Skeleton) OnCallMSG(src ServiceID, rid uint64, data ...interface{}) {
+	id := data[0]
+	data[0] = src
+	ret := s.callDispatcher.Call(id, data...)
+	s.Ret(src, rid, ret...)
 }
+
+func (s *Skeleton) findCallerByType(infoType int32) *CallHelper {
+	var caller *CallHelper
+	switch infoType {
+	case MSG_TYPE_NORMAL:
+		caller = s.normalDispatcher
+	case MSG_TYPE_REQUEST:
+		caller = s.requestDispatcher
+	case MSG_TYPE_CALL:
+		caller = s.callDispatcher
+	default:
+		panic("not support infoType")
+	}
+	return caller
+}
+
+//function's first parameter must ServiceID
+func (s *Skeleton) SubscribeFunc(infoType int32, id interface{}, fun interface{}) {
+	caller := s.findCallerByType(infoType)
+	switch key := id.(type) {
+	case int:
+		caller.AddFuncInt(key, fun)
+	case string:
+		caller.AddFunc(key, fun)
+	}
+}
+
+//method's first parameter must ServiceID
+func (s *Skeleton) SubscribeMethod(infoType int32, id interface{}, v interface{}, methodName string) {
+	caller := s.findCallerByType(infoType)
+	switch key := id.(type) {
+	case int:
+		caller.AddMethodInt(key, v, methodName)
+	case string:
+		caller.AddMethod(key, v, methodName)
+	}
+}
+
 func (s *Skeleton) OnDistributeMSG(data ...interface{}) {
 }
 func (s *Skeleton) OnCloseNotify() {

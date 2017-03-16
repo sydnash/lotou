@@ -1,4 +1,4 @@
-package lotou
+package core
 
 import (
 	"fmt"
@@ -24,8 +24,12 @@ func TestHelper(t *testing.T) {
 
 	callHelper.AddMethod("t2", i, "Add")
 
+	callHelper.AddFuncInt(1, normalFunc)
+	callHelper.AddMethodInt(2, i, "Add")
+
 	callHelper.Call("t1", 1, "name")
-	callHelper.Call("t2", 2)
+	callHelper.Call(1, 1, "name")
+	callHelper.Call(2, 2)
 
 	a := []interface{}{1, "name"}
 	callHelper.Call("t1", a...)

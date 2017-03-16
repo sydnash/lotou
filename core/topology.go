@@ -49,7 +49,7 @@ func RegisterNode() {
 	})
 }
 
-func RegisterNodeRet(id uint64) {
+func DispatchRegisterNodeRet(id uint64) {
 	registerNodeChan <- id
 }
 
@@ -84,12 +84,12 @@ func NameToId(name string) (ServiceID, error) {
 		tmp := nameRequestId
 		nameMapMutex.Unlock()
 
-		sendToMaster("getIdByName", name, tmp)
 		ch := make(chan *nameRet)
-
 		nameMapMutex.Lock()
 		nameChanMap[tmp] = ch
 		nameMapMutex.Unlock()
+
+		sendToMaster("getIdByName", name, tmp)
 		ret := <-ch
 		close(ch)
 		if !ret.ok {
@@ -100,7 +100,7 @@ func NameToId(name string) (ServiceID, error) {
 	return INVALID_SERVICE_ID, ServiceNotFindError
 }
 
-func GetIdByNameRet(id ServiceID, ok bool, name string, rid uint) {
+func DispatchGetIdByNameRet(id ServiceID, ok bool, name string, rid uint) {
 	nameMapMutex.Lock()
 	ch := nameChanMap[rid]
 	delete(nameChanMap, rid)
