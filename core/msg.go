@@ -65,7 +65,7 @@ func rawSend(isNeedEnc bool, src, dst ServiceID, msgType int32, data ...interfac
 	}
 	if err != nil {
 		//didn't find service and dst id is remote id, send a forward msg to master.
-		sendToMaster("forward", msg)
+		route("forward", msg)
 		return nil
 	}
 	dsts.pushMSG(msg)

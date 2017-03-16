@@ -43,8 +43,8 @@ func (g *Game) OnInit() {
 	g.SubscribeFunc(core.MSG_TYPE_REQUEST, "testRequest", func(src core.ServiceID, data ...interface{}) string {
 		return "world"
 	})
-	g.SubscribeFunc(core.MSG_TYPE_CALL, "testCall", func(src core.ServiceID, data ...interface{}) string {
-		return "world"
+	g.SubscribeFunc(core.MSG_TYPE_CALL, "testCall", func(src core.ServiceID, data ...interface{}) (string, string) {
+		return "hello", "world"
 	})
 }
 

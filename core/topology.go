@@ -43,7 +43,7 @@ func InitNode(_isStandalone, _isMaster bool) {
 func RegisterNode() {
 	once.Do(func() {
 		if !isStandalone && !isMaster {
-			sendToMaster("registerNode")
+			route("registerNode")
 			h.nodeId = <-registerNodeChan
 		}
 	})
@@ -56,12 +56,12 @@ func DispatchRegisterNodeRet(id uint64) {
 //globalName regist name to master
 //it will notify all exist service through distribute msg.
 func globalName(id ServiceID, name string) {
-	sendToMaster("registerName", uint64(id), name)
+	route("registerName", uint64(id), name)
 }
 
-//sendToMaster send msg to master
+//route send msg to master
 //if node is not a master node, it send to .slave node first, .slave will forward msg to master.
-func sendToMaster(data ...interface{}) {
+func route(data ...interface{}) {
 	if !isStandalone {
 		router, err := findServiceByName(".router")
 		if err != nil {
@@ -89,7 +89,7 @@ func NameToId(name string) (ServiceID, error) {
 		nameChanMap[tmp] = ch
 		nameMapMutex.Unlock()
 
-		sendToMaster("getIdByName", name, tmp)
+		route("getIdByName", name, tmp)
 		ret := <-ch
 		close(ch)
 		if !ret.ok {
