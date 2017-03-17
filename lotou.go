@@ -58,3 +58,23 @@ func Start(f CloseFunc, data ...*ModuleParam) {
 
 	core.Wait()
 }
+
+//RawStart start lotou, with no block.
+func RawStart(data ...*ModuleParam) {
+	log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
+
+	core.InitNode(conf.CoreIsStandalone, conf.CoreIsMaster)
+
+	if !conf.CoreIsStandalone {
+		if conf.CoreIsMaster {
+			topology.StartMaster(conf.MasterListenIp, conf.MultiNodePort)
+		} else {
+			topology.StartSlave(conf.SlaveConnectIp, conf.MultiNodePort)
+		}
+		core.RegisterNode()
+	}
+
+	for _, m := range data {
+		core.StartService(m.N, m.M)
+	}
+}
