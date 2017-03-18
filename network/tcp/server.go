@@ -61,7 +61,7 @@ func (self *Server) Listen() error {
 					continue
 				}
 				log.Error("tcp server: accept err %s, server closed.", err)
-				core.Send(self.Dest, core.MSG_TYPE_NORMAL, TCPServerClosed)
+				core.Send(self.Dest, core.MSG_TYPE_NORMAL, core.MSG_ENC_TYPE_NO, TCPServerClosed)
 				break
 			}
 			a := NewAgent(tcpCon, self.Dest)

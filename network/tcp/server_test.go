@@ -14,17 +14,19 @@ type M struct {
 	decoder *binary.Decoder
 }
 
-func (m *M) OnNormalMSG(src core.ServiceID, data ...interface{}) {
-	cmd := data[0].(int)
+func (m *M) OnNormalMSG(msg *core.Message) {
+	cmd := msg.MethodId.(int)
 	if cmd == tcp.AGENT_CLOSED {
 		log.Info("agent closed")
 	}
 }
 
-func (m *M) OnSocketMSG(src core.ServiceID, data ...interface{}) {
-	cmd := data[0].(int)
+func (m *M) OnSocketMSG(msg *core.Message) {
+	src := msg.Src
+	cmd := msg.MethodId.(int)
+	data := msg.Data
 	if cmd == tcp.AGENT_DATA {
-		data := data[1].([]byte)
+		data := data[0].([]byte)
 		m.decoder.SetBuffer(data)
 		var msg []byte = []byte{}
 		m.decoder.Decode(&msg)

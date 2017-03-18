@@ -14,7 +14,7 @@ type Timer struct {
 	interval   int //interval time of milloseconds per trigger
 	elapsed    int //time elapsed
 	repeat     int //repeat times, <= 0 forever
-	repeated   int
+	repeated   int //allready repeated times
 	isComplete bool
 	isForever  bool
 }

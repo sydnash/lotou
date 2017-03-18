@@ -18,11 +18,11 @@ func (g *Game) OnMainLoop(dt int) {
 		t := func(timeout bool, data string) {
 			fmt.Println("request respond ", timeout, data)
 		}
-		g.Request(g.remoteId, 10, t, func() {
+		g.Request(g.remoteId, core.MSG_ENC_TYPE_GO, 10, t, func() {
 			fmt.Println("slave timeout")
 		}, "testRequest", "hello")
 
-		fmt.Println(g.Call(g.remoteId, "testCall", "hello"))
+		fmt.Println(g.Call(g.remoteId, core.MSG_ENC_TYPE_GO, "testCall", "hello"))
 	}
 }
 

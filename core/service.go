@@ -91,14 +91,14 @@ func (s *service) dispatchMSG(msg *Message) bool {
 	}
 	switch msg.Type {
 	case MSG_TYPE_NORMAL:
-		s.m.OnNormalMSG(ServiceID(msg.Src), msg.Data...)
+		s.m.OnNormalMSG(msg)
 	case MSG_TYPE_CLOSE:
 		if msg.Data[0].(bool) {
 			return true
 		}
 		s.m.OnCloseNotify()
 	case MSG_TYPE_SOCKET:
-		s.m.OnSocketMSG(ServiceID(msg.Src), msg.Data...)
+		s.m.OnSocketMSG(msg)
 	case MSG_TYPE_REQUEST:
 		s.dispatchRequest(msg)
 	case MSG_TYPE_RESPOND:
@@ -106,7 +106,7 @@ func (s *service) dispatchMSG(msg *Message) bool {
 	case MSG_TYPE_CALL:
 		s.dispatchCall(msg)
 	case MSG_TYPE_DISTRIBUTE:
-		s.m.OnDistributeMSG(msg.Data...)
+		s.m.OnDistributeMSG(msg)
 	case MSG_TYPE_TIMEOUT:
 		s.dispatchTimeout(msg)
 	}
@@ -165,7 +165,7 @@ func (s *service) runWithLoop(d int) {
 
 //respndCb is a function like: func(isok bool, ...interface{})  the first param must be a bool
 //timeoutCb is a function with no param : func()
-func (s *service) request(dst ServiceID, timeout int, respondCb interface{}, timeoutCb interface{}, data ...interface{}) {
+func (s *service) request(dst ServiceID, encType int32, timeout int, respondCb interface{}, timeoutCb interface{}, methodId interface{}, data ...interface{}) {
 	s.requestMutex.Lock()
 	id := s.requestId
 	s.requestId++
@@ -175,20 +175,17 @@ func (s *service) request(dst ServiceID, timeout int, respondCb interface{}, tim
 	PanicWhen(cbp.respond.Kind() != reflect.Func, "respond cb must function.")
 	PanicWhen(cbp.timeout.Kind() != reflect.Func, "timeout cb must function.")
 
-	param := make([]interface{}, 2)
-	param[0] = id
-	param[1] = data
-	rawSend(true, s.getId(), dst, MSG_TYPE_REQUEST, param...)
+	lowLevelSend(s.getId(), dst, MSG_TYPE_REQUEST, encType, id, methodId, data...)
 
 	if timeout > 0 {
 		time.AfterFunc(time.Duration(timeout)*time.Millisecond, func() {
-			rawSend(false, INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, id)
+			lowLevelSend(INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, MSG_ENC_TYPE_NO, id, 0)
 		})
 	}
 }
 
 func (s *service) dispatchTimeout(m *Message) {
-	rid := m.Data[0].(uint64)
+	rid := m.Id
 	cbp, ok := s.getDeleteRequestCb(rid)
 	if !ok {
 		return
@@ -197,17 +194,12 @@ func (s *service) dispatchTimeout(m *Message) {
 	cb.Call([]reflect.Value{})
 }
 
-func (s *service) dispatchRequest(m *Message) {
-	rid := m.Data[0].(uint64)
-	data := m.Data[1].([]interface{})
-	s.m.OnRequestMSG(ServiceID(m.Src), rid, data...)
+func (s *service) dispatchRequest(msg *Message) {
+	s.m.OnRequestMSG(msg)
 }
 
-func (s *service) respond(dst ServiceID, rid uint64, data ...interface{}) {
-	param := make([]interface{}, 2)
-	param[0] = rid
-	param[1] = data
-	rawSend(true, s.getId(), dst, MSG_TYPE_RESPOND, param...)
+func (s *service) respond(dst ServiceID, encType int32, rid uint64, data ...interface{}) {
+	lowLevelSend(s.getId(), dst, MSG_TYPE_RESPOND, encType, rid, 0, data...)
 }
 
 //return request callback by request id
@@ -220,8 +212,10 @@ func (s *service) getDeleteRequestCb(id uint64) (requestCB, bool) {
 }
 
 func (s *service) dispatchRespond(m *Message) {
-	rid := m.Data[0].(uint64)
-	data := m.Data[1].([]interface{})
+	var rid uint64
+	var data []interface{}
+	rid = m.Id
+	data = m.Data
 
 	cbp, ok := s.getDeleteRequestCb(rid)
 	if !ok {
@@ -237,23 +231,20 @@ func (s *service) dispatchRespond(m *Message) {
 	cb.Call(param)
 }
 
-func (s *service) call(dst ServiceID, data ...interface{}) ([]interface{}, error) {
+func (s *service) call(dst ServiceID, encType int32, methodId interface{}, data ...interface{}) ([]interface{}, error) {
 	PanicWhen(dst == s.getId(), "dst must equal to s's id")
 	s.callMutex.Lock()
 	id := s.callId
 	s.callId++
 	s.callMutex.Unlock()
-	param := make([]interface{}, 2)
-	param[0] = id
-	param[1] = data
-	if err := rawSend(true, s.getId(), dst, MSG_TYPE_CALL, param...); err != nil {
-		return nil, err
-	}
-	ch := make(chan []interface{})
 
+	ch := make(chan []interface{})
 	s.callMutex.Lock()
 	s.callChanMap[id] = ch
 	s.callMutex.Unlock()
+	if err := lowLevelSend(s.getId(), dst, MSG_TYPE_CALL, encType, id, methodId, data...); err != nil {
+		return nil, err
+	}
 	if conf.CallTimeOut > 0 {
 		time.AfterFunc(time.Duration(conf.CallTimeOut)*time.Millisecond, func() {
 			s.dispatchRet(id, ServiceCallTimeout)
@@ -271,20 +262,15 @@ func (s *service) call(dst ServiceID, data ...interface{}) ([]interface{}, error
 	return ret, nil
 }
 
-func (s *service) dispatchCall(m *Message) {
-	cid := m.Data[0].(uint64)
-	data := m.Data[1].([]interface{})
-	s.m.OnCallMSG(ServiceID(m.Src), cid, data...)
+func (s *service) dispatchCall(msg *Message) {
+	s.m.OnCallMSG(msg)
 }
 
-func (s *service) ret(dst ServiceID, cid uint64, data ...interface{}) {
+func (s *service) ret(dst ServiceID, encType int32, cid uint64, data ...interface{}) {
 	var dstService *service
 	dstService, err := findServiceById(dst)
 	if err != nil {
-		param := make([]interface{}, 2)
-		param[0] = cid
-		param[1] = data
-		rawSend(true, s.getId(), dst, MSG_TYPE_RET, param...)
+		lowLevelSend(s.getId(), dst, MSG_TYPE_RET, encType, cid, 0, data...)
 		return
 	}
 	dstService.dispatchRet(cid, data...)
@@ -296,7 +282,11 @@ func (s *service) dispatchRet(cid uint64, data ...interface{}) {
 	s.callMutex.Unlock()
 
 	if ok {
-		ch <- data
+		select {
+		case ch <- data:
+		default:
+			PanicWhen(true, "dispatchRet failed on ch.")
+		}
 	}
 }
 

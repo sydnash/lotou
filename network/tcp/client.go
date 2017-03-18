@@ -73,9 +73,10 @@ func (c *Client) onSend(src core.ServiceID, param ...interface{}) {
 	}
 }
 
-func (c *Client) OnNormalMSG(src core.ServiceID, param ...interface{}) {
-	cmd := param[0].(int)
-	param = param[1:]
+func (c *Client) OnNormalMSG(msg *core.Message) {
+	src := msg.Src
+	cmd := msg.MethodId.(int)
+	param := msg.Data
 	if cmd == CLIENT_CMD_CONNECT { //connect
 		n := param[0].(int)
 		c.onConnect(n)

@@ -26,15 +26,22 @@ const (
 //Message is the based struct of msg through all service
 //by convention, the first value of Data is a string as the method name
 type Message struct {
-	Src     uint64
-	Dst     uint64
-	Type    int32
-	EncType int32
-	Data    []interface{}
+	Src      ServiceID
+	Dst      ServiceID
+	Type     int32
+	EncType  int32
+	Id       uint64 //request id or call id
+	MethodId interface{}
+	Data     []interface{}
 }
 
-func NewMessage(src, dst ServiceID, msgType, encType int32, data ...interface{}) *Message {
-	msg := &Message{uint64(src), uint64(dst), msgType, encType, data}
+func NewMessage(src, dst ServiceID, msgType, encType int32, id uint64, methodId interface{}, data ...interface{}) *Message {
+	switch encType {
+	case MSG_ENC_TYPE_NO:
+	case MSG_ENC_TYPE_GO:
+		data = append([]interface{}(nil), gob.Pack(data...))
+	}
+	msg := &Message{src, dst, msgType, encType, id, methodId, data}
 	return msg
 }
 
@@ -42,15 +49,15 @@ func init() {
 	gob.RegisterStructType(Message{})
 }
 
-func sendNoEnc(src ServiceID, dst ServiceID, msgType int32, data ...interface{}) error {
-	return rawSend(false, src, dst, msgType, data...)
+func sendNoEnc(src ServiceID, dst ServiceID, msgType int32, id uint64, methodId interface{}, data ...interface{}) error {
+	return lowLevelSend(src, dst, msgType, MSG_ENC_TYPE_NO, id, methodId, data...)
 }
 
-func send(src ServiceID, dst ServiceID, msgType int32, data ...interface{}) error {
-	return rawSend(true, src, dst, msgType, data...)
+func send(src ServiceID, dst ServiceID, msgType, encType int32, id uint64, methodId interface{}, data ...interface{}) error {
+	return lowLevelSend(src, dst, msgType, encType, id, methodId, data...)
 }
 
-func rawSend(isNeedEnc bool, src, dst ServiceID, msgType int32, data ...interface{}) error {
+func lowLevelSend(src, dst ServiceID, msgType, encType int32, id uint64, methodId interface{}, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
 	isLocal := checkIsLocalId(dst)
 
@@ -58,11 +65,7 @@ func rawSend(isNeedEnc bool, src, dst ServiceID, msgType int32, data ...interfac
 		return err
 	}
 	var msg *Message
-	if isNeedEnc {
-		msg = NewMessage(src, dst, msgType, MSG_ENC_TYPE_GO, gob.Pack(data))
-	} else {
-		msg = NewMessage(src, dst, msgType, MSG_ENC_TYPE_NO, data...)
-	}
+	msg = NewMessage(src, dst, msgType, encType, id, methodId, data...)
 	if err != nil {
 		//doesn't find service and dstid is remote id, send a forward msg to master.
 		route("forward", msg)
@@ -73,12 +76,12 @@ func rawSend(isNeedEnc bool, src, dst ServiceID, msgType int32, data ...interfac
 }
 
 //send msg to dst by dst's service name
-func sendName(src ServiceID, dst string, msgType int32, data ...interface{}) error {
+func sendName(src ServiceID, dst string, msgType int32, methodId interface{}, data ...interface{}) error {
 	dsts, err := findServiceByName(dst)
 	if err != nil {
 		return err
 	}
-	return rawSend(true, src, dsts.getId(), msgType, data...)
+	return lowLevelSend(src, dsts.getId(), msgType, MSG_ENC_TYPE_GO, 0, methodId, data...)
 }
 
 func ForwardLocal(m *Message) {
@@ -94,22 +97,21 @@ func ForwardLocal(m *Message) {
 			t := gob.Unpack(m.Data[0].([]byte))
 			m.Data = t.([]interface{})
 		}
-		cid := m.Data[0].(uint64)
-		data := m.Data[1].([]interface{})
-		dsts.dispatchRet(cid, data...)
+		cid := m.Id
+		dsts.dispatchRet(cid, m.Data...)
 	}
 }
-func DistributeMSG(src ServiceID, data ...interface{}) {
+func DistributeMSG(src ServiceID, methodId interface{}, data ...interface{}) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	for dst, ser := range h.dic {
 		if ServiceID(dst) != src {
-			localSendWithoutMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, data)
+			localSendWithoutMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, 0, methodId, data...)
 		}
 	}
 }
 
-func localSendWithoutMutex(src ServiceID, dstService *service, msgType, encType int32, data ...interface{}) {
-	msg := NewMessage(src, dstService.getId(), msgType, encType, data...)
+func localSendWithoutMutex(src ServiceID, dstService *service, msgType, encType int32, id uint64, methodId interface{}, data ...interface{}) {
+	msg := NewMessage(src, dstService.getId(), msgType, encType, id, methodId, data...)
 	dstService.pushMSG(msg)
 }

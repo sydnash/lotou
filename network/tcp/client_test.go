@@ -28,16 +28,18 @@ func (c *C) OnMainLoop(dt int) {
 	c.RawSend(c.client, core.MSG_TYPE_NORMAL, tcp.CLIENT_CMD_SEND, t1)
 }
 
-func (c *C) OnNormalMSG(src core.ServiceID, data ...interface{}) {
+func (c *C) OnNormalMSG(msg *core.Message) {
+	data := msg.Data
 	if len(data) >= 2 {
-		log.Info("recv data :%s", string(data[1].([]byte)))
+		log.Info("recv data :%s", string(data[0].([]byte)))
 	}
 }
 
-func (c *C) OnSocketMSG(src core.ServiceID, data ...interface{}) {
-	cmd := data[0].(int)
+func (c *C) OnSocketMSG(msg *core.Message) {
+	cmd := msg.MethodId.(int)
+	data := msg.Data
 	if cmd == tcp.CLIENT_DATA {
-		data := data[1].([]byte)
+		data := data[0].([]byte)
 		c.decoder.SetBuffer(data)
 		var msg []byte = []byte{}
 		c.decoder.Decode(&msg)
@@ -48,7 +50,7 @@ func (c *C) OnSocketMSG(src core.ServiceID, data ...interface{}) {
 func TestClient(t *testing.T) {
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 1; i++ {
 		c := &C{Skeleton: core.NewSkeleton(1000)}
 		core.StartService(".client", c)
 		c.encoder = binary.NewEncoder()

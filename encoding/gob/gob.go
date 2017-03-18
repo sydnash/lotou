@@ -1,6 +1,6 @@
 package gob
 
-func Pack(data []interface{}) []byte {
+func Pack(data ...interface{}) []byte {
 	encoder := NewEncoder()
 	encoder.Reset()
 	encoder.Encode(data)

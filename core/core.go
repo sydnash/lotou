@@ -37,8 +37,8 @@ func ParseNodeId(id ServiceID) uint64 {
 	return id.parseNodeId()
 }
 
-func Send(dst ServiceID, msgType int32, data ...interface{}) error {
-	return rawSend(true, INVALID_SERVICE_ID, dst, msgType, data...)
+func Send(dst ServiceID, msgType, encType int32, methodId interface{}, data ...interface{}) error {
+	return lowLevelSend(INVALID_SERVICE_ID, dst, msgType, encType, 0, methodId, data...)
 }
 
 //SendCloseToAll simple send a close msg to all service
@@ -46,7 +46,7 @@ func SendCloseToAll() {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	for _, ser := range h.dic {
-		localSendWithoutMutex(INVALID_SERVICE_ID, ser, MSG_TYPE_CLOSE, MSG_ENC_TYPE_NO, false)
+		localSendWithoutMutex(INVALID_SERVICE_ID, ser, MSG_TYPE_CLOSE, MSG_ENC_TYPE_NO, 0, 0, false)
 	}
 }
 
