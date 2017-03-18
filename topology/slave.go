@@ -19,38 +19,36 @@ func StartSlave(ip, port string) {
 	m.client = core.StartService("", c)
 }
 
-func (s *slave) OnNormalMSG(dst core.ServiceID, data ...interface{}) {
+func (s *slave) OnNormalMSG(msg *core.Message) {
 	//dest is master's id, src is core's id
 	//data[0] is cmd such as (registerNode, regeisterName, getIdByName...)
-	t1 := gob.Pack(data)
+	t1 := gob.Pack(msg)
 	s.RawSend(s.client, core.MSG_TYPE_NORMAL, tcp.CLIENT_CMD_SEND, t1)
 }
-func (s *slave) OnSocketMSG(dst core.ServiceID, data ...interface{}) {
-	//dest is master's id, src is agent's id
-	//data[0] is socket status
-	//data[1] is a gob encode data
-	//it's first encode value is cmd such as (registerNodeRet, regeisterNameRet, getIdByNameRet, forword...)
-	//it's second encode value is dest service's id.
-	//find correct agent and send msg to that node.
-	cmd := data[0].(int)
+func (s *slave) OnSocketMSG(msg *core.Message) {
+	//cmd is socket status
+	cmd := msg.MethodId.(int)
+	//data[0] is a gob encode data of Message
+	data := msg.Data
 	if cmd == tcp.CLIENT_DATA {
-		sdata := gob.Unpack(data[1].([]byte))
-		array := sdata.([]interface{})
-		scmd := array[0].(string)
+		sdata := gob.Unpack(data[0].([]byte))
+		masterMSG := sdata.([]interface{})[0].(*core.Message)
+
+		scmd := masterMSG.MethodId.(string)
+		array := masterMSG.Data
 		if scmd == "registerNodeRet" {
-			nodeId := array[1].(uint64)
+			nodeId := array[0].(uint64)
 			core.DispatchRegisterNodeRet(nodeId)
-		} else if scmd == "distibute" {
-			data := array[1].([]interface{})
-			core.DistributeMSG(s.Id, data...)
+		} else if scmd == "distribute" {
+			core.DistributeMSG(s.Id, array[0].(string), array[1:]...)
 		} else if scmd == "getIdByNameRet" {
-			id := array[1].(uint64)
-			ok := array[2].(bool)
-			name := array[3].(string)
-			rid := array[4].(uint)
+			id := array[0].(uint64)
+			ok := array[1].(bool)
+			name := array[2].(string)
+			rid := array[3].(uint)
 			core.DispatchGetIdByNameRet(core.ServiceID(id), ok, name, rid)
 		} else if scmd == "forward" {
-			msg := array[1].(*core.Message)
+			msg := array[0].(*core.Message)
 			s.forwardM(msg)
 		}
 	}

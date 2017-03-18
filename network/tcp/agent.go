@@ -5,7 +5,6 @@ import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"net"
-	"sync"
 	"time"
 )
 
@@ -16,7 +15,7 @@ import (
 
 	reciev other inner message and process(such as write to network; close; change dest service)
 
-	agent has tow goroutine:
+	agent has two goroutine:
 		one to read message from tcpConnector and send to dest
 		one read inner message chan and process
 
@@ -31,7 +30,6 @@ type Agent struct {
 	leftTimeBeforArrived int
 	inbuffer             *bufio.Reader
 	outbuffer            *bufio.Writer
-	bufferMutxt          sync.Mutex
 }
 
 const (
@@ -78,11 +76,12 @@ func (a *Agent) OnMainLoop(dt int) {
 	}
 }
 
-func (a *Agent) OnNormalMSG(src core.ServiceID, data ...interface{}) {
-	cmd := data[0].(int)
+func (a *Agent) OnNormalMSG(msg *core.Message) {
+	data := msg.Data
+	cmd := msg.MethodId.(int)
 	if cmd == AGENT_CMD_SEND {
 		a.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
-		msg := data[1].([]byte)
+		msg := data[0].([]byte)
 		if _, err := a.outbuffer.Write(msg); err != nil {
 			log.Error("agent write msg failed: %s", err)
 			a.onConnectError()

@@ -166,7 +166,7 @@ func (enc *Encoder) encodeStruct(value reflect.Value) {
 	for i := 0; i < num; i++ {
 		v := value.Field(i)
 		if v.CanInterface() {
-			enc.encodeValue(v)
+			enc.encodeValue(reflect.ValueOf(v.Interface()))
 		}
 	}
 }

@@ -100,7 +100,7 @@ func (dec *Decoder) decodeConcreteValue(kind, depth, structId uint, typ reflect.
 	case reflect.Map:
 		value = dec.decodeMap(typ)
 	default:
-		panic("not support type")
+		panic(fmt.Sprintf("not support type: %s", tk))
 	}
 	for i := 0; i < int(depth); i++ {
 		typ := value.Type()
@@ -190,7 +190,7 @@ func (dec *Decoder) decodeStruct(structId uint) (value reflect.Value) {
 		f := value.Field(i)
 		if f.CanInterface() {
 			v := dec.decodeValue()
-			f.Set(v)
+			f.Set(v.Convert(f.Type()))
 		}
 	}
 

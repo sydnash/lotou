@@ -25,8 +25,8 @@ func (g *Game) OnNormalMSG(src core.ServiceID, data ...interface{}) {
 	log.Info("%v, %v", src, data)
 	//g.RawSend(src, core.MSG_TYPE_NORMAL, "222")
 }*/
-func (g *Game) OnDistributeMSG(data ...interface{}) {
-	log.Info("%v", data)
+func (g *Game) OnDistributeMSG(msg *core.Message) {
+	log.Info("%v", msg)
 }
 func (g *Game) OnInit() {
 	log.Info("OnInit: name:%v  id:%v", g.Name, g.Id)

@@ -61,13 +61,13 @@ func globalName(id ServiceID, name string) {
 
 //route send msg to master
 //if node is not a master node, it send to .slave node first, .slave will forward msg to master.
-func route(data ...interface{}) {
+func route(methodId interface{}, data ...interface{}) {
 	if !isStandalone {
 		router, err := findServiceByName(".router")
 		if err != nil {
 			return
 		}
-		localSendWithoutMutex(INVALID_SERVICE_ID, router, MSG_TYPE_NORMAL, MSG_ENC_TYPE_NO, data...)
+		localSendWithoutMutex(INVALID_SERVICE_ID, router, MSG_TYPE_NORMAL, MSG_ENC_TYPE_NO, 0, methodId, data...)
 	}
 }
 

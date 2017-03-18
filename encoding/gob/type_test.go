@@ -72,6 +72,6 @@ func TestType(t *testing.T) {
 		}
 	}
 
-	var testbyte interface{} = [3]uint8{'a', 'b', 'c'}
-	fmt.Println(testbyte.([3]byte))
+	var testbyte = []interface{}{1, 2, 3}
+	t = reflect.ValueOf(testbyte)
 }

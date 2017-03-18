@@ -48,7 +48,7 @@ func (ts *TimerSchedule) Update(dt int) {
 }
 
 //Schedule start a timer with interval and repeat.
-//it's callback with each interval, and timer will delete after trigger repeat times
+//callback will be triggerd each interval, and timer will delete after trigger repeat times
 //if interval is small than schedule's interval
 //it may trigger multitimes at a update.
 func (ts *TimerSchedule) Schedule(interval, repeat int, cb TimerCallback) *Timer {

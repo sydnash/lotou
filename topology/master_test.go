@@ -12,19 +12,19 @@ type Game struct {
 	*core.Skeleton
 }
 
-func (g *Game) OnRequestMSG(src core.ServiceID, rid uint64, data ...interface{}) {
-	g.Respond(src, rid, "world")
+func (g *Game) OnRequestMSG(msg *core.Message) {
+	g.Respond(msg.Src, core.MSG_ENC_TYPE_GO, msg.Id, "world")
 }
-func (g *Game) OnCallMSG(src core.ServiceID, cid uint64, data ...interface{}) {
-	g.Ret(src, cid, "world")
+func (g *Game) OnCallMSG(msg *core.Message) {
+	g.Ret(msg.Src, core.MSG_ENC_TYPE_GO, msg.Id, "world")
 }
 
-func (g *Game) OnNormalMSG(src core.ServiceID, data ...interface{}) {
-	log.Info("%v, %v", src, data)
+func (g *Game) OnNormalMSG(msg *core.Message) {
+	log.Info("%v", msg)
 	//g.RawSend(src, core.MSG_TYPE_NORMAL, "222")
 }
-func (g *Game) OnDistributeMSG(data ...interface{}) {
-	log.Info("%v", data)
+func (g *Game) OnDistributeMSG(msg *core.Message) {
+	log.Info("%v", msg)
 }
 func TestMaster(t *testing.T) {
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
