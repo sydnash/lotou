@@ -4,28 +4,39 @@ import (
 	"errors"
 	"github.com/sydnash/lotou/conf"
 	"github.com/sydnash/lotou/encoding/gob"
+	"github.com/sydnash/lotou/timer"
 	"reflect"
 	"sync"
 	"time"
 )
+
+type ServiceID uint64
+
+func (id ServiceID) parseNodeId() uint64 {
+	return (uint64(id) & NODE_ID_MASK) >> NODE_ID_OFF
+}
+func (id ServiceID) parseBaseId() uint64 {
+	return uint64(id) & (^uint64(NODE_ID_MASK))
+}
 
 type requestCB struct {
 	respond reflect.Value
 	timeout reflect.Value
 }
 type service struct {
-	id           uint
+	id           ServiceID
 	name         string
 	msgChan      chan *Message
 	loopTicker   *time.Ticker
 	loopDuration int //unit is Millisecond
 	m            Module
-	requestId    int
-	requestMap   map[int]requestCB
+	requestId    uint64
+	requestMap   map[uint64]requestCB
 	requestMutex sync.Mutex
-	callId       int
-	callChanMap  map[int]chan []interface{}
+	callId       uint64
+	callChanMap  map[uint64]chan []interface{}
 	callMutex    sync.Mutex
+	ts           *timer.TimerSchedule
 }
 
 var (
@@ -36,8 +47,8 @@ func newService(name string) *service {
 	s := &service{name: name}
 	s.msgChan = make(chan *Message, 1024)
 	s.requestId = 0
-	s.requestMap = make(map[int]requestCB)
-	s.callChanMap = make(map[int]chan []interface{})
+	s.requestMap = make(map[uint64]requestCB)
+	s.callChanMap = make(map[uint64]chan []interface{})
 	return s
 }
 
@@ -49,16 +60,20 @@ func (s *service) getName() string {
 	return s.name
 }
 
-func (s *service) setId(id uint) {
+func (s *service) setId(id ServiceID) {
 	s.id = id
 }
 
-func (s *service) getId() uint {
+func (s *service) getId() ServiceID {
 	return s.id
 }
 
 func (s *service) pushMSG(m *Message) {
-	s.msgChan <- m
+	select {
+	case s.msgChan <- m:
+	default:
+		panic("service is full.")
+	}
 }
 
 func (s *service) destroy() {
@@ -76,14 +91,14 @@ func (s *service) dispatchMSG(msg *Message) bool {
 	}
 	switch msg.Type {
 	case MSG_TYPE_NORMAL:
-		s.m.OnNormalMSG(msg.Src, msg.Data...)
+		s.m.OnNormalMSG(ServiceID(msg.Src), msg.Data...)
 	case MSG_TYPE_CLOSE:
 		if msg.Data[0].(bool) {
 			return true
 		}
 		s.m.OnCloseNotify()
 	case MSG_TYPE_SOCKET:
-		s.m.OnSocketMSG(msg.Src, msg.Data...)
+		s.m.OnSocketMSG(ServiceID(msg.Src), msg.Data...)
 	case MSG_TYPE_REQUEST:
 		s.dispatchRequest(msg)
 	case MSG_TYPE_RESPOND:
@@ -129,6 +144,7 @@ EXIT:
 				break EXIT
 			}
 		case <-s.loopTicker.C:
+			s.ts.Update(s.loopDuration)
 			s.m.OnMainLoop(s.loopDuration)
 		}
 	}
@@ -142,32 +158,37 @@ func (s *service) run() {
 }
 
 func (s *service) runWithLoop(d int) {
+	s.loopDuration = d
 	s.loopTicker = time.NewTicker(time.Duration(d) * time.Millisecond)
 	SafeGo(s.loopWithLoop)
 }
 
-func (s *service) request(dst uint, timeout int, respondCb interface{}, timeoutCb interface{}, data ...interface{}) {
+//respndCb is a function like: func(isok bool, ...interface{})  the first param must be a bool
+//timeoutCb is a function with no param : func()
+func (s *service) request(dst ServiceID, timeout int, respondCb interface{}, timeoutCb interface{}, data ...interface{}) {
 	s.requestMutex.Lock()
 	id := s.requestId
 	s.requestId++
 	cbp := requestCB{reflect.ValueOf(respondCb), reflect.ValueOf(timeoutCb)}
 	s.requestMap[id] = cbp
 	s.requestMutex.Unlock()
-	PanicWhen(cbp.respond.Kind() != reflect.Func)
-	PanicWhen(cbp.timeout.Kind() != reflect.Func)
+	PanicWhen(cbp.respond.Kind() != reflect.Func, "respond cb must function.")
+	PanicWhen(cbp.timeout.Kind() != reflect.Func, "timeout cb must function.")
 
 	param := make([]interface{}, 2)
 	param[0] = id
 	param[1] = data
 	rawSend(true, s.getId(), dst, MSG_TYPE_REQUEST, param...)
 
-	time.AfterFunc(time.Duration(timeout)*time.Millisecond, func() {
-		rawSend(false, INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, id)
-	})
+	if timeout > 0 {
+		time.AfterFunc(time.Duration(timeout)*time.Millisecond, func() {
+			rawSend(false, INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, id)
+		})
+	}
 }
 
 func (s *service) dispatchTimeout(m *Message) {
-	rid := m.Data[0].(int)
+	rid := m.Data[0].(uint64)
 	cbp, ok := s.getDeleteRequestCb(rid)
 	if !ok {
 		return
@@ -177,19 +198,20 @@ func (s *service) dispatchTimeout(m *Message) {
 }
 
 func (s *service) dispatchRequest(m *Message) {
-	rid := m.Data[0].(int)
+	rid := m.Data[0].(uint64)
 	data := m.Data[1].([]interface{})
-	s.m.OnRequestMSG(m.Src, rid, data...)
+	s.m.OnRequestMSG(ServiceID(m.Src), rid, data...)
 }
 
-func (s *service) respond(dst uint, rid int, data ...interface{}) {
+func (s *service) respond(dst ServiceID, rid uint64, data ...interface{}) {
 	param := make([]interface{}, 2)
 	param[0] = rid
 	param[1] = data
 	rawSend(true, s.getId(), dst, MSG_TYPE_RESPOND, param...)
 }
 
-func (s *service) getDeleteRequestCb(id int) (requestCB, bool) {
+//return request callback by request id
+func (s *service) getDeleteRequestCb(id uint64) (requestCB, bool) {
 	s.requestMutex.Lock()
 	cb, ok := s.requestMap[id]
 	delete(s.requestMap, id)
@@ -198,7 +220,7 @@ func (s *service) getDeleteRequestCb(id int) (requestCB, bool) {
 }
 
 func (s *service) dispatchRespond(m *Message) {
-	rid := m.Data[0].(int)
+	rid := m.Data[0].(uint64)
 	data := m.Data[1].([]interface{})
 
 	cbp, ok := s.getDeleteRequestCb(rid)
@@ -215,8 +237,8 @@ func (s *service) dispatchRespond(m *Message) {
 	cb.Call(param)
 }
 
-func (s *service) call(dst uint, data ...interface{}) ([]interface{}, error) {
-	PanicWhen(dst == s.getId())
+func (s *service) call(dst ServiceID, data ...interface{}) ([]interface{}, error) {
+	PanicWhen(dst == s.getId(), "dst must equal to s's id")
 	s.callMutex.Lock()
 	id := s.callId
 	s.callId++
@@ -232,9 +254,11 @@ func (s *service) call(dst uint, data ...interface{}) ([]interface{}, error) {
 	s.callMutex.Lock()
 	s.callChanMap[id] = ch
 	s.callMutex.Unlock()
-	time.AfterFunc(time.Duration(conf.CallTimeOut)*time.Millisecond, func() {
-		s.dispatchRet(id, ServiceCallTimeout)
-	})
+	if conf.CallTimeOut > 0 {
+		time.AfterFunc(time.Duration(conf.CallTimeOut)*time.Millisecond, func() {
+			s.dispatchRet(id, ServiceCallTimeout)
+		})
+	}
 	ret := <-ch
 	s.callMutex.Lock()
 	delete(s.callChanMap, id)
@@ -248,12 +272,12 @@ func (s *service) call(dst uint, data ...interface{}) ([]interface{}, error) {
 }
 
 func (s *service) dispatchCall(m *Message) {
-	cid := m.Data[0].(int)
+	cid := m.Data[0].(uint64)
 	data := m.Data[1].([]interface{})
-	s.m.OnCallMSG(m.Src, cid, data...)
+	s.m.OnCallMSG(ServiceID(m.Src), cid, data...)
 }
 
-func (s *service) ret(dst uint, cid int, data ...interface{}) {
+func (s *service) ret(dst ServiceID, cid uint64, data ...interface{}) {
 	var dstService *service
 	dstService, err := findServiceById(dst)
 	if err != nil {
@@ -266,7 +290,7 @@ func (s *service) ret(dst uint, cid int, data ...interface{}) {
 	dstService.dispatchRet(cid, data...)
 }
 
-func (s *service) dispatchRet(cid int, data ...interface{}) {
+func (s *service) dispatchRet(cid uint64, data ...interface{}) {
 	s.callMutex.Lock()
 	ch, ok := s.callChanMap[cid]
 	s.callMutex.Unlock()
@@ -274,4 +298,9 @@ func (s *service) dispatchRet(cid int, data ...interface{}) {
 	if ok {
 		ch <- data
 	}
+}
+
+func (s *service) schedule(interval, repeat int, cb timer.TimerCallback) *timer.Timer {
+	PanicWhen(s.loopDuration <= 0, "loopDuraton must greater than zero.")
+	return s.ts.Schedule(interval, repeat, cb)
 }

@@ -2,26 +2,28 @@ package core
 
 import (
 	"errors"
+	"github.com/sydnash/lotou/vector"
 	"sync"
 )
 
 //definition for node id
 const (
-	NODE_ID_MASK       = 0xFF000000
-	NODE_ID_OFF        = 24
-	INVALID_SERVICE_ID = (0XFF << NODE_ID_OFF) & NODE_ID_MASK
-	DEFAULT_NODE_ID    = 0XFF
-	MASTER_NODE_ID     = 0
-	INIT_SERVICE_ID    = 10
+	NODE_ID_OFF                  = 64 - 16
+	NODE_ID_MASK                 = 0xFFFF << NODE_ID_OFF
+	INVALID_SERVICE_ID           = NODE_ID_MASK
+	DEFAULT_NODE_ID              = 0XFFFF
+	MASTER_NODE_ID               = 0
+	INIT_SERVICE_ID    ServiceID = 10
 )
 
-type handleDic map[uint]*service
+type handleDic map[uint64]*service
 
 type handleStorage struct {
-	dicMutex sync.Mutex
-	dic      handleDic
-	nodeId   uint
-	curId    uint
+	dicMutex           sync.Mutex
+	dic                handleDic
+	nodeId             uint64
+	curId              uint64
+	baseServiceIdCache *vector.Vector
 }
 
 var (
@@ -33,17 +35,14 @@ var (
 func newHandleStorage() *handleStorage {
 	h := &handleStorage{}
 	h.nodeId = DEFAULT_NODE_ID
-	h.dic = make(map[uint]*service)
-	h.curId = INIT_SERVICE_ID
+	h.dic = make(map[uint64]*service)
+	h.curId = uint64(INIT_SERVICE_ID)
+	h.baseServiceIdCache = vector.NewCap(1000)
 	return h
 }
 
-func parseNodeIdFromId(id uint) uint {
-	return (id & NODE_ID_MASK) >> NODE_ID_OFF
-}
-
-func checkIsLocalId(id uint) bool {
-	nodeId := parseNodeIdFromId(id)
+func checkIsLocalId(id ServiceID) bool {
+	nodeId := id.parseNodeId()
 	if nodeId == DEFAULT_NODE_ID {
 		return true
 	}
@@ -67,31 +66,40 @@ func init() {
 	h = newHandleStorage()
 }
 
-func registerService(s *service) uint {
+func registerService(s *service) ServiceID {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
-	h.curId++
-	id := h.nodeId<<NODE_ID_OFF | h.curId
+	var baseServiceId uint64
+	if h.baseServiceIdCache.Empty() {
+		h.curId++
+		baseServiceId = h.curId
+	} else {
+		baseServiceId = h.baseServiceIdCache.Pop().(uint64)
+	}
+	id := h.nodeId<<NODE_ID_OFF | baseServiceId
 	h.dic[id] = s
-	s.setId(id)
+	sid := ServiceID(id)
+	s.setId(sid)
 	exitGroup.Add(1)
-	return id
+	return ServiceID(sid)
 }
 
 func unregisterService(s *service) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
-	if _, ok := h.dic[s.getId()]; !ok {
+	id := uint64(s.getId())
+	if _, ok := h.dic[id]; !ok {
 		return
 	}
-	delete(h.dic, s.getId())
+	delete(h.dic, id)
+	h.baseServiceIdCache.Push((ServiceID(id)).parseBaseId())
 	exitGroup.Done()
 }
 
-func findServiceById(id uint) (s *service, err error) {
+func findServiceById(id ServiceID) (s *service, err error) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
-	s, ok := h.dic[id]
+	s, ok := h.dic[uint64(id)]
 	if !ok {
 		err = ServiceNotFindError
 	}
@@ -99,7 +107,7 @@ func findServiceById(id uint) (s *service, err error) {
 }
 
 func findServiceByName(name string) (s *service, err error) {
-	PanicWhen(len(name) == 0)
+	PanicWhen(len(name) == 0, "name must not empty.")
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	for _, value := range h.dic {

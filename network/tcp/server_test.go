@@ -14,14 +14,14 @@ type M struct {
 	decoder *binary.Decoder
 }
 
-func (m *M) OnNormalMSG(src uint, data ...interface{}) {
+func (m *M) OnNormalMSG(src core.ServiceID, data ...interface{}) {
 	cmd := data[0].(int)
 	if cmd == tcp.AGENT_CLOSED {
 		log.Info("agent closed")
 	}
 }
 
-func (m *M) OnSocketMSG(src uint, data ...interface{}) {
+func (m *M) OnSocketMSG(src core.ServiceID, data ...interface{}) {
 	cmd := data[0].(int)
 	if cmd == tcp.AGENT_DATA {
 		data := data[1].([]byte)
@@ -40,9 +40,11 @@ func TestServer(t *testing.T) {
 	m.decoder = binary.NewDecoder()
 	core.StartService(".m", m)
 
-	s := tcp.New("", "3333", m.Id)
+	s := tcp.NewServer("", "3333", m.Id)
 	s.Listen()
 
 	ch := make(chan int)
 	<-ch
+
+	s.Close()
 }

@@ -15,11 +15,15 @@ import (
 type Server struct {
 	Host     string
 	Port     string
-	Dest     uint
+	Dest     core.ServiceID
 	listener *net.TCPListener
 }
 
-func New(host, port string, dest uint) *Server {
+var (
+	TCPServerClosed = "TCPServerClosed"
+)
+
+func NewServer(host, port string, dest core.ServiceID) *Server {
 	s := &Server{Host: host, Port: port}
 	s.Dest = dest
 	return s
@@ -39,12 +43,26 @@ func (self *Server) Listen() error {
 	}
 
 	go func() {
+		var tempDelay time.Duration
 		for {
 			tcpCon, err := self.listener.AcceptTCP()
 			if err != nil {
-				log.Warn("tcp server: accept tcp faield %s", err)
-				time.Sleep(time.Second * 3)
-				continue
+				if ne, ok := err.(net.Error); ok && ne.Temporary() {
+					if tempDelay == 0 {
+						tempDelay = 5 * time.Millisecond
+					} else {
+						tempDelay *= 2
+					}
+					if max := 1 * time.Second; tempDelay > max {
+						tempDelay = max
+					}
+					log.Warn("tcp server: accept error: %v; retrying in %v", err, tempDelay)
+					time.Sleep(tempDelay)
+					continue
+				}
+				log.Error("tcp server: accept err %s, server closed.", err)
+				core.Send(self.Dest, core.MSG_TYPE_NORMAL, TCPServerClosed)
+				break
 			}
 			a := NewAgent(tcpCon, self.Dest)
 			core.StartService("", a)
@@ -52,4 +70,10 @@ func (self *Server) Listen() error {
 	}()
 
 	return nil
+}
+
+func (self *Server) Close() {
+	if self.listener != nil {
+		self.listener.Close()
+	}
 }

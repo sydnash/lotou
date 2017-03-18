@@ -1,8 +1,7 @@
-package lotou
+package core
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 )
 
@@ -19,15 +18,18 @@ func (self Int) Add(i int) {
 func TestHelper(t *testing.T) {
 	callHelper := NewCallHelper()
 
-	callHelper.AddFunc("t1", reflect.ValueOf(normalFunc))
+	callHelper.AddFunc("t1", normalFunc)
 
 	i := Int(1)
-	v := reflect.ValueOf(i)
 
-	callHelper.AddFunc("t2", v.MethodByName("Add"))
+	callHelper.AddMethod("t2", i, "Add")
+
+	callHelper.AddFuncInt(1, normalFunc)
+	callHelper.AddMethodInt(2, i, "Add")
 
 	callHelper.Call("t1", 1, "name")
-	callHelper.Call("t2", 2)
+	callHelper.Call(1, 1, "name")
+	callHelper.Call(2, 2)
 
 	a := []interface{}{1, "name"}
 	callHelper.Call("t1", a...)

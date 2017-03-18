@@ -12,7 +12,7 @@ type Client struct {
 	*core.Skeleton
 	Con           *net.TCPConn
 	RemoteAddress *net.TCPAddr
-	Dest          uint
+	Dest          core.ServiceID
 	inbuffer      *bufio.Reader
 	outbuffer     *bufio.Writer
 }
@@ -28,7 +28,7 @@ const (
 	CLIENT_CMD_SEND
 )
 
-func NewClient(host, port string, dest uint) *Client {
+func NewClient(host, port string, dest core.ServiceID) *Client {
 	c := &Client{Skeleton: core.NewSkeleton(0), Dest: dest}
 	address := net.JoinHostPort(host, port)
 	tcpAddress, err := net.ResolveTCPAddr("tcp", address)
@@ -51,7 +51,7 @@ func (c *Client) OnDestroy() {
 func (c *Client) onConnect(n int) {
 	c.connect(n)
 }
-func (c *Client) onSend(src uint, param ...interface{}) {
+func (c *Client) onSend(src core.ServiceID, param ...interface{}) {
 	if c.Con == nil {
 		c.connect(2)
 	}
@@ -60,20 +60,20 @@ func (c *Client) onSend(src uint, param ...interface{}) {
 		c.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
 		_, err := c.outbuffer.Write(data)
 		if err != nil {
-			log.Error("agent write msg failed: %s", err)
+			log.Error("client onSend failed: %s", err)
 			c.onConError()
 		}
 		if c.Con != nil {
 			err = c.outbuffer.Flush()
 			if err != nil {
-				log.Error("agent write msg failed: %s", err)
+				log.Error("client onSend failed: %s", err)
 				c.onConError()
 			}
 		}
 	}
 }
 
-func (c *Client) OnNormalMSG(src uint, param ...interface{}) {
+func (c *Client) OnNormalMSG(src core.ServiceID, param ...interface{}) {
 	cmd := param[0].(int)
 	param = param[1:]
 	if cmd == CLIENT_CMD_CONNECT { //connect
@@ -113,7 +113,7 @@ func (self *Client) connect(n int) {
 				//split package
 				pack, err := Subpackage(self.inbuffer)
 				if err != nil {
-					log.Error("agent read msg failed: %s", err)
+					log.Error("cliend read msg failed: %s", err)
 					self.onConError()
 					break
 				}

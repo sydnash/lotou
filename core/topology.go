@@ -5,7 +5,7 @@ import (
 )
 
 type nameRet struct {
-	id   uint
+	id   ServiceID
 	ok   bool
 	name string
 }
@@ -13,15 +13,15 @@ type nameRet struct {
 var (
 	once                   sync.Once
 	isStandalone, isMaster bool
-	registerNodeChan       chan uint
+	registerNodeChan       chan uint64
 	nameChanMap            map[uint]chan *nameRet
 	nameMapMutex           sync.Mutex
 	nameRequestId          uint
-	beginNodeId            uint
+	beginNodeId            uint64
 )
 
 func init() {
-	registerNodeChan = make(chan uint)
+	registerNodeChan = make(chan uint64)
 
 	nameChanMap = make(map[uint]chan *nameRet)
 	nameRequestId = 0
@@ -43,33 +43,37 @@ func InitNode(_isStandalone, _isMaster bool) {
 func RegisterNode() {
 	once.Do(func() {
 		if !isStandalone && !isMaster {
-			sendName(INVALID_SERVICE_ID, ".slave", MSG_TYPE_NORMAL, "registerNode")
+			route("registerNode")
 			h.nodeId = <-registerNodeChan
 		}
 	})
 }
 
-func RegisterNodeRet(id uint) {
+func DispatchRegisterNodeRet(id uint64) {
 	registerNodeChan <- id
 }
 
-func globalName(id uint, name string) {
-	sendToMaster("registerName", id, name)
+//globalName regist name to master
+//it will notify all exist service through distribute msg.
+func globalName(id ServiceID, name string) {
+	route("registerName", uint64(id), name)
 }
 
-func sendToMaster(data ...interface{}) {
+//route send msg to master
+//if node is not a master node, it send to .slave node first, .slave will forward msg to master.
+func route(data ...interface{}) {
 	if !isStandalone {
-		if isMaster {
-			//sync name
-			sendName(INVALID_SERVICE_ID, ".master", MSG_TYPE_NORMAL, data...)
-		} else {
-			//name to master
-			sendName(INVALID_SERVICE_ID, ".slave", MSG_TYPE_NORMAL, data...)
+		router, err := findServiceByName(".router")
+		if err != nil {
+			return
 		}
+		localSendWithoutMutex(INVALID_SERVICE_ID, router, MSG_TYPE_NORMAL, MSG_ENC_TYPE_NO, data...)
 	}
 }
 
-func NameToId(name string) (uint, error) {
+//NameToId couldn't guarantee get the correct id for name.
+//it will return err if the named server is until now.
+func NameToId(name string) (ServiceID, error) {
 	ser, err := findServiceByName(name)
 	if err == nil {
 		return ser.getId(), nil
@@ -80,12 +84,12 @@ func NameToId(name string) (uint, error) {
 		tmp := nameRequestId
 		nameMapMutex.Unlock()
 
-		sendToMaster("getIdByName", name, tmp)
 		ch := make(chan *nameRet)
-
 		nameMapMutex.Lock()
 		nameChanMap[tmp] = ch
 		nameMapMutex.Unlock()
+
+		route("getIdByName", name, tmp)
 		ret := <-ch
 		close(ch)
 		if !ret.ok {
@@ -96,7 +100,7 @@ func NameToId(name string) (uint, error) {
 	return INVALID_SERVICE_ID, ServiceNotFindError
 }
 
-func GetIdByNameRet(id uint, ok bool, name string, rid uint) {
+func DispatchGetIdByNameRet(id ServiceID, ok bool, name string, rid uint) {
 	nameMapMutex.Lock()
 	ch := nameChanMap[rid]
 	delete(nameChanMap, rid)
@@ -104,7 +108,7 @@ func GetIdByNameRet(id uint, ok bool, name string, rid uint) {
 	ch <- &nameRet{id, ok, name}
 }
 
-func GenerateNodeId() uint {
+func GenerateNodeId() uint64 {
 	ret := beginNodeId
 	beginNodeId++
 	return ret

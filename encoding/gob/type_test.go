@@ -48,6 +48,7 @@ func TestType(t *testing.T) {
 	b = append(b, s1)
 	a = append(a, b)
 	a = append(a, a)
+	a = append(a, [3]byte{'a', 'b', 'c'})
 	for _, v := range a {
 		enc.Encode(v)
 	}
@@ -71,4 +72,6 @@ func TestType(t *testing.T) {
 		}
 	}
 
+	var testbyte interface{} = [3]uint8{'a', 'b', 'c'}
+	fmt.Println(testbyte.([3]byte))
 }

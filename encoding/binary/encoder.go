@@ -5,6 +5,8 @@ import (
 	"reflect"
 )
 
+//Encoder encode value to binary start with 4 byte for binary len.
+//and only 2 byte to encode map, slice's len.
 type Encoder struct {
 	b    []byte
 	r, w int

@@ -12,7 +12,7 @@ import (
 
 type C struct {
 	*core.Skeleton
-	client  uint
+	client  core.ServiceID
 	encoder *binary.Encoder
 	decoder *binary.Decoder
 }
@@ -28,13 +28,13 @@ func (c *C) OnMainLoop(dt int) {
 	c.RawSend(c.client, core.MSG_TYPE_NORMAL, tcp.CLIENT_CMD_SEND, t1)
 }
 
-func (c *C) OnNormalMSG(src uint, data ...interface{}) {
+func (c *C) OnNormalMSG(src core.ServiceID, data ...interface{}) {
 	if len(data) >= 2 {
 		log.Info("recv data :%s", string(data[1].([]byte)))
 	}
 }
 
-func (c *C) OnSocketMSG(src uint, data ...interface{}) {
+func (c *C) OnSocketMSG(src core.ServiceID, data ...interface{}) {
 	cmd := data[0].(int)
 	if cmd == tcp.CLIENT_DATA {
 		data := data[1].([]byte)

@@ -20,8 +20,18 @@ type SimpleLoger struct {
 	shellLevel int
 }
 
+const (
+	COLOR_DEBUG_LEVEL_DESC = "[\x1b[32mdebug\x1b[0m] "
+	COLOR_INFO_LEVEL_DESC  = "[\x1b[36minfo \x1b[0m] "
+	COLOR_WARN_LEVEL_DESC  = "[\x1b[33mwarn \x1b[0m] "
+	COLOR_ERROR_LEVEL_DESC = "[\x1b[31merror\x1b[0m] "
+	COLOR_FATAL_LEVEL_DESC = "[\x1b[31mfatal\x1b[0m] "
+)
+
+var color_format = []string{COLOR_DEBUG_LEVEL_DESC, COLOR_INFO_LEVEL_DESC, COLOR_WARN_LEVEL_DESC, COLOR_ERROR_LEVEL_DESC, COLOR_FATAL_LEVEL_DESC}
+
 func (self *SimpleLoger) DoPrintf(level int, levelDesc, format string, a ...interface{}) {
-	format = levelDesc + format
+	nformat := levelDesc + format
 	if level >= self.fileLevel {
 		if self.logLine > self.maxLine {
 			if self.baseFile != nil {
@@ -33,12 +43,13 @@ func (self *SimpleLoger) DoPrintf(level int, levelDesc, format string, a ...inte
 			self.logLine = 0
 		}
 		if self.fileLogger != nil {
-			self.fileLogger.Printf(format, a...)
+			self.fileLogger.Printf(nformat, a...)
 			self.logLine++
 		}
 	}
 	if level >= self.shellLevel {
-		log.Printf(format, a...)
+		nformat := color_format[level] + format
+		log.Printf(nformat, a...)
 	}
 }
 

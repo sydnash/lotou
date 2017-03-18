@@ -24,17 +24,17 @@ const (
 )
 
 //Message is the based struct of msg through all service
-//by convenient, the first value of Data is string as the method
+//by convention, the first value of Data is a string as the method name
 type Message struct {
-	Src     uint
-	Dst     uint
-	Type    int
-	EncType int
+	Src     uint64
+	Dst     uint64
+	Type    int32
+	EncType int32
 	Data    []interface{}
 }
 
-func NewMessage(src, dst uint, msgType, encType int, data ...interface{}) *Message {
-	msg := &Message{src, dst, msgType, encType, data}
+func NewMessage(src, dst ServiceID, msgType, encType int32, data ...interface{}) *Message {
+	msg := &Message{uint64(src), uint64(dst), msgType, encType, data}
 	return msg
 }
 
@@ -42,15 +42,15 @@ func init() {
 	gob.RegisterStructType(Message{})
 }
 
-func sendNoEnc(src uint, dst uint, msgType int, data ...interface{}) error {
+func sendNoEnc(src ServiceID, dst ServiceID, msgType int32, data ...interface{}) error {
 	return rawSend(false, src, dst, msgType, data...)
 }
 
-func send(src uint, dst uint, msgType int, data ...interface{}) error {
+func send(src ServiceID, dst ServiceID, msgType int32, data ...interface{}) error {
 	return rawSend(true, src, dst, msgType, data...)
 }
 
-func rawSend(isEnc bool, src, dst uint, msgType int, data ...interface{}) error {
+func rawSend(isNeedEnc bool, src, dst ServiceID, msgType int32, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
 	isLocal := checkIsLocalId(dst)
 
@@ -58,20 +58,22 @@ func rawSend(isEnc bool, src, dst uint, msgType int, data ...interface{}) error 
 		return err
 	}
 	var msg *Message
-	if isEnc {
+	if isNeedEnc {
 		msg = NewMessage(src, dst, msgType, MSG_ENC_TYPE_GO, gob.Pack(data))
 	} else {
 		msg = NewMessage(src, dst, msgType, MSG_ENC_TYPE_NO, data...)
 	}
 	if err != nil {
-		sendToMaster("forward", msg)
+		//doesn't find service and dstid is remote id, send a forward msg to master.
+		route("forward", msg)
 		return nil
 	}
 	dsts.pushMSG(msg)
 	return nil
 }
 
-func sendName(src uint, dst string, msgType int, data ...interface{}) error {
+//send msg to dst by dst's service name
+func sendName(src ServiceID, dst string, msgType int32, data ...interface{}) error {
 	dsts, err := findServiceByName(dst)
 	if err != nil {
 		return err
@@ -80,7 +82,7 @@ func sendName(src uint, dst string, msgType int, data ...interface{}) error {
 }
 
 func ForwardLocal(m *Message) {
-	dsts, err := findServiceById(m.Dst)
+	dsts, err := findServiceById(ServiceID(m.Dst))
 	if err != nil {
 		return
 	}
@@ -92,22 +94,22 @@ func ForwardLocal(m *Message) {
 			t := gob.Unpack(m.Data[0].([]byte))
 			m.Data = t.([]interface{})
 		}
-		cid := m.Data[0].(int)
+		cid := m.Data[0].(uint64)
 		data := m.Data[1].([]interface{})
 		dsts.dispatchRet(cid, data...)
 	}
 }
-func DistributeMSG(src uint, data ...interface{}) {
+func DistributeMSG(src ServiceID, data ...interface{}) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	for dst, ser := range h.dic {
-		if dst != src {
-			localSendWithNoMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, data)
+		if ServiceID(dst) != src {
+			localSendWithoutMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, data)
 		}
 	}
 }
 
-func localSendWithNoMutex(src uint, dstService *service, msgType, encType int, data ...interface{}) {
+func localSendWithoutMutex(src ServiceID, dstService *service, msgType, encType int32, data ...interface{}) {
 	msg := NewMessage(src, dstService.getId(), msgType, encType, data...)
 	dstService.pushMSG(msg)
 }
