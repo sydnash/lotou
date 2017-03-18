@@ -3,9 +3,10 @@
 首先：本人初学go语言，希望用go语言来学习游戏服务器编程，欢迎指正，  
 如果有兴趣，可以联系我  
 QQ：157621271  
-wechat：daijun_1234  
-申请请写lotou  
-
+wechat：daijun_1234  
+golang&lotou 交流群号：362112175    欢迎达人进来分享技术
+申请请写lotou  
+目前该frame接口变动频繁，请勿用于生产环境。
 a golang game server framework
 
 I want write it as a game server.
