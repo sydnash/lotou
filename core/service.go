@@ -61,7 +61,11 @@ func (s *service) getId() ServiceID {
 }
 
 func (s *service) pushMSG(m *Message) {
-	s.msgChan <- m
+	select {
+	case s.msgChan <- m:
+	default:
+		panic("service is full.")
+	}
 }
 
 func (s *service) destroy() {
