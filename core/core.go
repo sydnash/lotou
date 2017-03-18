@@ -14,8 +14,8 @@ func StartService(name string, m Module) ServiceID {
 	s := newService(name)
 	s.m = m
 	id := registerService(s)
-	m.SetService(s)
-	d := m.GetDuration()
+	m.setService(s)
+	d := m.getDuration()
 	s.loopDuration = d
 	if d > 0 {
 		s.ts = timer.NewTS()
@@ -33,11 +33,11 @@ func StartService(name string, m Module) ServiceID {
 }
 
 //Parse Node Id parse node id from service id
-func ParseNodeId(id ServiceID) uint {
-	return parseNodeIdFromId(id)
+func ParseNodeId(id ServiceID) uint64 {
+	return id.parseNodeId()
 }
 
-func Send(dst ServiceID, msgType int, data ...interface{}) error {
+func Send(dst ServiceID, msgType int32, data ...interface{}) error {
 	return rawSend(true, INVALID_SERVICE_ID, dst, msgType, data...)
 }
 

@@ -14,7 +14,7 @@ type slave struct {
 
 func StartSlave(ip, port string) {
 	m := &slave{Skeleton: core.NewSkeleton(0)}
-	core.StartService(".slave", m)
+	core.StartService(".router", m)
 	c := tcp.NewClient(ip, port, m.Id)
 	m.client = core.StartService("", c)
 }
@@ -22,8 +22,6 @@ func StartSlave(ip, port string) {
 func (s *slave) OnNormalMSG(dst core.ServiceID, data ...interface{}) {
 	//dest is master's id, src is core's id
 	//data[0] is cmd such as (registerNode, regeisterName, getIdByName...)
-	//data[1] is dest nodeService's id
-	//parse node's id, and choose correct agent and send msg to that node.
 	t1 := gob.Pack(data)
 	s.RawSend(s.client, core.MSG_TYPE_NORMAL, tcp.CLIENT_CMD_SEND, t1)
 }
@@ -40,17 +38,17 @@ func (s *slave) OnSocketMSG(dst core.ServiceID, data ...interface{}) {
 		array := sdata.([]interface{})
 		scmd := array[0].(string)
 		if scmd == "registerNodeRet" {
-			nodeId := array[1].(uint)
-			core.RegisterNodeRet(nodeId)
+			nodeId := array[1].(uint64)
+			core.DispatchRegisterNodeRet(nodeId)
 		} else if scmd == "distibute" {
 			data := array[1].([]interface{})
 			core.DistributeMSG(s.Id, data...)
 		} else if scmd == "getIdByNameRet" {
-			id := array[1].(uint)
+			id := array[1].(uint64)
 			ok := array[2].(bool)
 			name := array[3].(string)
 			rid := array[4].(uint)
-			core.GetIdByNameRet(core.ServiceID(id), ok, name, rid)
+			core.DispatchGetIdByNameRet(core.ServiceID(id), ok, name, rid)
 		} else if scmd == "forward" {
 			msg := array[1].(*core.Message)
 			s.forwardM(msg)

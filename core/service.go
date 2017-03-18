@@ -10,7 +10,15 @@ import (
 	"time"
 )
 
-type ServiceID uint
+type ServiceID uint64
+
+func (id ServiceID) parseNodeId() uint64 {
+	return (uint64(id) & NODE_ID_MASK) >> NODE_ID_OFF
+}
+func (id ServiceID) parseBaseId() uint64 {
+	return uint64(id) & (^uint64(NODE_ID_MASK))
+}
+
 type requestCB struct {
 	respond reflect.Value
 	timeout reflect.Value
@@ -22,11 +30,11 @@ type service struct {
 	loopTicker   *time.Ticker
 	loopDuration int //unit is Millisecond
 	m            Module
-	requestId    int
-	requestMap   map[int]requestCB
+	requestId    uint64
+	requestMap   map[uint64]requestCB
 	requestMutex sync.Mutex
-	callId       int
-	callChanMap  map[int]chan []interface{}
+	callId       uint64
+	callChanMap  map[uint64]chan []interface{}
 	callMutex    sync.Mutex
 	ts           *timer.TimerSchedule
 }
@@ -39,8 +47,8 @@ func newService(name string) *service {
 	s := &service{name: name}
 	s.msgChan = make(chan *Message, 1024)
 	s.requestId = 0
-	s.requestMap = make(map[int]requestCB)
-	s.callChanMap = make(map[int]chan []interface{})
+	s.requestMap = make(map[uint64]requestCB)
+	s.callChanMap = make(map[uint64]chan []interface{})
 	return s
 }
 
@@ -180,7 +188,7 @@ func (s *service) request(dst ServiceID, timeout int, respondCb interface{}, tim
 }
 
 func (s *service) dispatchTimeout(m *Message) {
-	rid := m.Data[0].(int)
+	rid := m.Data[0].(uint64)
 	cbp, ok := s.getDeleteRequestCb(rid)
 	if !ok {
 		return
@@ -190,19 +198,20 @@ func (s *service) dispatchTimeout(m *Message) {
 }
 
 func (s *service) dispatchRequest(m *Message) {
-	rid := m.Data[0].(int)
+	rid := m.Data[0].(uint64)
 	data := m.Data[1].([]interface{})
 	s.m.OnRequestMSG(ServiceID(m.Src), rid, data...)
 }
 
-func (s *service) respond(dst ServiceID, rid int, data ...interface{}) {
+func (s *service) respond(dst ServiceID, rid uint64, data ...interface{}) {
 	param := make([]interface{}, 2)
 	param[0] = rid
 	param[1] = data
 	rawSend(true, s.getId(), dst, MSG_TYPE_RESPOND, param...)
 }
 
-func (s *service) getDeleteRequestCb(id int) (requestCB, bool) {
+//return request callback by request id
+func (s *service) getDeleteRequestCb(id uint64) (requestCB, bool) {
 	s.requestMutex.Lock()
 	cb, ok := s.requestMap[id]
 	delete(s.requestMap, id)
@@ -211,7 +220,7 @@ func (s *service) getDeleteRequestCb(id int) (requestCB, bool) {
 }
 
 func (s *service) dispatchRespond(m *Message) {
-	rid := m.Data[0].(int)
+	rid := m.Data[0].(uint64)
 	data := m.Data[1].([]interface{})
 
 	cbp, ok := s.getDeleteRequestCb(rid)
@@ -263,12 +272,12 @@ func (s *service) call(dst ServiceID, data ...interface{}) ([]interface{}, error
 }
 
 func (s *service) dispatchCall(m *Message) {
-	cid := m.Data[0].(int)
+	cid := m.Data[0].(uint64)
 	data := m.Data[1].([]interface{})
 	s.m.OnCallMSG(ServiceID(m.Src), cid, data...)
 }
 
-func (s *service) ret(dst ServiceID, cid int, data ...interface{}) {
+func (s *service) ret(dst ServiceID, cid uint64, data ...interface{}) {
 	var dstService *service
 	dstService, err := findServiceById(dst)
 	if err != nil {
@@ -281,7 +290,7 @@ func (s *service) ret(dst ServiceID, cid int, data ...interface{}) {
 	dstService.dispatchRet(cid, data...)
 }
 
-func (s *service) dispatchRet(cid int, data ...interface{}) {
+func (s *service) dispatchRet(cid uint64, data ...interface{}) {
 	s.callMutex.Lock()
 	ch, ok := s.callChanMap[cid]
 	s.callMutex.Unlock()

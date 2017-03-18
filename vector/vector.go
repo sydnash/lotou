@@ -14,6 +14,10 @@ func NewCap(n int) *Vector {
 	return v
 }
 
+func (v *Vector) Empty() bool {
+	return v.Len() == 0
+}
+
 func (v *Vector) Len() int {
 	return len(v.s)
 }
