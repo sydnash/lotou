@@ -51,7 +51,7 @@ func (c *CallHelper) AddMethodInt(id int, v interface{}, methodName string) {
 	c.idFuncMap[id] = f
 }
 
-func (c *CallHelper) Call(id interface{}, src ServiceID, encType int32, param ...interface{}) []interface{} {
+func (c *CallHelper) Call(id interface{}, src ServiceID, param ...interface{}) []interface{} {
 	var cb reflect.Value
 	var ok bool
 	switch key := id.(type) {

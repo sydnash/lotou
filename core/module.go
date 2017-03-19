@@ -110,18 +110,18 @@ func (s *Skeleton) OnDestroy() {
 func (s *Skeleton) OnMainLoop(dt int) {
 }
 func (s *Skeleton) OnNormalMSG(msg *Message) {
-	s.normalDispatcher.Call(msg.MethodId, msg.Src, msg.EncType, msg.Data...)
+	s.normalDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
 }
 func (s *Skeleton) OnInit() {
 }
 func (s *Skeleton) OnSocketMSG(msg *Message) {
 }
 func (s *Skeleton) OnRequestMSG(msg *Message) {
-	ret := s.requestDispatcher.Call(msg.MethodId, msg.Src, msg.EncType, msg.Data...)
+	ret := s.requestDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
 	s.Respond(msg.Src, msg.EncType, msg.Id, ret...)
 }
 func (s *Skeleton) OnCallMSG(msg *Message) {
-	ret := s.callDispatcher.Call(msg.MethodId, msg.Src, msg.EncType, msg.Data...)
+	ret := s.callDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
 	s.Ret(msg.Src, msg.EncType, msg.Id, ret...)
 }
 
