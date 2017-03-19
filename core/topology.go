@@ -65,7 +65,7 @@ func route(methodId interface{}, data ...interface{}) bool {
 	if !isStandalone {
 		router, err := findServiceByName(".router")
 		if err != nil {
-			return
+			return false
 		}
 		localSendWithoutMutex(INVALID_SERVICE_ID, router, MSG_TYPE_NORMAL, MSG_ENC_TYPE_NO, 0, methodId, data...)
 		return true
