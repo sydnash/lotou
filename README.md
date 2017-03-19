@@ -8,8 +8,6 @@ golang&lotou 交流群号：362112175    欢迎达人进来分享技术
 
 申请请写lotou  
 
-目前该frame接口变动频繁，请勿用于生产环境。
-
 a golang game server framework
 
 I want write it as a game server.
