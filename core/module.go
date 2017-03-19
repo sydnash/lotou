@@ -5,7 +5,7 @@ import (
 )
 
 type Module interface {
-	//OnInit is called within StartService
+	//OnInit is is the first call in service's goroutinue.
 	OnInit()
 	//OnDestory is called when service is closed
 	OnDestroy()
@@ -78,8 +78,8 @@ func (s *Skeleton) SendClose(dst ServiceID, isForce bool) {
 
 //Request send a request msg to dst, and start timeout function if timeout > 0
 //after receiver call Respond, the responseCb will be called
-func (s *Skeleton) Request(dst ServiceID, encType int32, timeout int, responseCb interface{}, timeoutCb interface{}, methodId interface{}, data ...interface{}) {
-	s.s.request(dst, encType, timeout, responseCb, timeoutCb, methodId, data...)
+func (s *Skeleton) Request(dst ServiceID, encType int32, timeout int, responseCb interface{}, methodId interface{}, data ...interface{}) {
+	s.s.request(dst, encType, timeout, responseCb, methodId, data...)
 }
 
 //Respond used to respond request msg

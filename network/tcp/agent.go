@@ -33,17 +33,19 @@ type Agent struct {
 }
 
 const (
-	AGENT_CLOSED = iota
+	AGENT_CLOSED = iota + 1
 	AGENT_DATA
 	AGENT_ARRIVE
 )
 const (
-	AGENT_CMD_SEND = iota
+	AGENT_CMD_SEND = iota + 1
 )
+
+const AgentNoDataHoldtime = 5000
 
 func (a *Agent) OnInit() {
 	a.hasDataArrived = false
-	a.leftTimeBeforArrived = 5000
+	a.leftTimeBeforArrived = AgentNoDataHoldtime
 	a.inbuffer = bufio.NewReader(a.Con)
 	a.outbuffer = bufio.NewWriter(a.Con)
 	go func() {
@@ -71,6 +73,7 @@ func (a *Agent) OnMainLoop(dt int) {
 	if !a.hasDataArrived {
 		a.leftTimeBeforArrived -= dt
 		if a.leftTimeBeforArrived < 0 {
+			log.Error("agent has no data comming in after %v ms", AgentNoDataHoldtime)
 			a.SendClose(a.Id, false)
 		}
 	}

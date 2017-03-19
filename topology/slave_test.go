@@ -20,9 +20,7 @@ func (g *Game) OnMainLoop(dt int) {
 		t := func(timeout bool, data ...interface{}) {
 			fmt.Println("request respond ", timeout, data)
 		}
-		g.Request(remoteId, core.MSG_ENC_TYPE_GO, 10, t, func() {
-			log.Info("timeout")
-		}, "hello")
+		g.Request(remoteId, core.MSG_ENC_TYPE_GO, 10, t, "hello")
 
 		fmt.Println(g.Call(remoteId, core.MSG_ENC_TYPE_GO, "hello"))
 	}

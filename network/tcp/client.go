@@ -2,29 +2,40 @@ package tcp
 
 import (
 	"bufio"
+	"bytes"
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"net"
+	"sync/atomic"
 	"time"
 )
 
 type Client struct {
 	*core.Skeleton
-	Con           *net.TCPConn
-	RemoteAddress *net.TCPAddr
-	Dest          core.ServiceID
-	inbuffer      *bufio.Reader
-	outbuffer     *bufio.Writer
+	Con             *net.TCPConn
+	RemoteAddress   *net.TCPAddr
+	Dest            core.ServiceID
+	inbuffer        *bufio.Reader
+	outbuffer       *bufio.Writer
+	status          int32
+	bufferForOutMsg *bytes.Buffer
+	isNeedExit      bool
 }
 
 const (
-	CLIENT_CONNECT_FAILED = iota
+	CLIENT_STATUS_NOT_CONNECT = iota
+	CLIENT_STATUS_CONNECTING
+	CLIENT_STATUS_CONNECTED
+)
+
+const (
+	CLIENT_CONNECT_FAILED = iota + 1
 	CLIENT_CONNECTED
 	CLIENT_DISCONNECTED
 	CLIENT_DATA
 )
 const (
-	CLIENT_CMD_CONNECT = iota
+	CLIENT_CMD_CONNECT = iota + 1
 	CLIENT_CMD_SEND
 )
 
@@ -37,6 +48,8 @@ func NewClient(host, port string, dest core.ServiceID) *Client {
 		return nil
 	}
 	c.RemoteAddress = tcpAddress
+	c.status = CLIENT_STATUS_NOT_CONNECT
+	c.bufferForOutMsg = bytes.NewBuffer([]byte{})
 	return c
 }
 
@@ -44,6 +57,7 @@ func (c *Client) OnInit() {
 }
 
 func (c *Client) OnDestroy() {
+	c.isNeedExit = true
 	if c.Con != nil {
 		c.Con.Close()
 	}
@@ -51,26 +65,55 @@ func (c *Client) OnDestroy() {
 func (c *Client) onConnect(n int) {
 	c.connect(n)
 }
-func (c *Client) onSend(src core.ServiceID, param ...interface{}) {
-	if c.Con == nil {
-		c.connect(2)
-	}
+
+func (c *Client) sendBufferOutMsgAndData(data []byte) {
 	if c.Con != nil {
-		data := param[0].([]byte)
 		c.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
-		_, err := c.outbuffer.Write(data)
-		if err != nil {
-			log.Error("client onSend failed: %s", err)
-			c.onConError()
+		if c.bufferForOutMsg.Len() > 0 {
+			_, err := c.outbuffer.Write(c.bufferForOutMsg.Bytes())
+			if err != nil {
+				log.Error("client onSend tmp out msg err: %s", err)
+				c.onConError()
+			}
+			c.bufferForOutMsg.Reset()
+		}
+		if data != nil {
+			_, err := c.outbuffer.Write(data)
+			if err != nil {
+				log.Error("client onSend writebuff err: %s", err)
+				c.onConError()
+			}
 		}
 		if c.Con != nil {
-			err = c.outbuffer.Flush()
+			err := c.outbuffer.Flush()
 			if err != nil {
-				log.Error("client onSend failed: %s", err)
+				log.Error("client onSend err: %s", err)
 				c.onConError()
 			}
 		}
 	}
+}
+
+func (c *Client) onSend(src core.ServiceID, param ...interface{}) {
+	if c.status != CLIENT_STATUS_CONNECTED {
+		if c.status == CLIENT_STATUS_NOT_CONNECT {
+			go c.connect(-1)
+		}
+		data := param[0].([]byte)
+		defer func() {
+			if err := recover(); err != nil {
+				if err == bytes.ErrTooLarge {
+					log.Error("client out msg buffer is too large, we will reset it.")
+					c.bufferForOutMsg.Reset()
+				} else {
+					panic(err)
+				}
+			}
+		}()
+		c.bufferForOutMsg.Write(data)
+		return
+	}
+	c.sendBufferOutMsgAndData(param[0].([]byte))
 }
 
 func (c *Client) OnNormalMSG(msg *core.Message) {
@@ -85,11 +128,18 @@ func (c *Client) OnNormalMSG(msg *core.Message) {
 	}
 }
 
-func (self *Client) connect(n int) {
-	for i := 0; i < n; n++ {
-		if self.Con == nil {
+func (c *Client) connect(n int) {
+	if !atomic.CompareAndSwapInt32(&c.status, CLIENT_STATUS_NOT_CONNECT, CLIENT_STATUS_CONNECTING) {
+		return
+	}
+	i := 0
+	for {
+		if c.isNeedExit {
+			return
+		}
+		if c.Con == nil {
 			var err error
-			self.Con, err = net.DialTCP("tcp", nil, self.RemoteAddress)
+			c.Con, err = net.DialTCP("tcp", nil, c.RemoteAddress)
 			if err != nil {
 				log.Error("client connect failed: %s", err)
 			} else {
@@ -97,34 +147,44 @@ func (self *Client) connect(n int) {
 			}
 		}
 		time.Sleep(time.Second * 2)
-	}
-	if self.Con == nil {
-		self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, CLIENT_CONNECT_FAILED) //connect failed
-	} else {
-		if self.inbuffer == nil && self.outbuffer == nil {
-			self.inbuffer = bufio.NewReader(self.Con)
-			self.outbuffer = bufio.NewWriter(self.Con)
-		} else {
-			self.inbuffer.Reset(self.Con)
-			self.outbuffer.Reset(self.Con)
+		i++
+		if n > 0 && i >= n {
+			break
 		}
-		self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, CLIENT_CONNECTED) //connect success
+	}
+	if c.Con == nil {
+		c.RawSend(c.Dest, core.MSG_TYPE_SOCKET, CLIENT_CONNECT_FAILED) //connect failed
+	} else {
+		if c.inbuffer == nil && c.outbuffer == nil {
+			c.inbuffer = bufio.NewReader(c.Con)
+			c.outbuffer = bufio.NewWriter(c.Con)
+		} else {
+			c.inbuffer.Reset(c.Con)
+			c.outbuffer.Reset(c.Con)
+		}
+		c.RawSend(c.Dest, core.MSG_TYPE_SOCKET, CLIENT_CONNECTED) //connect success
+		c.sendBufferOutMsgAndData(nil)
 		go func() {
 			for {
 				//split package
-				pack, err := Subpackage(self.inbuffer)
+				pack, err := Subpackage(c.inbuffer)
 				if err != nil {
 					log.Error("cliend read msg failed: %s", err)
-					self.onConError()
+					c.onConError()
 					break
 				}
-				self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, CLIENT_DATA, pack) //recv message
+				c.RawSend(c.Dest, core.MSG_TYPE_SOCKET, CLIENT_DATA, pack) //recv message
 			}
 		}()
 	}
+	atomic.StoreInt32(&c.status, CLIENT_STATUS_CONNECTED)
 }
-func (self *Client) onConError() {
-	self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, CLIENT_DISCONNECTED) //disconnected
-	self.OnDestroy()
-	self.Con = nil
+func (c *Client) onConError() {
+	c.RawSend(c.Dest, core.MSG_TYPE_SOCKET, CLIENT_DISCONNECTED) //disconnected
+	c.OnDestroy()
+	if c.Con != nil {
+		c.Con.Close()
+	}
+	c.Con = nil
+	atomic.StoreInt32(&c.status, CLIENT_STATUS_NOT_CONNECT)
 }

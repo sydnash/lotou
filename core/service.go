@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/sydnash/lotou/conf"
 	"github.com/sydnash/lotou/encoding/gob"
+	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/timer"
 	"reflect"
 	"sync"
@@ -21,7 +22,7 @@ func (id ServiceID) parseBaseId() uint64 {
 
 type requestCB struct {
 	respond reflect.Value
-	timeout reflect.Value
+	//timeout reflect.Value
 }
 type service struct {
 	id           ServiceID
@@ -114,6 +115,7 @@ func (s *service) dispatchMSG(msg *Message) bool {
 }
 
 func (s *service) loop() {
+	s.m.OnInit()
 EXIT:
 	for {
 		select {
@@ -132,6 +134,7 @@ EXIT:
 }
 
 func (s *service) loopWithLoop() {
+	s.m.OnInit()
 EXIT:
 	for {
 		select {
@@ -160,26 +163,31 @@ func (s *service) run() {
 func (s *service) runWithLoop(d int) {
 	s.loopDuration = d
 	s.loopTicker = time.NewTicker(time.Duration(d) * time.Millisecond)
+	s.ts = timer.NewTS()
 	SafeGo(s.loopWithLoop)
 }
 
 //respndCb is a function like: func(isok bool, ...interface{})  the first param must be a bool
-//timeoutCb is a function with no param : func()
-func (s *service) request(dst ServiceID, encType int32, timeout int, respondCb interface{}, timeoutCb interface{}, methodId interface{}, data ...interface{}) {
+func (s *service) request(dst ServiceID, encType int32, timeout int, respondCb interface{}, methodId interface{}, data ...interface{}) {
 	s.requestMutex.Lock()
 	id := s.requestId
 	s.requestId++
-	cbp := requestCB{reflect.ValueOf(respondCb), reflect.ValueOf(timeoutCb)}
+	cbp := requestCB{reflect.ValueOf(respondCb)}
 	s.requestMap[id] = cbp
 	s.requestMutex.Unlock()
 	PanicWhen(cbp.respond.Kind() != reflect.Func, "respond cb must function.")
-	PanicWhen(cbp.timeout.Kind() != reflect.Func, "timeout cb must function.")
 
 	lowLevelSend(s.getId(), dst, MSG_TYPE_REQUEST, encType, id, methodId, data...)
 
 	if timeout > 0 {
 		time.AfterFunc(time.Duration(timeout)*time.Millisecond, func() {
-			lowLevelSend(INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, MSG_ENC_TYPE_NO, id, 0)
+			s.requestMutex.Lock()
+			_, ok := s.requestMap[id]
+			s.requestMutex.Unlock()
+			if ok {
+				log.Info("send time out info=======")
+				lowLevelSend(INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, MSG_ENC_TYPE_NO, id, 0)
+			}
 		})
 	}
 }
@@ -190,8 +198,14 @@ func (s *service) dispatchTimeout(m *Message) {
 	if !ok {
 		return
 	}
-	cb := cbp.timeout
-	cb.Call([]reflect.Value{})
+	cb := cbp.respond
+	var param []reflect.Value
+	param = append(param, reflect.ValueOf(true))
+	plen := cb.Type().NumIn()
+	for i := 1; i < plen; i++ {
+		param = append(param, reflect.New(cb.Type().In(i)).Elem())
+	}
+	cb.Call(param)
 }
 
 func (s *service) dispatchRequest(msg *Message) {
