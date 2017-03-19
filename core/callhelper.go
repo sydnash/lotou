@@ -70,6 +70,11 @@ func (c *callHelper) Call(id interface{}, src ServiceID, encType int32, param ..
 	for _, v := range param {
 		p = append(p, reflect.ValueOf(v))
 	}
+	defer func() {
+		if err := recover(); err != nil {
+			log.Fatal("callHelper.Call err: method: %v %v", id, err)
+		}
+	}()
 	ret := cb.Call(p)
 
 	out := make([]interface{}, len(ret))

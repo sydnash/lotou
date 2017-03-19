@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -36,6 +37,10 @@ func init() {
 func UUID() uint64 {
 	u, _ := worker.NextId()
 	return uint64(u)
+}
+func UUIDString() string {
+	u, _ := worker.NextId()
+	return fmt.Sprintf("%v", uint64(u))
 }
 
 // NewIdWorker Func: Generate NewIdWorker with Given workerid

@@ -15,6 +15,7 @@ func TestUUID(t *testing.T) {
 	binary.LittleEndian.PutUint64(p, pp)
 
 	str := base64.StdEncoding.EncodeToString(p)
+	fmt.Println(string(str))
 
 	tt := md5.Sum([]byte(str))
 
