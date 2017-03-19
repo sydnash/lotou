@@ -38,8 +38,7 @@ func (g *Game) OnMainLoop(dt int) {
 	t := func(timeout bool, data ...interface{}) {
 		fmt.Println("request respond ", timeout, data)
 	}
-	g.Request(g.Dst, MSG_ENC_TYPE_GO, 10, t, func() {
-	}, "testRequest", "hello")
+	g.Request(g.Dst, MSG_ENC_TYPE_GO, 10, t, "testRequest", "hello")
 
 	fmt.Println(g.Call(g.Dst, MSG_ENC_TYPE_GO, "testCall", "hello"))
 }

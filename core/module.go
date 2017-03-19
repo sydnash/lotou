@@ -33,9 +33,9 @@ type Skeleton struct {
 	Id                ServiceID
 	Name              string
 	D                 int
-	normalDispatcher  *callHelper
-	requestDispatcher *callHelper
-	callDispatcher    *callHelper
+	normalDispatcher  *CallHelper
+	requestDispatcher *CallHelper
+	callDispatcher    *CallHelper
 }
 
 func NewSkeleton(d int) *Skeleton {
@@ -125,8 +125,8 @@ func (s *Skeleton) OnCallMSG(msg *Message) {
 	s.Ret(msg.Src, msg.EncType, msg.Id, ret...)
 }
 
-func (s *Skeleton) findCallerByType(infoType int32) *callHelper {
-	var caller *callHelper
+func (s *Skeleton) findCallerByType(infoType int32) *CallHelper {
+	var caller *CallHelper
 	switch infoType {
 	case MSG_TYPE_NORMAL:
 		caller = s.normalDispatcher

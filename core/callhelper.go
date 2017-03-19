@@ -6,10 +6,10 @@ import (
 	"reflect"
 )
 
-//callHelper help to call functions where the comein params is like interface{} or []interface{}
+//CallHelper help to call functions where the comein params is like interface{} or []interface{}
 //avoid to use type assert(a.(int))
 //it's not thread safe
-type callHelper struct {
+type CallHelper struct {
 	funcMap   map[string]reflect.Value
 	idFuncMap map[int]reflect.Value
 }
@@ -18,40 +18,40 @@ var (
 	FuncNotFound = errors.New("func not found.")
 )
 
-func NewCallHelper() *callHelper {
-	ret := &callHelper{}
+func NewCallHelper() *CallHelper {
+	ret := &CallHelper{}
 	ret.funcMap = make(map[string]reflect.Value)
 	ret.idFuncMap = make(map[int]reflect.Value)
 	return ret
 }
 
-func (c *callHelper) AddFunc(name string, fun interface{}) {
+func (c *CallHelper) AddFunc(name string, fun interface{}) {
 	f := reflect.ValueOf(fun)
 	PanicWhen(f.Kind() != reflect.Func, "fun must be a function type.")
 	c.funcMap[name] = f
 }
 
-func (c *callHelper) AddMethod(name string, v interface{}, methodName string) {
+func (c *CallHelper) AddMethod(name string, v interface{}, methodName string) {
 	self := reflect.ValueOf(v)
 	f := self.MethodByName(methodName)
 	PanicWhen(f.Kind() != reflect.Func, "method must be a function type.")
 	c.funcMap[name] = f
 }
 
-func (c *callHelper) AddFuncInt(id int, fun interface{}) {
+func (c *CallHelper) AddFuncInt(id int, fun interface{}) {
 	f := reflect.ValueOf(fun)
 	PanicWhen(f.Kind() != reflect.Func, "fun must be a function type.")
 	c.idFuncMap[id] = f
 }
 
-func (c *callHelper) AddMethodInt(id int, v interface{}, methodName string) {
+func (c *CallHelper) AddMethodInt(id int, v interface{}, methodName string) {
 	self := reflect.ValueOf(v)
 	f := self.MethodByName(methodName)
 	PanicWhen(f.Kind() != reflect.Func, "method must be a function type")
 	c.idFuncMap[id] = f
 }
 
-func (c *callHelper) Call(id interface{}, src ServiceID, encType int32, param ...interface{}) []interface{} {
+func (c *CallHelper) Call(id interface{}, src ServiceID, encType int32, param ...interface{}) []interface{} {
 	var cb reflect.Value
 	var ok bool
 	switch key := id.(type) {
@@ -72,7 +72,7 @@ func (c *callHelper) Call(id interface{}, src ServiceID, encType int32, param ..
 	}
 	defer func() {
 		if err := recover(); err != nil {
-			log.Fatal("callHelper.Call err: method: %v %v", id, err)
+			log.Fatal("CallHelper.Call err: method: %v %v", id, err)
 		}
 	}()
 	ret := cb.Call(p)
