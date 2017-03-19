@@ -31,6 +31,8 @@ func Start(f CloseFunc, data ...*ModuleParam) {
 			topology.StartSlave(conf.SlaveConnectIp, conf.MultiNodePort)
 		}
 		core.RegisterNode()
+	} else {
+		topology.StartMaster(conf.MasterListenIp, conf.MultiNodePort)
 	}
 
 	for _, m := range data {
