@@ -36,18 +36,19 @@ func (s *slave) OnSocketMSG(msg *core.Message) {
 
 		scmd := masterMSG.MethodId.(string)
 		array := masterMSG.Data
-		if scmd == "registerNodeRet" {
+		switch scmd {
+		case core.Cmd_RegisterNodeRet:
 			nodeId := array[0].(uint64)
 			core.DispatchRegisterNodeRet(nodeId)
-		} else if scmd == "distribute" {
+		case core.Cmd_Distribute:
 			core.DistributeMSG(s.Id, array[0].(string), array[1:]...)
-		} else if scmd == "getIdByNameRet" {
+		case core.Cmd_GetIdByNameRet:
 			id := array[0].(uint64)
 			ok := array[1].(bool)
 			name := array[2].(string)
 			rid := array[3].(uint)
 			core.DispatchGetIdByNameRet(core.ServiceID(id), ok, name, rid)
-		} else if scmd == "forward" {
+		case core.Cmd_Forward:
 			msg := array[0].(*core.Message)
 			s.forwardM(msg)
 		}

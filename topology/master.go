@@ -28,18 +28,21 @@ func (m *master) OnNormalMSG(msg *core.Message) {
 	//cmd such as (registerName, getIdByName, syncName, forward ...)
 	cmd := msg.MethodId.(string)
 	data := msg.Data
-	if cmd == "forward" {
+	switch cmd {
+	case core.Cmd_Forward:
 		msg := data[0].(*core.Message)
 		m.forwardM(msg, nil)
-	} else if cmd == "registerName" {
+	case core.Cmd_RegisterName:
 		id := data[0].(uint64)
 		name := data[1].(string)
 		m.onRegisterName(core.ServiceID(id), name)
-	} else if cmd == "getIdByName" {
+	case core.Cmd_GetIdByName:
 		name := data[0].(string)
 		rid := data[1].(uint)
 		id, ok := m.globalNameMap[name]
 		core.DispatchGetIdByNameRet(id, ok, name, rid)
+	default:
+		log.Info("Unknown command for master: %v", cmd)
 	}
 }
 
@@ -47,19 +50,19 @@ func (m *master) onRegisterNode(src core.ServiceID) {
 	//generate node id
 	nodeId := core.GenerateNodeId()
 	m.nodesMap[nodeId] = src
-	msg := core.NewMessage(0, 0, 0, 0, 0, "registerNodeRet", nodeId)
+	msg := core.NewMessage(0, 0, 0, 0, 0, core.Cmd_RegisterNodeRet, nodeId)
 	sendData := gob.Pack(msg)
 	m.RawSend(src, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
 }
 
 func (m *master) onRegisterName(serviceId core.ServiceID, serviceName string) {
 	m.globalNameMap[serviceName] = serviceId
-	m.distributeM("nameAdd", serviceName, serviceId)
+	m.distributeM(core.Cmd_NameAdd, serviceName, serviceId)
 }
 
 func (m *master) onGetIdByName(src core.ServiceID, name string, rId uint) {
 	id, ok := m.globalNameMap[name]
-	msg := core.NewMessage(0, 0, 0, 0, 0, "getIdByNameRet", id, ok, name, rId)
+	msg := core.NewMessage(0, 0, 0, 0, 0, core.Cmd_GetIdByNameRet, id, ok, name, rId)
 	sendData := gob.Pack(msg)
 	m.RawSend(src, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
 }
@@ -77,17 +80,19 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 		slaveMSG := sdata.([]interface{})[0].(*core.Message)
 		scmd := slaveMSG.MethodId.(string)
 		array := slaveMSG.Data
-		if scmd == "registerNode" {
+		switch scmd {
+		case core.Cmd_RegisterNode:
 			m.onRegisterNode(src)
-		} else if scmd == "registerName" {
+		case core.Cmd_RegisterName:
 			serviceId := array[0].(uint64)
 			serviceName := array[1].(string)
 			m.onRegisterName(core.ServiceID(serviceId), serviceName)
-		} else if scmd == "getIdByName" {
+		case core.Cmd_GetIdByName:
 			name := array[0].(string)
 			rId := array[1].(uint)
 			m.onGetIdByName(src, name, rId)
-		} else if scmd == "forward" { //find correct agent and send msg to that node.
+		case core.Cmd_Forward:
+			//find correct agent and send msg to that node.
 			forwardMsg := array[0].(*core.Message)
 			m.forwardM(forwardMsg, data[0].([]byte))
 		}
@@ -110,14 +115,14 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 				deletedNames = append(deletedNames, name)
 			}
 		}
-		m.distributeM("nameDeleted", deletedNames)
+		m.distributeM(core.Cmd_NameDeleted, deletedNames)
 	}
 }
 
 func (m *master) distributeM(methodId string, data ...interface{}) {
 	for _, agent := range m.nodesMap {
 		msg := &core.Message{}
-		msg.MethodId = "distribute"
+		msg.MethodId = core.Cmd_Distribute
 		msg.Data = append(msg.Data, methodId)
 		msg.Data = append(msg.Data, data...)
 		sendData := gob.Pack(msg)
@@ -141,8 +146,9 @@ func (m *master) forwardM(msg *core.Message, data []byte) {
 	}
 	//if has no encode data, encode it first.
 	if data == nil {
-		ret := &core.Message{}
-		ret.MethodId = "forward"
+		ret := &core.Message{
+			MethodId: core.Cmd_Forward,
+		}
 		ret.Data = append(ret.Data, msg)
 		data = gob.Pack(ret)
 	}

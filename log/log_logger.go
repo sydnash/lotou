@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type SimpleLoger struct {
+type SimpleLogger struct {
 	//file log
 	fileLevel  int
 	fileLogger *log.Logger
@@ -18,6 +18,7 @@ type SimpleLoger struct {
 	logLine    int
 	//shell log
 	shellLevel int
+	isColored  bool
 }
 
 const (
@@ -28,9 +29,27 @@ const (
 	COLOR_FATAL_LEVEL_DESC = "[\x1b[31mfatal\x1b[0m] "
 )
 
-var color_format = []string{COLOR_DEBUG_LEVEL_DESC, COLOR_INFO_LEVEL_DESC, COLOR_WARN_LEVEL_DESC, COLOR_ERROR_LEVEL_DESC, COLOR_FATAL_LEVEL_DESC}
+var color_format = []string{
+	COLOR_DEBUG_LEVEL_DESC,
+	COLOR_INFO_LEVEL_DESC,
+	COLOR_WARN_LEVEL_DESC,
+	COLOR_ERROR_LEVEL_DESC,
+	COLOR_FATAL_LEVEL_DESC,
+}
 
-func (self *SimpleLoger) DoPrintf(level int, levelDesc, format string, a ...interface{}) {
+var std_format = []string{
+	DEBUG_LEVEL_DESC,
+	INFO_LEVEL_DESC,
+	WARN_LEVEL_DESC,
+	ERROR_LEVEL_DESC,
+	FATAL_LEVEL_DESC,
+}
+
+func (self *SimpleLogger) SetColored(colored bool) {
+	self.isColored = colored
+}
+
+func (self *SimpleLogger) DoPrintf(level int, levelDesc, format string, a ...interface{}) {
 	nformat := levelDesc + format
 	if level >= self.fileLevel {
 		if self.logLine > self.maxLine {
@@ -48,23 +67,27 @@ func (self *SimpleLoger) DoPrintf(level int, levelDesc, format string, a ...inte
 		}
 	}
 	if level >= self.shellLevel {
-		nformat := color_format[level] + format
+		sel_fmt := color_format
+		if !self.isColored {
+			sel_fmt = std_format
+		}
+		nformat := sel_fmt[level] + format
 		log.Printf(nformat, a...)
 	}
 }
 
-func (self *SimpleLoger) setFileOutDir(path string) {
+func (self *SimpleLogger) setFileOutDir(path string) {
 	self.outputPath = path
 }
 
-func (self *SimpleLoger) setFileLogLevel(level int) {
+func (self *SimpleLogger) setFileLogLevel(level int) {
 	self.fileLevel = level
 }
-func (self *SimpleLoger) setShellLogLevel(level int) {
+func (self *SimpleLogger) setShellLogLevel(level int) {
 	self.shellLevel = level
 }
 
-func (self *SimpleLoger) createLogFile(dir string) (*os.File, error) {
+func (self *SimpleLogger) createLogFile(dir string) (*os.File, error) {
 	now := time.Now()
 	filename := fmt.Sprintf("_%d-%02d-%02d_%02d-%02d-%02d.log",
 		now.Year(),
@@ -84,8 +107,8 @@ func (self *SimpleLoger) createLogFile(dir string) (*os.File, error) {
 	return file, nil
 }
 
-func CreateLogger(path string, fileLevel, shellLevel, maxLine, bufSize int) *SimpleLoger {
-	logger := &SimpleLoger{}
+func CreateLogger(path string, fileLevel, shellLevel, maxLine, bufSize int) *SimpleLogger {
+	logger := &SimpleLogger{}
 	logger.setFileOutDir(path)
 	logger.setFileLogLevel(fileLevel)
 	logger.setShellLogLevel(shellLevel)
