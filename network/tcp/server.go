@@ -19,7 +19,7 @@ type Server struct {
 	listener *net.TCPListener
 }
 
-var (
+const (
 	TCPServerClosed = "TCPServerClosed"
 )
 
