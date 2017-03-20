@@ -210,7 +210,6 @@ func (s *service) request(dst ServiceID, encType int32, timeout int, respondCb i
 			_, ok := s.requestMap[id]
 			s.requestMutex.Unlock()
 			if ok {
-				log.Info("send time out info=======")
 				lowLevelSend(INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, MSG_ENC_TYPE_NO, id, 0)
 			}
 		})
