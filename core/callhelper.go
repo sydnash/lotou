@@ -60,7 +60,7 @@ func (c *CallHelper) Call(id interface{}, src ServiceID, param ...interface{}) [
 	case string:
 		cb, ok = c.funcMap[key]
 	default:
-		log.Fatal("methodid: %v is not register", id)
+		log.Fatal("methodid: %v is not registered; %v", id)
 	}
 	if !ok {
 		log.Fatal("func: %v is not found", id)

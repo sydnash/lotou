@@ -7,6 +7,7 @@ import (
 	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/timer"
 	"reflect"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -114,41 +115,65 @@ func (s *service) dispatchMSG(msg *Message) bool {
 	return false
 }
 
+func (s *service) loopSelect() (ret bool) {
+	ret = true
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error("recover: stack: %v\n, %v", string(debug.Stack()), err)
+		}
+	}()
+	select {
+	case msg, ok := <-s.msgChan:
+		if !ok {
+			return false
+		}
+		isClose := s.dispatchMSG(msg)
+		if isClose {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *service) loop() {
 	s.m.OnInit()
-EXIT:
 	for {
-		select {
-		case msg, ok := <-s.msgChan:
-			if !ok {
-				break EXIT
-			}
-			isClose := s.dispatchMSG(msg)
-			if isClose {
-				break EXIT
-			}
+		if !s.loopSelect() {
+			break
 		}
 	}
 	s.m.OnDestroy()
 	s.destroy()
 }
 
+func (s *service) loopWithLoopSelect() (ret bool) {
+	ret = true
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error("recover: stack: %v\n, %v", string(debug.Stack()), err)
+		}
+	}()
+	select {
+	case msg, ok := <-s.msgChan:
+		if !ok {
+			return false
+		}
+		isClose := s.dispatchMSG(msg)
+		if isClose {
+			return false
+		}
+	case <-s.loopTicker.C:
+		s.ts.Update(s.loopDuration)
+		s.m.OnMainLoop(s.loopDuration)
+	}
+	return true
+}
+
 func (s *service) loopWithLoop() {
 	s.m.OnInit()
-EXIT:
 	for {
-		select {
-		case msg, ok := <-s.msgChan:
-			if !ok {
-				break EXIT
-			}
-			isClose := s.dispatchMSG(msg)
-			if isClose {
-				break EXIT
-			}
-		case <-s.loopTicker.C:
-			s.ts.Update(s.loopDuration)
-			s.m.OnMainLoop(s.loopDuration)
+		if !s.loopWithLoopSelect() {
+			break
 		}
 	}
 	s.loopTicker.Stop()

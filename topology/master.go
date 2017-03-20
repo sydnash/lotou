@@ -1,6 +1,7 @@
 package topology
 
 import (
+	"github.com/sydnash/lotou/conf"
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/encoding/gob"
 	"github.com/sydnash/lotou/log"
@@ -20,8 +21,10 @@ func StartMaster(ip, port string) {
 	m.globalNameMap = make(map[string]core.ServiceID)
 	core.StartService(".router", m)
 
-	m.tcpServer = tcp.NewServer(ip, port, m.Id)
-	m.tcpServer.Listen()
+	if !conf.CoreIsStandalone {
+		m.tcpServer = tcp.NewServer(ip, port, m.Id)
+		m.tcpServer.Listen()
+	}
 }
 
 func (m *master) OnNormalMSG(msg *core.Message) {
