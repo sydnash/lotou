@@ -68,7 +68,7 @@ func lowLevelSend(src, dst ServiceID, msgType, encType int32, id uint64, methodI
 	msg = NewMessage(src, dst, msgType, encType, id, methodId, data...)
 	if err != nil {
 		//doesn't find service and dstid is remote id, send a forward msg to master.
-		route("forward", msg)
+		route(Cmd_Forward, msg)
 		return nil
 	}
 	dsts.pushMSG(msg)

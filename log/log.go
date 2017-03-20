@@ -33,6 +33,7 @@ type Msg struct {
 
 type Logger interface {
 	DoPrintf(level int, levelDesc, format string, a ...interface{})
+	SetColored(colored bool)
 }
 
 var glogger Logger
