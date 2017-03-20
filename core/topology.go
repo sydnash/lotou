@@ -43,7 +43,7 @@ func InitNode(_isStandalone, _isMaster bool) {
 func RegisterNode() {
 	once.Do(func() {
 		if !isStandalone && !isMaster {
-			route("registerNode")
+			route(Cmd_RegisterNode)
 			h.nodeId = <-registerNodeChan
 		}
 	})
@@ -56,7 +56,7 @@ func DispatchRegisterNodeRet(id uint64) {
 //globalName regist name to master
 //it will notify all exist service through distribute msg.
 func globalName(id ServiceID, name string) {
-	route("registerName", uint64(id), name)
+	route(Cmd_RegisterName, uint64(id), name)
 }
 
 //route send msg to master
@@ -88,7 +88,7 @@ func NameToId(name string) (ServiceID, error) {
 		nameChanMap[tmp] = ch
 		nameMapMutex.Unlock()
 
-		route("getIdByName", name, tmp)
+		route(Cmd_GetIdByName, name, tmp)
 		ret := <-ch
 		close(ch)
 		if !ret.ok {
