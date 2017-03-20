@@ -17,3 +17,18 @@ var (
 	MultiNodePort    string = "4000"          //master listen port
 	CallTimeOut      int    = 10000           //global timeout for Call fucntion
 )
+
+func SetMasterMode() {
+	CoreIsMaster = true
+	CoreIsStandalone = false
+}
+
+func SetStandaloneMode() {
+	CoreIsMaster = false
+	CoreIsStandalone = true
+}
+
+func SetSlaveMode() {
+	CoreIsMaster = false
+	CoreIsStandalone = false
+}

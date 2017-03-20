@@ -1,6 +1,8 @@
 package core
 
 import (
+	"github.com/sydnash/lotou/log"
+	"github.com/sydnash/lotou/vector"
 	"sync"
 )
 
@@ -10,6 +12,10 @@ type nameRet struct {
 	name string
 }
 
+const (
+	StartingNodeID = 10
+)
+
 var (
 	once                   sync.Once
 	isStandalone, isMaster bool
@@ -18,6 +24,7 @@ var (
 	nameMapMutex           sync.Mutex
 	nameRequestId          uint
 	beginNodeId            uint64
+	validNodeIdVec         *vector.Vector
 )
 
 func init() {
@@ -28,7 +35,8 @@ func init() {
 
 	isStandalone = true
 
-	beginNodeId = 10
+	beginNodeId = StartingNodeID
+	validNodeIdVec = vector.New()
 }
 
 func InitNode(_isStandalone, _isMaster bool) {
@@ -45,6 +53,7 @@ func RegisterNode() {
 		if !isStandalone && !isMaster {
 			route(Cmd_RegisterNode)
 			h.nodeId = <-registerNodeChan
+			log.Info("SlaveNode register:%v", h.nodeId)
 		}
 	})
 }
@@ -108,7 +117,19 @@ func DispatchGetIdByNameRet(id ServiceID, ok bool, name string, rid uint) {
 }
 
 func GenerateNodeId() uint64 {
-	ret := beginNodeId
-	beginNodeId++
+	var ret uint64
+	if validNodeIdVec.Empty() {
+		ret = beginNodeId
+		beginNodeId++
+	} else {
+		ret = validNodeIdVec.Pop().(uint64)
+	}
 	return ret
+}
+
+func CollectNodeId(recycledNodeID uint64) {
+	if recycledNodeID >= StartingNodeID {
+		log.Info("Recycled of NodeID<%v>", recycledNodeID)
+		validNodeIdVec.Push(recycledNodeID)
+	}
 }

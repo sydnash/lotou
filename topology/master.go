@@ -109,6 +109,7 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 			}
 		}
 		delete(m.nodesMap, nodeId)
+		core.CollectNodeId(nodeId)
 
 		//notify other services delete name's id on agent which is disconnected.
 		deletedNames := []string{}
