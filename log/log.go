@@ -80,9 +80,10 @@ func Fatal(format string, param ...interface{}) {
 }
 
 //init log with SimpleLogger
-func Init(path string, fileLevel, shellLevel, maxLine, bufSize int) {
+func Init(path string, fileLevel, shellLevel, maxLine, bufSize int) Logger {
 	logger := CreateLogger(path, fileLevel, shellLevel, maxLine, bufSize)
 	SetLogger(logger)
+	return logger
 }
 
 //init log with default logger

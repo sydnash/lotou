@@ -20,8 +20,8 @@ type ModuleParam struct {
 type CloseFunc func()
 
 func Start(f CloseFunc, data ...*ModuleParam) {
-	log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
-
+	logger := log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
+	logger.SetColored(conf.LogHasColor)
 	core.InitNode(conf.CoreIsStandalone, conf.CoreIsMaster)
 
 	if !conf.CoreIsStandalone {
