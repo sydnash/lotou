@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+const (
+	CLIENT_STATUS_NOT_CONNECT = iota
+	CLIENT_STATUS_CONNECTING
+	CLIENT_STATUS_CONNECTED
+)
+
 type Client struct {
 	*core.Skeleton
 	Con             *net.TCPConn
@@ -21,23 +27,6 @@ type Client struct {
 	bufferForOutMsg *bytes.Buffer
 	isNeedExit      bool
 }
-
-const (
-	CLIENT_STATUS_NOT_CONNECT = iota
-	CLIENT_STATUS_CONNECTING
-	CLIENT_STATUS_CONNECTED
-)
-
-const (
-	CLIENT_CONNECT_FAILED = iota + 1
-	CLIENT_CONNECTED
-	CLIENT_DISCONNECTED
-	CLIENT_DATA
-)
-const (
-	CLIENT_CMD_CONNECT = iota + 1
-	CLIENT_CMD_SEND
-)
 
 func NewClient(host, port string, dest core.ServiceID) *Client {
 	c := &Client{Skeleton: core.NewSkeleton(0), Dest: dest}

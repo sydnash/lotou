@@ -32,15 +32,6 @@ type Agent struct {
 	outbuffer            *bufio.Writer
 }
 
-const (
-	AGENT_CLOSED = iota + 1
-	AGENT_DATA
-	AGENT_ARRIVE
-)
-const (
-	AGENT_CMD_SEND = iota + 1
-)
-
 const AgentNoDataHoldtime = 5000
 
 func (a *Agent) OnInit() {
