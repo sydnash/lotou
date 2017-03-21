@@ -5,11 +5,13 @@ import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/topology"
+	"math/rand"
 	_ "net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 type ModuleParam struct {
@@ -20,6 +22,7 @@ type ModuleParam struct {
 type CloseFunc func()
 
 func Start(f CloseFunc, data ...*ModuleParam) {
+	rand.Seed(time.Now().UnixNano())
 	logger := log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
 	logger.SetColored(conf.LogHasColor)
 	core.InitNode(conf.CoreIsStandalone, conf.CoreIsMaster)
