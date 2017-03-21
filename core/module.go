@@ -125,9 +125,9 @@ func (s *Skeleton) OnCallMSG(msg *Message) {
 	s.Ret(msg.Src, msg.EncType, msg.Id, ret...)
 }
 
-func (s *Skeleton) findCallerByType(infoType int32) *CallHelper {
+func (s *Skeleton) findCallerByType(msgType int32) *CallHelper {
 	var caller *CallHelper
-	switch infoType {
+	switch msgType {
 	case MSG_TYPE_NORMAL:
 		caller = s.normalDispatcher
 	case MSG_TYPE_REQUEST:
@@ -135,14 +135,14 @@ func (s *Skeleton) findCallerByType(infoType int32) *CallHelper {
 	case MSG_TYPE_CALL:
 		caller = s.callDispatcher
 	default:
-		panic("not support infoType")
+		panic("not support msgType")
 	}
 	return caller
 }
 
 //function's first parameter must ServiceID
-func (s *Skeleton) SubscribeFunc(infoType int32, id interface{}, fun interface{}) {
-	caller := s.findCallerByType(infoType)
+func (s *Skeleton) SubscribeFunc(msgType int32, id interface{}, fun interface{}) {
+	caller := s.findCallerByType(msgType)
 	switch key := id.(type) {
 	case int:
 		caller.AddFuncInt(key, fun)
@@ -152,8 +152,8 @@ func (s *Skeleton) SubscribeFunc(infoType int32, id interface{}, fun interface{}
 }
 
 //method's first parameter must ServiceID
-func (s *Skeleton) SubscribeMethod(infoType int32, id interface{}, v interface{}, methodName string) {
-	caller := s.findCallerByType(infoType)
+func (s *Skeleton) SubscribeMethod(msgType int32, id interface{}, v interface{}, methodName string) {
+	caller := s.findCallerByType(msgType)
 	switch key := id.(type) {
 	case int:
 		caller.AddMethodInt(key, v, methodName)
