@@ -25,7 +25,7 @@ import (
 type Agent struct {
 	*core.Skeleton
 	Con                  *net.TCPConn
-	Dest                 core.ServiceID
+	HostServiceId        core.ServiceID
 	hasDataArrived       bool
 	leftTimeBeforArrived int
 	inbuffer             *bufio.Reader
@@ -50,13 +50,13 @@ func (a *Agent) OnInit() {
 			if !a.hasDataArrived {
 				a.hasDataArrived = true
 			}
-			a.RawSend(a.Dest, core.MSG_TYPE_SOCKET, AGENT_DATA, pack)
+			a.RawSend(a.HostServiceId, core.MSG_TYPE_SOCKET, AGENT_DATA, pack)
 		}
 	}()
 }
 
 func NewAgent(con *net.TCPConn, dest core.ServiceID) *Agent {
-	a := &Agent{Con: con, Dest: dest, Skeleton: core.NewSkeleton(10)}
+	a := &Agent{Con: con, HostServiceId: dest, Skeleton: core.NewSkeleton(10)}
 	return a
 }
 
@@ -92,7 +92,7 @@ func (a *Agent) OnDestroy() {
 }
 
 func (self *Agent) onConnectError() {
-	self.RawSend(self.Dest, core.MSG_TYPE_SOCKET, AGENT_CLOSED)
+	self.RawSend(self.HostServiceId, core.MSG_TYPE_SOCKET, AGENT_CLOSED)
 	self.SendClose(self.Id, false)
 }
 func (self *Agent) close() {

@@ -33,7 +33,6 @@ func (s *slave) OnSocketMSG(msg *core.Message) {
 	if cmd == tcp.CLIENT_DATA {
 		sdata := gob.Unpack(data[0].([]byte))
 		masterMSG := sdata.([]interface{})[0].(*core.Message)
-
 		scmd := masterMSG.MethodId.(string)
 		array := masterMSG.Data
 		switch scmd {
