@@ -20,7 +20,7 @@ type Client struct {
 	*core.Skeleton
 	Con             *net.TCPConn
 	RemoteAddress   *net.TCPAddr
-	Dest            core.ServiceID
+	hostService     core.ServiceID
 	inbuffer        *bufio.Reader
 	outbuffer       *bufio.Writer
 	status          int32
@@ -28,8 +28,11 @@ type Client struct {
 	isNeedExit      bool
 }
 
-func NewClient(host, port string, dest core.ServiceID) *Client {
-	c := &Client{Skeleton: core.NewSkeleton(0), Dest: dest}
+func NewClient(host, port string, hostID core.ServiceID) *Client {
+	c := &Client{
+		Skeleton:    core.NewSkeleton(0),
+		hostService: hostID,
+	}
 	address := net.JoinHostPort(host, port)
 	tcpAddress, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
@@ -142,7 +145,7 @@ func (c *Client) connect(n int) {
 		}
 	}
 	if c.Con == nil {
-		c.RawSend(c.Dest, core.MSG_TYPE_SOCKET, CLIENT_CONNECT_FAILED) //connect failed
+		c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_CONNECT_FAILED) //connect failed
 	} else {
 		if c.inbuffer == nil && c.outbuffer == nil {
 			c.inbuffer = bufio.NewReader(c.Con)
@@ -151,7 +154,7 @@ func (c *Client) connect(n int) {
 			c.inbuffer.Reset(c.Con)
 			c.outbuffer.Reset(c.Con)
 		}
-		c.RawSend(c.Dest, core.MSG_TYPE_SOCKET, CLIENT_CONNECTED) //connect success
+		c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_CONNECTED) //connect success
 		c.sendBufferOutMsgAndData(nil)
 		go func() {
 			for {
@@ -162,18 +165,23 @@ func (c *Client) connect(n int) {
 					c.onConError()
 					break
 				}
-				c.RawSend(c.Dest, core.MSG_TYPE_SOCKET, CLIENT_DATA, pack) //recv message
+				c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_DATA, pack) //recv message
 			}
 		}()
 	}
 	atomic.StoreInt32(&c.status, CLIENT_STATUS_CONNECTED)
 }
+
 func (c *Client) onConError() {
-	c.RawSend(c.Dest, core.MSG_TYPE_SOCKET, CLIENT_DISCONNECTED) //disconnected
+	c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_DISCONNECTED) //disconnected
 	c.OnDestroy()
 	if c.Con != nil {
 		c.Con.Close()
 	}
 	c.Con = nil
 	atomic.StoreInt32(&c.status, CLIENT_STATUS_NOT_CONNECT)
+}
+
+func (c *Client) sendToHost(msgType int32, methodId interface{}, data ...interface{}) {
+	c.RawSend(c.hostService, msgType, methodId, data...)
 }
