@@ -22,7 +22,7 @@ type CallHelper struct {
 	idFuncMap map[int]*callbackDesc
 }
 
-type ReplayFunc func(data ...interface{})
+type ReplyFunc func(data ...interface{})
 
 var (
 	FuncNotFound = errors.New("func not found.")
@@ -66,7 +66,7 @@ func (c *CallHelper) setIsAutoReply(id interface{}, isAutoReply bool) {
 	cb.isAutoReply = isAutoReply
 	if !isAutoReply {
 		t := reflect.New(cb.cb.Type().In(ReplyFuncPosition))
-		log.Debug("%v", t.Elem().Interface().(ReplayFunc))
+		log.Debug("%v", t.Elem().Interface().(ReplyFunc))
 	}
 }
 
@@ -112,7 +112,7 @@ func (c *CallHelper) Call(id interface{}, src ServiceID, param ...interface{}) [
 	return out
 }
 
-func (c *CallHelper) CallWithReplyFunc(id interface{}, src ServiceID, replyFunc ReplayFunc, param ...interface{}) {
+func (c *CallHelper) CallWithReplyFunc(id interface{}, src ServiceID, replyFunc ReplyFunc, param ...interface{}) {
 	cb := c.findCallbackDesk(id)
 	p := []reflect.Value{}
 	p = append(p, reflect.ValueOf(src)) //append src service id
