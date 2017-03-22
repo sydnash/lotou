@@ -156,7 +156,7 @@ func (s *Skeleton) findCallerByType(msgType int32) *CallHelper {
 
 //function's first parameter must ServiceID
 //isAutoReply: is auto reply when msgType is request or call.
-func (s *Skeleton) SubscribeFunc(msgType int32, id interface{}, fun interface{}, isAutoReply bool) {
+func (s *Skeleton) RegisterHandlerFunc(msgType int32, id interface{}, fun interface{}, isAutoReply bool) {
 	caller := s.findCallerByType(msgType)
 	switch key := id.(type) {
 	case int:
@@ -169,7 +169,7 @@ func (s *Skeleton) SubscribeFunc(msgType int32, id interface{}, fun interface{},
 
 //method's first parameter must ServiceID
 //isAutoReply: is auto reply when msgType is request or call.
-func (s *Skeleton) SubscribeMethod(msgType int32, id interface{}, v interface{}, methodName string, isAutoReply bool) {
+func (s *Skeleton) RegisterHandlerMethod(msgType int32, id interface{}, v interface{}, methodName string, isAutoReply bool) {
 	caller := s.findCallerByType(msgType)
 	switch key := id.(type) {
 	case int:

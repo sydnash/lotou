@@ -45,13 +45,13 @@ func (g *Game) OnMainLoop(dt int) {
 
 func (g *Game) OnInit() {
 	//test for go and no enc
-	g.SubscribeFunc(MSG_TYPE_NORMAL, "testNormal", func(src ServiceID, data ...interface{}) {
+	g.RegisterHandlerFunc(MSG_TYPE_NORMAL, "testNormal", func(src ServiceID, data ...interface{}) {
 		log.Info("%v, %v", src, data)
 	}, true)
-	g.SubscribeFunc(MSG_TYPE_REQUEST, "testRequest", func(src ServiceID, data ...interface{}) string {
+	g.RegisterHandlerFunc(MSG_TYPE_REQUEST, "testRequest", func(src ServiceID, data ...interface{}) string {
 		return "world"
 	}, true)
-	g.SubscribeFunc(MSG_TYPE_CALL, "testCall", func(src ServiceID, data ...interface{}) (string, string) {
+	g.RegisterHandlerFunc(MSG_TYPE_CALL, "testCall", func(src ServiceID, data ...interface{}) (string, string) {
 		return "hello", "world"
 	}, true)
 }

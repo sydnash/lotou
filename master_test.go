@@ -37,13 +37,13 @@ func (g *Game) OnInit() {
 			log.Info("time schedule.")
 		})
 	}
-	g.SubscribeFunc(core.MSG_TYPE_NORMAL, "testNormal", func(src core.ServiceID, data ...interface{}) {
+	g.RegisterHandlerFunc(core.MSG_TYPE_NORMAL, "testNormal", func(src core.ServiceID, data ...interface{}) {
 		log.Info("%v, %v", src, data)
 	}, true)
-	g.SubscribeFunc(core.MSG_TYPE_REQUEST, "testRequest", func(src core.ServiceID, data ...interface{}) string {
+	g.RegisterHandlerFunc(core.MSG_TYPE_REQUEST, "testRequest", func(src core.ServiceID, data ...interface{}) string {
 		return "world"
 	}, true)
-	g.SubscribeFunc(core.MSG_TYPE_CALL, "testCall", func(src core.ServiceID, data ...interface{}) (string, string) {
+	g.RegisterHandlerFunc(core.MSG_TYPE_CALL, "testCall", func(src core.ServiceID, data ...interface{}) (string, string) {
 		return "hello", "world"
 	}, true)
 }
