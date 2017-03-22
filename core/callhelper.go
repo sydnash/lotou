@@ -62,7 +62,7 @@ func (c *CallHelper) AddMethodInt(id int, v interface{}, methodName string) {
 }
 
 func (c *CallHelper) setIsAutoReply(id interface{}, isAutoReply bool) {
-	cb := c.findCallbackDesk(id)
+	cb := c.findCallbackDesc(id)
 	cb.isAutoReply = isAutoReply
 	if !isAutoReply {
 		t := reflect.New(cb.cb.Type().In(ReplyFuncPosition))
@@ -71,10 +71,10 @@ func (c *CallHelper) setIsAutoReply(id interface{}, isAutoReply bool) {
 }
 
 func (c *CallHelper) getIsAutoReply(id interface{}) bool {
-	return c.findCallbackDesk(id).isAutoReply
+	return c.findCallbackDesc(id).isAutoReply
 }
 
-func (c *CallHelper) findCallbackDesk(id interface{}) *callbackDesc {
+func (c *CallHelper) findCallbackDesc(id interface{}) *callbackDesc {
 	var cb *callbackDesc
 	var ok bool
 	switch key := id.(type) {
@@ -92,7 +92,7 @@ func (c *CallHelper) findCallbackDesk(id interface{}) *callbackDesc {
 }
 
 func (c *CallHelper) Call(id interface{}, src ServiceID, param ...interface{}) []interface{} {
-	cb := c.findCallbackDesk(id)
+	cb := c.findCallbackDesc(id)
 	p := []reflect.Value{}
 	p = append(p, reflect.ValueOf(src)) //append src service id
 	for _, v := range param {
@@ -113,7 +113,7 @@ func (c *CallHelper) Call(id interface{}, src ServiceID, param ...interface{}) [
 }
 
 func (c *CallHelper) CallWithReplyFunc(id interface{}, src ServiceID, replyFunc ReplyFunc, param ...interface{}) {
-	cb := c.findCallbackDesk(id)
+	cb := c.findCallbackDesc(id)
 	p := []reflect.Value{}
 	p = append(p, reflect.ValueOf(src)) //append src service id
 	p = append(p, reflect.ValueOf(replyFunc))
