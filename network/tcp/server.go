@@ -13,19 +13,22 @@ import (
 )
 
 type Server struct {
-	Host     string
-	Port     string
-	Dest     core.ServiceID
-	listener *net.TCPListener
+	Host        string
+	Port        string
+	hostService core.ServiceID
+	listener    *net.TCPListener
 }
 
-var (
+const (
 	TCPServerClosed = "TCPServerClosed"
 )
 
-func NewServer(host, port string, dest core.ServiceID) *Server {
-	s := &Server{Host: host, Port: port}
-	s.Dest = dest
+func NewServer(host, port string, hsID core.ServiceID) *Server {
+	s := &Server{
+		Host:        host,
+		Port:        port,
+		hostService: hsID,
+	}
 	return s
 }
 
@@ -61,10 +64,10 @@ func (self *Server) Listen() error {
 					continue
 				}
 				log.Error("tcp server: accept err %s, server closed.", err)
-				core.Send(self.Dest, core.MSG_TYPE_NORMAL, core.MSG_ENC_TYPE_NO, TCPServerClosed)
+				core.Send(self.hostService, core.MSG_TYPE_NORMAL, core.MSG_ENC_TYPE_NO, TCPServerClosed)
 				break
 			}
-			a := NewAgent(tcpCon, self.Dest)
+			a := NewAgent(tcpCon, self.hostService)
 			core.StartService("", a)
 		}
 	}()

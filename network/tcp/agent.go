@@ -25,7 +25,7 @@ import (
 type Agent struct {
 	*core.Skeleton
 	Con                  *net.TCPConn
-	HostServiceId        core.ServiceID
+	hostService          core.ServiceID
 	hasDataArrived       bool
 	leftTimeBeforArrived int
 	inbuffer             *bufio.Reader
@@ -50,13 +50,17 @@ func (a *Agent) OnInit() {
 			if !a.hasDataArrived {
 				a.hasDataArrived = true
 			}
-			a.RawSend(a.HostServiceId, core.MSG_TYPE_SOCKET, AGENT_DATA, pack)
+			a.sendToHost(core.MSG_TYPE_SOCKET, AGENT_DATA, pack)
 		}
 	}()
 }
 
-func NewAgent(con *net.TCPConn, dest core.ServiceID) *Agent {
-	a := &Agent{Con: con, HostServiceId: dest, Skeleton: core.NewSkeleton(10)}
+func NewAgent(con *net.TCPConn, hostID core.ServiceID) *Agent {
+	a := &Agent{
+		Con:         con,
+		hostService: hostID,
+		Skeleton:    core.NewSkeleton(10),
+	}
 	return a
 }
 
@@ -64,7 +68,7 @@ func (a *Agent) OnMainLoop(dt int) {
 	if !a.hasDataArrived {
 		a.leftTimeBeforArrived -= dt
 		if a.leftTimeBeforArrived < 0 {
-			log.Error("agent has no data comming in after %v ms", AgentNoDataHoldtime)
+			log.Error("agent hasn't got any data for %v ms", AgentNoDataHoldtime)
 			a.SendClose(a.Id, false)
 		}
 	}
@@ -91,11 +95,16 @@ func (a *Agent) OnDestroy() {
 	a.close()
 }
 
-func (self *Agent) onConnectError() {
-	self.RawSend(self.HostServiceId, core.MSG_TYPE_SOCKET, AGENT_CLOSED)
-	self.SendClose(self.Id, false)
+func (a *Agent) onConnectError() {
+	a.sendToHost(core.MSG_TYPE_SOCKET, AGENT_CLOSED)
+	a.SendClose(a.Id, false)
 }
-func (self *Agent) close() {
-	log.Info("close agent. %v", self.Con.RemoteAddr())
-	self.Con.Close()
+
+func (a *Agent) close() {
+	log.Info("close agent. %v", a.Con.RemoteAddr())
+	a.Con.Close()
+}
+
+func (a *Agent) sendToHost(msgType int32, methodId interface{}, data ...interface{}) {
+	a.RawSend(a.hostService, msgType, methodId, data...)
 }
