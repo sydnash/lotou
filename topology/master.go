@@ -112,14 +112,15 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 		core.CollectNodeId(nodeId)
 
 		//notify other services delete name's id on agent which is disconnected.
-		deletedNames := []string{}
+		type tmp []interface{}
+		deletedNames := []interface{}{}
 		for name, id := range m.globalNameMap {
 			nid := core.ParseNodeId(id)
 			if nid == nodeId {
-				deletedNames = append(deletedNames, name)
+				deletedNames = append(deletedNames, tmp{name, id})
 			}
 		}
-		m.distributeM(core.Cmd_NameDeleted, deletedNames)
+		m.distributeM(core.Cmd_NameDeleted, deletedNames...)
 	}
 }
 

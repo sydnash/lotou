@@ -106,6 +106,18 @@ func (v *Vector) Reverse() {
 	}
 }
 
+func (v *Vector) Front() (r interface{}) {
+	r = v.s[0]
+	return r
+}
+
+//Back return last element in vector
+//it panics if vector is empty
+func (v *Vector) Back() (r interface{}) {
+	r = v.s[len(v.s)-1]
+	return r
+}
+
 func (v *Vector) Clear() {
 	for i, _ := range v.s {
 		v.s[i] = nil
