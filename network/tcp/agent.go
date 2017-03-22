@@ -105,6 +105,6 @@ func (a *Agent) close() {
 	a.Con.Close()
 }
 
-func (a *Agent) sendToHost(msgType int32, methodId interface{}, data ...interface{}) {
+func (a *Agent) sendToHost(msgType core.MsgType, methodId interface{}, data ...interface{}) {
 	a.RawSend(a.hostService, msgType, methodId, data...)
 }

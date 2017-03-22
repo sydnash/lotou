@@ -182,6 +182,6 @@ func (c *Client) onConError() {
 	atomic.StoreInt32(&c.status, CLIENT_STATUS_NOT_CONNECT)
 }
 
-func (c *Client) sendToHost(msgType int32, methodId interface{}, data ...interface{}) {
+func (c *Client) sendToHost(msgType core.MsgType, methodId interface{}, data ...interface{}) {
 	c.RawSend(c.hostService, msgType, methodId, data...)
 }
