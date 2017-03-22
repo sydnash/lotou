@@ -61,7 +61,7 @@ func (c *CallHelper) setIsAutoReply(id interface{}, isAutoReply bool) {
 	cb := c.findCallbackDesk(id)
 	cb.isAutoReply = isAutoReply
 	if !isAutoReply {
-		t := reflect.New(cb.cb.Type().In(2))
+		t := reflect.New(cb.cb.Type().In(1))
 		log.Debug("%v", t.Elem().Interface().(ReplayFunc))
 	}
 }
