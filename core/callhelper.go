@@ -9,6 +9,10 @@ import (
 //CallHelper help to call functions where the comein params is like interface{} or []interface{}
 //avoid to use type assert(a.(int))
 //it's not thread safe
+const (
+	ReplyFuncPosition = 1
+)
+
 type callbackDesc struct {
 	cb          reflect.Value
 	isAutoReply bool
@@ -61,7 +65,7 @@ func (c *CallHelper) setIsAutoReply(id interface{}, isAutoReply bool) {
 	cb := c.findCallbackDesk(id)
 	cb.isAutoReply = isAutoReply
 	if !isAutoReply {
-		t := reflect.New(cb.cb.Type().In(1))
+		t := reflect.New(cb.cb.Type().In(ReplyFuncPosition))
 		log.Debug("%v", t.Elem().Interface().(ReplayFunc))
 	}
 }
