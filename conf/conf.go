@@ -11,7 +11,7 @@ var (
 	LogMaxLine       int    = 10000           //log's max line per file
 	LogBufferSize    int    = 1000            //
 	LogHasColor      bool   = true
-	CoreIsStandalone bool   = true        //set system is a standalone or multinode
+	CoreIsStandalone bool   = false       //set system is a standalone or multinode
 	CoreIsMaster     bool   = true        //set node is master
 	MasterListenIp   string = "127.0.0.1" //master listen ip
 	SlaveConnectIp   string = "127.0.0.1" //master ip

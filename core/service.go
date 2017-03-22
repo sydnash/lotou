@@ -20,6 +20,9 @@ func (id ServiceID) parseNodeId() uint64 {
 func (id ServiceID) parseBaseId() uint64 {
 	return uint64(id) & (^uint64(NODE_ID_MASK))
 }
+func (id ServiceID) IsValid() bool {
+	return !(id == INVALID_SERVICE_ID || id == 0)
+}
 
 type requestCB struct {
 	respond reflect.Value

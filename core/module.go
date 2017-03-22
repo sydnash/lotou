@@ -117,12 +117,26 @@ func (s *Skeleton) OnInit() {
 func (s *Skeleton) OnSocketMSG(msg *Message) {
 }
 func (s *Skeleton) OnRequestMSG(msg *Message) {
-	ret := s.requestDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
-	s.Respond(msg.Src, msg.EncType, msg.Id, ret...)
+	isAutoReply := s.requestDispatcher.getIsAutoReply(msg.MethodId)
+	if isAutoReply {
+		ret := s.requestDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
+		s.Respond(msg.Src, msg.EncType, msg.Id, ret...)
+	} else {
+		s.requestDispatcher.CallWithReplyFunc(msg.MethodId, msg.Src, func(ret ...interface{}) {
+			s.Respond(msg.Src, msg.EncType, msg.Id, ret...)
+		}, msg.Data...)
+	}
 }
 func (s *Skeleton) OnCallMSG(msg *Message) {
-	ret := s.callDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
-	s.Ret(msg.Src, msg.EncType, msg.Id, ret...)
+	isAutoReply := s.callDispatcher.getIsAutoReply(msg.MethodId)
+	if isAutoReply {
+		ret := s.callDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
+		s.Ret(msg.Src, msg.EncType, msg.Id, ret...)
+	} else {
+		s.callDispatcher.CallWithReplyFunc(msg.MethodId, msg.Src, func(ret ...interface{}) {
+			s.Ret(msg.Src, msg.EncType, msg.Id, ret...)
+		}, msg.Data...)
+	}
 }
 
 func (s *Skeleton) findCallerByType(msgType int32) *CallHelper {
@@ -141,7 +155,8 @@ func (s *Skeleton) findCallerByType(msgType int32) *CallHelper {
 }
 
 //function's first parameter must ServiceID
-func (s *Skeleton) SubscribeFunc(msgType int32, id interface{}, fun interface{}) {
+//isAutoReply: is auto reply when msgType is request or call.
+func (s *Skeleton) SubscribeFunc(msgType int32, id interface{}, fun interface{}, isAutoReply bool) {
 	caller := s.findCallerByType(msgType)
 	switch key := id.(type) {
 	case int:
@@ -149,10 +164,12 @@ func (s *Skeleton) SubscribeFunc(msgType int32, id interface{}, fun interface{})
 	case string:
 		caller.AddFunc(key, fun)
 	}
+	caller.setIsAutoReply(id, isAutoReply)
 }
 
 //method's first parameter must ServiceID
-func (s *Skeleton) SubscribeMethod(msgType int32, id interface{}, v interface{}, methodName string) {
+//isAutoReply: is auto reply when msgType is request or call.
+func (s *Skeleton) SubscribeMethod(msgType int32, id interface{}, v interface{}, methodName string, isAutoReply bool) {
 	caller := s.findCallerByType(msgType)
 	switch key := id.(type) {
 	case int:
@@ -160,6 +177,7 @@ func (s *Skeleton) SubscribeMethod(msgType int32, id interface{}, v interface{},
 	case string:
 		caller.AddMethod(key, v, methodName)
 	}
+	caller.setIsAutoReply(id, isAutoReply)
 }
 
 func (s *Skeleton) OnDistributeMSG(msg *Message) {
