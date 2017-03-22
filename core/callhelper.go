@@ -66,7 +66,7 @@ func (c *CallHelper) setIsAutoReply(id interface{}, isAutoReply bool) {
 	cb.isAutoReply = isAutoReply
 	if !isAutoReply {
 		t := reflect.New(cb.cb.Type().In(ReplyFuncPosition))
-		log.Debug("%v", t.Elem().Interface().(ReplyFunc))
+		_ = t.Elem().Interface().(ReplyFunc)
 	}
 }
 
