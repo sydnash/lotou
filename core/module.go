@@ -59,7 +59,7 @@ func (s *Skeleton) getDuration() int {
 //use gob encode(not golang's standard library, see "github.com/sydnash/lotou/encoding/gob"
 //only support basic types and Message
 //user defined struct should encode and decode by user
-func (s *Skeleton) Send(dst ServiceID, msgType MsgType, encType int32, methodId interface{}, data ...interface{}) {
+func (s *Skeleton) Send(dst ServiceID, msgType MsgType, encType EncType, methodId interface{}, data ...interface{}) {
 	send(s.s.getId(), dst, msgType, encType, 0, methodId, data...)
 }
 
@@ -78,18 +78,18 @@ func (s *Skeleton) SendClose(dst ServiceID, isForce bool) {
 
 //Request send a request msg to dst, and start timeout function if timeout > 0
 //after receiver call Respond, the responseCb will be called
-func (s *Skeleton) Request(dst ServiceID, encType int32, timeout int, responseCb interface{}, methodId interface{}, data ...interface{}) {
+func (s *Skeleton) Request(dst ServiceID, encType EncType, timeout int, responseCb interface{}, methodId interface{}, data ...interface{}) {
 	s.s.request(dst, encType, timeout, responseCb, methodId, data...)
 }
 
 //Respond used to respond request msg
-func (s *Skeleton) Respond(dst ServiceID, encType int32, rid uint64, data ...interface{}) {
+func (s *Skeleton) Respond(dst ServiceID, encType EncType, rid uint64, data ...interface{}) {
 	s.s.respond(dst, encType, rid, data...)
 }
 
 //Call send a call msg to dst, and start a timeout function with the conf.CallTimeOut
 //after receiver call Ret, it will return
-func (s *Skeleton) Call(dst ServiceID, encType int32, methodId interface{}, data ...interface{}) ([]interface{}, error) {
+func (s *Skeleton) Call(dst ServiceID, encType EncType, methodId interface{}, data ...interface{}) ([]interface{}, error) {
 	return s.s.call(dst, encType, methodId, data...)
 }
 
@@ -101,7 +101,7 @@ func (s *Skeleton) Schedule(interval, repeat int, cb timer.TimerCallback) *timer
 }
 
 //Ret used to ret call msg
-func (s *Skeleton) Ret(dst ServiceID, encType int32, cid uint64, data ...interface{}) {
+func (s *Skeleton) Ret(dst ServiceID, encType EncType, cid uint64, data ...interface{}) {
 	s.s.ret(dst, encType, cid, data...)
 }
 

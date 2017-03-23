@@ -19,18 +19,6 @@ type XMsg struct {
 	C int64
 }
 
-/*
-func (g *Game) OnRequestMSG(src ServiceID, encType int32, rid uint64, data ...interface{}) {
-	g.Respond(src, encType, rid, "world")
-}
-func (g *Game) OnCallMSG(src ServiceID, encType int32, cid uint64, data ...interface{}) {
-	g.Ret(src, encType, cid, "world")
-}
-func (g *Game) OnNormalMSG(src ServiceID, encType int32, data ...interface{}) {
-	fmt.Println(src, encType, data)
-}
-*/
-
 func (g *Game) OnMainLoop(dt int) {
 	g.Send(g.Dst, MSG_TYPE_NORMAL, MSG_ENC_TYPE_GO, "testNormal", g.Name, []byte{1, 2, 3, 4, 56})
 	g.RawSend(g.Dst, MSG_TYPE_NORMAL, "testNormal", g.Name, g.Id)

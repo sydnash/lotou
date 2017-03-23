@@ -31,7 +31,7 @@ func ParseNodeId(id ServiceID) uint64 {
 	return id.parseNodeId()
 }
 
-func Send(dst ServiceID, msgType MsgType, encType int32, methodId interface{}, data ...interface{}) error {
+func Send(dst ServiceID, msgType MsgType, encType EncType, methodId interface{}, data ...interface{}) error {
 	return lowLevelSend(INVALID_SERVICE_ID, dst, msgType, encType, 0, methodId, data...)
 }
 

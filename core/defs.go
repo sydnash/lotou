@@ -40,3 +40,14 @@ const (
 	MSG_TYPE_DISTRIBUTE MsgType = "MsgType.Distribute"
 	//MSG_TYPE_MAX="MsgType.Max"
 )
+
+/*
+const (
+	MSG_ENC_TYPE_NO = iota
+	MSG_ENC_TYPE_GO
+)
+*/
+const (
+	MSG_ENC_TYPE_NO EncType = "EncType.No"
+	MSG_ENC_TYPE_GO EncType = "EncType.LotouGob"
+)

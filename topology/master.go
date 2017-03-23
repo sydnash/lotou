@@ -53,7 +53,7 @@ func (m *master) onRegisterNode(src core.ServiceID) {
 	//generate node id
 	nodeId := core.GenerateNodeId()
 	m.nodesMap[nodeId] = src
-	msg := core.NewMessage(0, 0, core.MSG_TYPE_NORMAL, 0, 0, core.Cmd_RegisterNodeRet, nodeId)
+	msg := core.NewMessage(core.INVALID_SERVICE_ID, core.INVALID_SERVICE_ID, core.MSG_TYPE_NORMAL, core.MSG_ENC_TYPE_NO, 0, core.Cmd_RegisterNodeRet, nodeId)
 	sendData := gob.Pack(msg)
 	m.RawSend(src, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
 }
@@ -65,7 +65,7 @@ func (m *master) onRegisterName(serviceId core.ServiceID, serviceName string) {
 
 func (m *master) onGetIdByName(src core.ServiceID, name string, rId uint) {
 	id, ok := m.globalNameMap[name]
-	msg := core.NewMessage(0, 0, core.MSG_TYPE_NORMAL, 0, 0, core.Cmd_GetIdByNameRet, id, ok, name, rId)
+	msg := core.NewMessage(core.INVALID_SERVICE_ID, core.INVALID_SERVICE_ID, core.MSG_TYPE_NORMAL, core.MSG_ENC_TYPE_NO, 0, core.Cmd_GetIdByNameRet, id, ok, name, rId)
 	sendData := gob.Pack(msg)
 	m.RawSend(src, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
 }

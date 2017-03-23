@@ -196,7 +196,7 @@ func (s *service) runWithLoop(d int) {
 }
 
 //respndCb is a function like: func(isok bool, ...interface{})  the first param must be a bool
-func (s *service) request(dst ServiceID, encType int32, timeout int, respondCb interface{}, methodId interface{}, data ...interface{}) {
+func (s *service) request(dst ServiceID, encType EncType, timeout int, respondCb interface{}, methodId interface{}, data ...interface{}) {
 	s.requestMutex.Lock()
 	id := s.requestId
 	s.requestId++
@@ -239,7 +239,7 @@ func (s *service) dispatchRequest(msg *Message) {
 	s.m.OnRequestMSG(msg)
 }
 
-func (s *service) respond(dst ServiceID, encType int32, rid uint64, data ...interface{}) {
+func (s *service) respond(dst ServiceID, encType EncType, rid uint64, data ...interface{}) {
 	lowLevelSend(s.getId(), dst, MSG_TYPE_RESPOND, encType, rid, 0, data...)
 }
 
@@ -272,7 +272,7 @@ func (s *service) dispatchRespond(m *Message) {
 	cb.Call(param)
 }
 
-func (s *service) call(dst ServiceID, encType int32, methodId interface{}, data ...interface{}) ([]interface{}, error) {
+func (s *service) call(dst ServiceID, encType EncType, methodId interface{}, data ...interface{}) ([]interface{}, error) {
 	PanicWhen(dst == s.getId(), "dst must equal to s's id")
 	s.callMutex.Lock()
 	id := s.callId
@@ -307,7 +307,7 @@ func (s *service) dispatchCall(msg *Message) {
 	s.m.OnCallMSG(msg)
 }
 
-func (s *service) ret(dst ServiceID, encType int32, cid uint64, data ...interface{}) {
+func (s *service) ret(dst ServiceID, encType EncType, cid uint64, data ...interface{}) {
 	var dstService *service
 	dstService, err := findServiceById(dst)
 	if err != nil {

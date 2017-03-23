@@ -4,12 +4,8 @@ import (
 	"github.com/sydnash/lotou/encoding/gob"
 )
 
-const (
-	MSG_ENC_TYPE_NO = iota
-	MSG_ENC_TYPE_GO
-)
-
 type MsgType string
+type EncType string
 
 //Message is the based struct of msg through all service
 //by convention, the first value of Data is a string as the method name
@@ -17,13 +13,13 @@ type Message struct {
 	Src      ServiceID
 	Dst      ServiceID
 	Type     MsgType // Used to be int32
-	EncType  int32
+	EncType  EncType
 	Id       uint64 //request id or call id
 	MethodId interface{}
 	Data     []interface{}
 }
 
-func NewMessage(src, dst ServiceID, msgType MsgType, encType int32, id uint64, methodId interface{}, data ...interface{}) *Message {
+func NewMessage(src, dst ServiceID, msgType MsgType, encType EncType, id uint64, methodId interface{}, data ...interface{}) *Message {
 	switch encType {
 	case MSG_ENC_TYPE_NO:
 	case MSG_ENC_TYPE_GO:
@@ -41,11 +37,11 @@ func sendNoEnc(src ServiceID, dst ServiceID, msgType MsgType, id uint64, methodI
 	return lowLevelSend(src, dst, msgType, MSG_ENC_TYPE_NO, id, methodId, data...)
 }
 
-func send(src ServiceID, dst ServiceID, msgType MsgType, encType int32, id uint64, methodId interface{}, data ...interface{}) error {
+func send(src ServiceID, dst ServiceID, msgType MsgType, encType EncType, id uint64, methodId interface{}, data ...interface{}) error {
 	return lowLevelSend(src, dst, msgType, encType, id, methodId, data...)
 }
 
-func lowLevelSend(src, dst ServiceID, msgType MsgType, encType int32, id uint64, methodId interface{}, data ...interface{}) error {
+func lowLevelSend(src, dst ServiceID, msgType MsgType, encType EncType, id uint64, methodId interface{}, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
 	isLocal := checkIsLocalId(dst)
 
@@ -103,7 +99,7 @@ func DistributeMSG(src ServiceID, methodId interface{}, data ...interface{}) {
 	}
 }
 
-func localSendWithoutMutex(src ServiceID, dstService *service, msgType MsgType, encType int32, id uint64, methodId interface{}, data ...interface{}) {
+func localSendWithoutMutex(src ServiceID, dstService *service, msgType MsgType, encType EncType, id uint64, methodId interface{}, data ...interface{}) {
 	msg := NewMessage(src, dstService.getId(), msgType, encType, id, methodId, data...)
 	dstService.pushMSG(msg)
 }
