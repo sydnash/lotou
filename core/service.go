@@ -266,9 +266,7 @@ func (s *service) dispatchRespond(m *Message) {
 	n := len(data)
 	param := make([]reflect.Value, n+1)
 	param[0] = reflect.ValueOf(false)
-	for i := 0; i < n; i++ {
-		param[i+1] = reflect.ValueOf(data[i])
-	}
+	HelperFunctionToUseReflectCall(cb, param, 1, data)
 	cb.Call(param)
 }
 

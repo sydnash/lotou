@@ -69,16 +69,16 @@ func (c *CallHelper) findCallbackDesc(cmd CmdType) *callbackDesc {
 
 func (c *CallHelper) Call(cmd CmdType, src ServiceID, param ...interface{}) []interface{} {
 	cb := c.findCallbackDesc(cmd)
-	p := []reflect.Value{}
-	p = append(p, reflect.ValueOf(src)) //append src service id
-	for _, v := range param {
-		p = append(p, reflect.ValueOf(v))
-	}
 	defer func() {
 		if err := recover(); err != nil {
 			log.Fatal("CallHelper.Call err: method: %v %v", cmd, err)
 		}
 	}()
+
+	p := make([]reflect.Value, len(param)+1)
+	p[0] = reflect.ValueOf(src) //append src service id
+	HelperFunctionToUseReflectCall(cb.cb, p, 1, param)
+
 	ret := cb.cb.Call(p)
 
 	out := make([]interface{}, len(ret))
@@ -90,12 +90,11 @@ func (c *CallHelper) Call(cmd CmdType, src ServiceID, param ...interface{}) []in
 
 func (c *CallHelper) CallWithReplyFunc(cmd CmdType, src ServiceID, replyFunc ReplyFunc, param ...interface{}) {
 	cb := c.findCallbackDesc(cmd)
-	p := []reflect.Value{}
-	p = append(p, reflect.ValueOf(src)) //append src service id
-	p = append(p, reflect.ValueOf(replyFunc))
-	for _, v := range param {
-		p = append(p, reflect.ValueOf(v))
-	}
+	p := make([]reflect.Value, len(param)+2)
+	p[0] = reflect.ValueOf(src) //append src service id
+	p[1] = reflect.ValueOf(replyFunc)
+
+	HelperFunctionToUseReflectCall(cb.cb, p, 2, param)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Fatal("CallHelper.Call err: method: %v %v", cmd, err)

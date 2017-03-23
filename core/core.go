@@ -1,7 +1,9 @@
 package core
 
 import (
+	"fmt"
 	"github.com/sydnash/lotou/log"
+	"reflect"
 	"runtime/debug"
 )
 
@@ -24,6 +26,24 @@ func StartService(name string, m Module) ServiceID {
 		s.run()
 	}
 	return id
+}
+
+func HelperFunctionToUseReflectCall(f reflect.Value, callParam []reflect.Value, startNum int, realParam []interface{}) {
+	n := len(realParam)
+	for i := 0; i < n; i++ {
+		paramIndex := i + startNum
+		expectedType := f.Type().In(paramIndex)
+		if realParam[i] == nil {
+			callParam[paramIndex] = reflect.New(expectedType).Elem()
+		} else {
+			callParam[paramIndex] = reflect.ValueOf(realParam[i])
+		}
+		actualType := callParam[paramIndex].Type()
+		if !actualType.AssignableTo(expectedType) {
+			errStr := fmt.Sprintf("InvocationCausedPanic: called with a mismatched parameter type [parameter #%v: expected %v; got %v].", paramIndex, expectedType, actualType)
+			panic(errStr)
+		}
+	}
 }
 
 //Parse Node Id parse node id from service id
