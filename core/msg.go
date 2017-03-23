@@ -5,37 +5,25 @@ import (
 )
 
 const (
-	MSG_TYPE_NORMAL = iota
-	MSG_TYPE_REQUEST
-	MSG_TYPE_RESPOND
-	MSG_TYPE_TIMEOUT
-	MSG_TYPE_CALL
-	MSG_TYPE_RET
-	MSG_TYPE_CLOSE
-	MSG_TYPE_SOCKET
-	MSG_TYPE_ERR
-	MSG_TYPE_DISTRIBUTE
-	MSG_TYPE_MAX
-)
-
-const (
 	MSG_ENC_TYPE_NO = iota
 	MSG_ENC_TYPE_GO
 )
+
+type MsgType string
 
 //Message is the based struct of msg through all service
 //by convention, the first value of Data is a string as the method name
 type Message struct {
 	Src      ServiceID
 	Dst      ServiceID
-	Type     int32
+	Type     MsgType // Used to be int32
 	EncType  int32
 	Id       uint64 //request id or call id
 	MethodId interface{}
 	Data     []interface{}
 }
 
-func NewMessage(src, dst ServiceID, msgType, encType int32, id uint64, methodId interface{}, data ...interface{}) *Message {
+func NewMessage(src, dst ServiceID, msgType MsgType, encType int32, id uint64, methodId interface{}, data ...interface{}) *Message {
 	switch encType {
 	case MSG_ENC_TYPE_NO:
 	case MSG_ENC_TYPE_GO:
@@ -49,15 +37,15 @@ func init() {
 	gob.RegisterStructType(Message{})
 }
 
-func sendNoEnc(src ServiceID, dst ServiceID, msgType int32, id uint64, methodId interface{}, data ...interface{}) error {
+func sendNoEnc(src ServiceID, dst ServiceID, msgType MsgType, id uint64, methodId interface{}, data ...interface{}) error {
 	return lowLevelSend(src, dst, msgType, MSG_ENC_TYPE_NO, id, methodId, data...)
 }
 
-func send(src ServiceID, dst ServiceID, msgType, encType int32, id uint64, methodId interface{}, data ...interface{}) error {
+func send(src ServiceID, dst ServiceID, msgType MsgType, encType int32, id uint64, methodId interface{}, data ...interface{}) error {
 	return lowLevelSend(src, dst, msgType, encType, id, methodId, data...)
 }
 
-func lowLevelSend(src, dst ServiceID, msgType, encType int32, id uint64, methodId interface{}, data ...interface{}) error {
+func lowLevelSend(src, dst ServiceID, msgType MsgType, encType int32, id uint64, methodId interface{}, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
 	isLocal := checkIsLocalId(dst)
 
@@ -76,7 +64,7 @@ func lowLevelSend(src, dst ServiceID, msgType, encType int32, id uint64, methodI
 }
 
 //send msg to dst by dst's service name
-func sendName(src ServiceID, dst string, msgType int32, methodId interface{}, data ...interface{}) error {
+func sendName(src ServiceID, dst string, msgType MsgType, methodId interface{}, data ...interface{}) error {
 	dsts, err := findServiceByName(dst)
 	if err != nil {
 		return err
@@ -90,7 +78,11 @@ func ForwardLocal(m *Message) {
 		return
 	}
 	switch m.Type {
-	case MSG_TYPE_NORMAL, MSG_TYPE_REQUEST, MSG_TYPE_RESPOND, MSG_TYPE_CALL, MSG_TYPE_DISTRIBUTE:
+	case MSG_TYPE_NORMAL,
+		MSG_TYPE_REQUEST,
+		MSG_TYPE_RESPOND,
+		MSG_TYPE_CALL,
+		MSG_TYPE_DISTRIBUTE:
 		dsts.pushMSG(m)
 	case MSG_TYPE_RET:
 		if m.EncType == MSG_ENC_TYPE_GO {
@@ -111,7 +103,7 @@ func DistributeMSG(src ServiceID, methodId interface{}, data ...interface{}) {
 	}
 }
 
-func localSendWithoutMutex(src ServiceID, dstService *service, msgType, encType int32, id uint64, methodId interface{}, data ...interface{}) {
+func localSendWithoutMutex(src ServiceID, dstService *service, msgType MsgType, encType int32, id uint64, methodId interface{}, data ...interface{}) {
 	msg := NewMessage(src, dstService.getId(), msgType, encType, id, methodId, data...)
 	dstService.pushMSG(msg)
 }

@@ -59,13 +59,13 @@ func (s *Skeleton) getDuration() int {
 //use gob encode(not golang's standard library, see "github.com/sydnash/lotou/encoding/gob"
 //only support basic types and Message
 //user defined struct should encode and decode by user
-func (s *Skeleton) Send(dst ServiceID, msgType, encType int32, methodId interface{}, data ...interface{}) {
+func (s *Skeleton) Send(dst ServiceID, msgType MsgType, encType int32, methodId interface{}, data ...interface{}) {
 	send(s.s.getId(), dst, msgType, encType, 0, methodId, data...)
 }
 
 //RawSend not encode variables, be careful use
 //variables that passed by reference may be changed by others
-func (s *Skeleton) RawSend(dst ServiceID, msgType int32, methodId interface{}, data ...interface{}) {
+func (s *Skeleton) RawSend(dst ServiceID, msgType MsgType, methodId interface{}, data ...interface{}) {
 	sendNoEnc(s.s.getId(), dst, msgType, 0, methodId, data...)
 }
 
@@ -139,7 +139,7 @@ func (s *Skeleton) OnCallMSG(msg *Message) {
 	}
 }
 
-func (s *Skeleton) findCallerByType(msgType int32) *CallHelper {
+func (s *Skeleton) findCallerByType(msgType MsgType) *CallHelper {
 	var caller *CallHelper
 	switch msgType {
 	case MSG_TYPE_NORMAL:
@@ -156,7 +156,7 @@ func (s *Skeleton) findCallerByType(msgType int32) *CallHelper {
 
 //function's first parameter must ServiceID
 //isAutoReply: is auto reply when msgType is request or call.
-func (s *Skeleton) RegisterHandlerFunc(msgType int32, id interface{}, fun interface{}, isAutoReply bool) {
+func (s *Skeleton) RegisterHandlerFunc(msgType MsgType, id interface{}, fun interface{}, isAutoReply bool) {
 	caller := s.findCallerByType(msgType)
 	switch key := id.(type) {
 	case int:
@@ -169,7 +169,7 @@ func (s *Skeleton) RegisterHandlerFunc(msgType int32, id interface{}, fun interf
 
 //method's first parameter must ServiceID
 //isAutoReply: is auto reply when msgType is request or call.
-func (s *Skeleton) RegisterHandlerMethod(msgType int32, id interface{}, v interface{}, methodName string, isAutoReply bool) {
+func (s *Skeleton) RegisterHandlerMethod(msgType MsgType, id interface{}, v interface{}, methodName string, isAutoReply bool) {
 	caller := s.findCallerByType(msgType)
 	switch key := id.(type) {
 	case int:
