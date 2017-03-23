@@ -1,15 +1,16 @@
 package core
 
 const (
-	Cmd_Forward         = "forward"
-	Cmd_Distribute      = "distribute"
-	Cmd_RegisterNode    = "registerNode"
-	Cmd_RegisterNodeRet = "registerNodeRet"
-	Cmd_RegisterName    = "registerName"
-	Cmd_GetIdByName     = "getIdByName"
-	Cmd_GetIdByNameRet  = "getIdByNameRet"
-	Cmd_NameAdd         = "nameAdd"
-	Cmd_NameDeleted     = "nameDeleted"
+	Cmd_None            CmdType = "CmdType.Core.None"
+	Cmd_Forward         CmdType = "CmdType.Core.Forward"
+	Cmd_Distribute      CmdType = "CmdType.Core.Distribute"
+	Cmd_RegisterNode    CmdType = "CmdType.Core.RegisterNode"
+	Cmd_RegisterNodeRet CmdType = "CmdType.Core.RegisterNodeRet"
+	Cmd_RegisterName    CmdType = "CmdType.Core.RegisterName"
+	Cmd_GetIdByName     CmdType = "CmdType.Core.GetIdByName"
+	Cmd_GetIdByNameRet  CmdType = "CmdType.Core.GetIdByNameRet"
+	Cmd_NameAdd         CmdType = "CmdType.Core.NameAdd"
+	Cmd_NameDeleted     CmdType = "CmdType.Core.NameDeleted"
 )
 
 /*

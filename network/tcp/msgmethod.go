@@ -1,14 +1,18 @@
 package tcp
 
+import (
+	"github.com/sydnash/lotou/core"
+)
+
 const (
-	AGENT_CLOSED = iota + 500
-	AGENT_DATA
-	AGENT_ARRIVE
-	AGENT_CMD_SEND
-	CLIENT_CONNECT_FAILED
-	CLIENT_CONNECTED
-	CLIENT_DISCONNECTED
-	CLIENT_DATA
-	CLIENT_CMD_CONNECT
-	CLIENT_CMD_SEND
+	AGENT_CLOSED          core.CmdType = "CmdType.Tcp.AgentClosed"
+	AGENT_DATA            core.CmdType = "CmdType.Tcp.AgentData"
+	AGENT_ARRIVE          core.CmdType = "CmdType.Tcp.AgentArrive"
+	AGENT_CMD_SEND        core.CmdType = "CmdType.Tcp.AgentSend"
+	CLIENT_CONNECT_FAILED core.CmdType = "CmdType.Tcp.ClientConnectFailed"
+	CLIENT_CONNECTED      core.CmdType = "CmdType.Tcp.ClientConnected"
+	CLIENT_DISCONNECTED   core.CmdType = "CmdType.Tcp.ClientDisconnected"
+	CLIENT_DATA           core.CmdType = "CmdType.Tcp.ClientData"
+	CLIENT_CMD_CONNECT    core.CmdType = "CmdType.Tcp.ClientConnect"
+	CLIENT_CMD_SEND       core.CmdType = "CmdType.Tcp.ClientSend"
 )

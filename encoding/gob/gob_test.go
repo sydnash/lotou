@@ -10,8 +10,8 @@ import (
 func TestPackMore(t *testing.T) {
 	specificType := core.MSG_TYPE_NORMAL
 	m1 := &core.Message{
-		Type:     specificType,
-		MethodId: 100, //~ This line can not be ignored.
+		Type: specificType,
+		Cmd:  100, //~ This line can not be ignored.
 	}
 	bytes := gob.Pack(m1)
 	fmt.Println(bytes)

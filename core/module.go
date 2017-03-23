@@ -59,27 +59,27 @@ func (s *Skeleton) getDuration() int {
 //use gob encode(not golang's standard library, see "github.com/sydnash/lotou/encoding/gob"
 //only support basic types and Message
 //user defined struct should encode and decode by user
-func (s *Skeleton) Send(dst ServiceID, msgType MsgType, encType EncType, methodId interface{}, data ...interface{}) {
-	send(s.s.getId(), dst, msgType, encType, 0, methodId, data...)
+func (s *Skeleton) Send(dst ServiceID, msgType MsgType, encType EncType, cmd CmdType, data ...interface{}) {
+	send(s.s.getId(), dst, msgType, encType, 0, cmd, data...)
 }
 
 //RawSend not encode variables, be careful use
 //variables that passed by reference may be changed by others
-func (s *Skeleton) RawSend(dst ServiceID, msgType MsgType, methodId interface{}, data ...interface{}) {
-	sendNoEnc(s.s.getId(), dst, msgType, 0, methodId, data...)
+func (s *Skeleton) RawSend(dst ServiceID, msgType MsgType, cmd CmdType, data ...interface{}) {
+	sendNoEnc(s.s.getId(), dst, msgType, 0, cmd, data...)
 }
 
 //if isForce is false, then it will just notify the sevice it need to close
 //then service can do choose close immediate or close after self clean.
 //if isForce is true, then it close immediate
 func (s *Skeleton) SendClose(dst ServiceID, isForce bool) {
-	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE, 0, 0, isForce)
+	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE, 0, Cmd_None, isForce)
 }
 
 //Request send a request msg to dst, and start timeout function if timeout > 0
 //after receiver call Respond, the responseCb will be called
-func (s *Skeleton) Request(dst ServiceID, encType EncType, timeout int, responseCb interface{}, methodId interface{}, data ...interface{}) {
-	s.s.request(dst, encType, timeout, responseCb, methodId, data...)
+func (s *Skeleton) Request(dst ServiceID, encType EncType, timeout int, responseCb interface{}, cmd CmdType, data ...interface{}) {
+	s.s.request(dst, encType, timeout, responseCb, cmd, data...)
 }
 
 //Respond used to respond request msg
@@ -89,8 +89,8 @@ func (s *Skeleton) Respond(dst ServiceID, encType EncType, rid uint64, data ...i
 
 //Call send a call msg to dst, and start a timeout function with the conf.CallTimeOut
 //after receiver call Ret, it will return
-func (s *Skeleton) Call(dst ServiceID, encType EncType, methodId interface{}, data ...interface{}) ([]interface{}, error) {
-	return s.s.call(dst, encType, methodId, data...)
+func (s *Skeleton) Call(dst ServiceID, encType EncType, cmd CmdType, data ...interface{}) ([]interface{}, error) {
+	return s.s.call(dst, encType, cmd, data...)
 }
 
 func (s *Skeleton) Schedule(interval, repeat int, cb timer.TimerCallback) *timer.Timer {
@@ -110,30 +110,30 @@ func (s *Skeleton) OnDestroy() {
 func (s *Skeleton) OnMainLoop(dt int) {
 }
 func (s *Skeleton) OnNormalMSG(msg *Message) {
-	s.normalDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
+	s.normalDispatcher.Call(msg.Cmd, msg.Src, msg.Data...)
 }
 func (s *Skeleton) OnInit() {
 }
 func (s *Skeleton) OnSocketMSG(msg *Message) {
 }
 func (s *Skeleton) OnRequestMSG(msg *Message) {
-	isAutoReply := s.requestDispatcher.getIsAutoReply(msg.MethodId)
+	isAutoReply := s.requestDispatcher.getIsAutoReply(msg.Cmd)
 	if isAutoReply {
-		ret := s.requestDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
+		ret := s.requestDispatcher.Call(msg.Cmd, msg.Src, msg.Data...)
 		s.Respond(msg.Src, msg.EncType, msg.Id, ret...)
 	} else {
-		s.requestDispatcher.CallWithReplyFunc(msg.MethodId, msg.Src, func(ret ...interface{}) {
+		s.requestDispatcher.CallWithReplyFunc(msg.Cmd, msg.Src, func(ret ...interface{}) {
 			s.Respond(msg.Src, msg.EncType, msg.Id, ret...)
 		}, msg.Data...)
 	}
 }
 func (s *Skeleton) OnCallMSG(msg *Message) {
-	isAutoReply := s.callDispatcher.getIsAutoReply(msg.MethodId)
+	isAutoReply := s.callDispatcher.getIsAutoReply(msg.Cmd)
 	if isAutoReply {
-		ret := s.callDispatcher.Call(msg.MethodId, msg.Src, msg.Data...)
+		ret := s.callDispatcher.Call(msg.Cmd, msg.Src, msg.Data...)
 		s.Ret(msg.Src, msg.EncType, msg.Id, ret...)
 	} else {
-		s.callDispatcher.CallWithReplyFunc(msg.MethodId, msg.Src, func(ret ...interface{}) {
+		s.callDispatcher.CallWithReplyFunc(msg.Cmd, msg.Src, func(ret ...interface{}) {
 			s.Ret(msg.Src, msg.EncType, msg.Id, ret...)
 		}, msg.Data...)
 	}
@@ -156,28 +156,18 @@ func (s *Skeleton) findCallerByType(msgType MsgType) *CallHelper {
 
 //function's first parameter must ServiceID
 //isAutoReply: is auto reply when msgType is request or call.
-func (s *Skeleton) RegisterHandlerFunc(msgType MsgType, id interface{}, fun interface{}, isAutoReply bool) {
+func (s *Skeleton) RegisterHandlerFunc(msgType MsgType, cmd CmdType, fun interface{}, isAutoReply bool) {
 	caller := s.findCallerByType(msgType)
-	switch key := id.(type) {
-	case int:
-		caller.AddFuncInt(key, fun)
-	case string:
-		caller.AddFunc(key, fun)
-	}
-	caller.setIsAutoReply(id, isAutoReply)
+	caller.AddFunc(cmd, fun)
+	caller.setIsAutoReply(cmd, isAutoReply)
 }
 
 //method's first parameter must ServiceID
 //isAutoReply: is auto reply when msgType is request or call.
-func (s *Skeleton) RegisterHandlerMethod(msgType MsgType, id interface{}, v interface{}, methodName string, isAutoReply bool) {
+func (s *Skeleton) RegisterHandlerMethod(msgType MsgType, cmd CmdType, v interface{}, methodName string, isAutoReply bool) {
 	caller := s.findCallerByType(msgType)
-	switch key := id.(type) {
-	case int:
-		caller.AddMethodInt(key, v, methodName)
-	case string:
-		caller.AddMethod(key, v, methodName)
-	}
-	caller.setIsAutoReply(id, isAutoReply)
+	caller.AddMethod(cmd, v, methodName)
+	caller.setIsAutoReply(cmd, isAutoReply)
 }
 
 func (s *Skeleton) OnDistributeMSG(msg *Message) {

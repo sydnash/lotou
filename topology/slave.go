@@ -27,20 +27,20 @@ func (s *slave) OnNormalMSG(msg *core.Message) {
 }
 func (s *slave) OnSocketMSG(msg *core.Message) {
 	//cmd is socket status
-	cmd := msg.MethodId.(int)
+	cmd := msg.Cmd
 	//data[0] is a gob encode data of Message
 	data := msg.Data
 	if cmd == tcp.CLIENT_DATA {
 		sdata := gob.Unpack(data[0].([]byte))
 		masterMSG := sdata.([]interface{})[0].(*core.Message)
-		scmd := masterMSG.MethodId.(string)
+		scmd := masterMSG.Cmd
 		array := masterMSG.Data
 		switch scmd {
 		case core.Cmd_RegisterNodeRet:
 			nodeId := array[0].(uint64)
 			core.DispatchRegisterNodeRet(nodeId)
 		case core.Cmd_Distribute:
-			core.DistributeMSG(s.Id, array[0].(string), array[1:]...)
+			core.DistributeMSG(s.Id, core.CmdType(array[0].(string)), array[1:]...)
 		case core.Cmd_GetIdByNameRet:
 			id := array[0].(uint64)
 			ok := array[1].(bool)

@@ -110,12 +110,13 @@ func (c *Client) onSend(src core.ServiceID, param ...interface{}) {
 
 func (c *Client) OnNormalMSG(msg *core.Message) {
 	src := msg.Src
-	cmd := msg.MethodId.(int)
+	cmd := msg.Cmd
 	param := msg.Data
-	if cmd == CLIENT_CMD_CONNECT { //connect
+	switch cmd {
+	case CLIENT_CMD_CONNECT:
 		n := param[0].(int)
 		c.onConnect(n)
-	} else if cmd == CLIENT_CMD_SEND { //send
+	case CLIENT_CMD_SEND:
 		c.onSend(src, param...)
 	}
 }
@@ -182,6 +183,6 @@ func (c *Client) onConError() {
 	atomic.StoreInt32(&c.status, CLIENT_STATUS_NOT_CONNECT)
 }
 
-func (c *Client) sendToHost(msgType core.MsgType, methodId interface{}, data ...interface{}) {
-	c.RawSend(c.hostService, msgType, methodId, data...)
+func (c *Client) sendToHost(msgType core.MsgType, cmd core.CmdType, data ...interface{}) {
+	c.RawSend(c.hostService, msgType, cmd, data...)
 }

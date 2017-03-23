@@ -18,8 +18,7 @@ type callbackDesc struct {
 	isAutoReply bool
 }
 type CallHelper struct {
-	funcMap   map[string]*callbackDesc
-	idFuncMap map[int]*callbackDesc
+	funcMap map[CmdType]*callbackDesc
 }
 
 type ReplyFunc func(data ...interface{})
@@ -30,39 +29,25 @@ var (
 
 func NewCallHelper() *CallHelper {
 	ret := &CallHelper{}
-	ret.funcMap = make(map[string]*callbackDesc)
-	ret.idFuncMap = make(map[int]*callbackDesc)
+	ret.funcMap = make(map[CmdType]*callbackDesc)
 	return ret
 }
 
-func (c *CallHelper) AddFunc(name string, fun interface{}) {
+func (c *CallHelper) AddFunc(cmd CmdType, fun interface{}) {
 	f := reflect.ValueOf(fun)
 	PanicWhen(f.Kind() != reflect.Func, "fun must be a function type.")
-	c.funcMap[name] = &callbackDesc{f, true}
+	c.funcMap[cmd] = &callbackDesc{f, true}
 }
 
-func (c *CallHelper) AddMethod(name string, v interface{}, methodName string) {
+func (c *CallHelper) AddMethod(cmd CmdType, v interface{}, methodName string) {
 	self := reflect.ValueOf(v)
 	f := self.MethodByName(methodName)
 	PanicWhen(f.Kind() != reflect.Func, "method must be a function type.")
-	c.funcMap[name] = &callbackDesc{f, true}
+	c.funcMap[cmd] = &callbackDesc{f, true}
 }
 
-func (c *CallHelper) AddFuncInt(id int, fun interface{}) {
-	f := reflect.ValueOf(fun)
-	PanicWhen(f.Kind() != reflect.Func, "fun must be a function type.")
-	c.idFuncMap[id] = &callbackDesc{f, true}
-}
-
-func (c *CallHelper) AddMethodInt(id int, v interface{}, methodName string) {
-	self := reflect.ValueOf(v)
-	f := self.MethodByName(methodName)
-	PanicWhen(f.Kind() != reflect.Func, "method must be a function type")
-	c.idFuncMap[id] = &callbackDesc{f, true}
-}
-
-func (c *CallHelper) setIsAutoReply(id interface{}, isAutoReply bool) {
-	cb := c.findCallbackDesc(id)
+func (c *CallHelper) setIsAutoReply(cmd CmdType, isAutoReply bool) {
+	cb := c.findCallbackDesc(cmd)
 	cb.isAutoReply = isAutoReply
 	if !isAutoReply {
 		t := reflect.New(cb.cb.Type().In(ReplyFuncPosition))
@@ -70,29 +55,20 @@ func (c *CallHelper) setIsAutoReply(id interface{}, isAutoReply bool) {
 	}
 }
 
-func (c *CallHelper) getIsAutoReply(id interface{}) bool {
-	return c.findCallbackDesc(id).isAutoReply
+func (c *CallHelper) getIsAutoReply(cmd CmdType) bool {
+	return c.findCallbackDesc(cmd).isAutoReply
 }
 
-func (c *CallHelper) findCallbackDesc(id interface{}) *callbackDesc {
-	var cb *callbackDesc
-	var ok bool
-	switch key := id.(type) {
-	case int:
-		cb, ok = c.idFuncMap[key]
-	case string:
-		cb, ok = c.funcMap[key]
-	default:
-		log.Fatal("methodid: %v is not registered; %v", id)
-	}
+func (c *CallHelper) findCallbackDesc(cmd CmdType) *callbackDesc {
+	cb, ok := c.funcMap[cmd]
 	if !ok {
-		log.Fatal("func: %v is not found", id)
+		log.Fatal("func: %v is not found", cmd)
 	}
 	return cb
 }
 
-func (c *CallHelper) Call(id interface{}, src ServiceID, param ...interface{}) []interface{} {
-	cb := c.findCallbackDesc(id)
+func (c *CallHelper) Call(cmd CmdType, src ServiceID, param ...interface{}) []interface{} {
+	cb := c.findCallbackDesc(cmd)
 	p := []reflect.Value{}
 	p = append(p, reflect.ValueOf(src)) //append src service id
 	for _, v := range param {
@@ -100,7 +76,7 @@ func (c *CallHelper) Call(id interface{}, src ServiceID, param ...interface{}) [
 	}
 	defer func() {
 		if err := recover(); err != nil {
-			log.Fatal("CallHelper.Call err: method: %v %v", id, err)
+			log.Fatal("CallHelper.Call err: method: %v %v", cmd, err)
 		}
 	}()
 	ret := cb.cb.Call(p)
@@ -112,8 +88,8 @@ func (c *CallHelper) Call(id interface{}, src ServiceID, param ...interface{}) [
 	return out
 }
 
-func (c *CallHelper) CallWithReplyFunc(id interface{}, src ServiceID, replyFunc ReplyFunc, param ...interface{}) {
-	cb := c.findCallbackDesc(id)
+func (c *CallHelper) CallWithReplyFunc(cmd CmdType, src ServiceID, replyFunc ReplyFunc, param ...interface{}) {
+	cb := c.findCallbackDesc(cmd)
 	p := []reflect.Value{}
 	p = append(p, reflect.ValueOf(src)) //append src service id
 	p = append(p, reflect.ValueOf(replyFunc))
@@ -122,7 +98,7 @@ func (c *CallHelper) CallWithReplyFunc(id interface{}, src ServiceID, replyFunc 
 	}
 	defer func() {
 		if err := recover(); err != nil {
-			log.Fatal("CallHelper.Call err: method: %v %v", id, err)
+			log.Fatal("CallHelper.Call err: method: %v %v", cmd, err)
 		}
 	}()
 	cb.cb.Call(p)

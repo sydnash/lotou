@@ -36,7 +36,7 @@ func (c *C) OnNormalMSG(msg *core.Message) {
 }
 
 func (c *C) OnSocketMSG(msg *core.Message) {
-	cmd := msg.MethodId.(int)
+	cmd := msg.Cmd
 	data := msg.Data
 	if cmd == tcp.CLIENT_DATA {
 		data := data[0].([]byte)

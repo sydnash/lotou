@@ -29,7 +29,7 @@ func StartMaster(ip, port string) {
 
 func (m *master) OnNormalMSG(msg *core.Message) {
 	//cmd such as (registerName, getIdByName, syncName, forward ...)
-	cmd := msg.MethodId.(string)
+	cmd := msg.Cmd
 	data := msg.Data
 	switch cmd {
 	case core.Cmd_Forward:
@@ -74,14 +74,14 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 	//src is slave's agent's serviceid
 	src := msg.Src
 	//cmd is socket status
-	cmd := msg.MethodId.(int)
+	cmd := msg.Cmd
 	//data[0] is a gob encode with message
 	data := msg.Data
 	//it's first encode value is cmd such as (registerNode, regeisterName, getIdByName, forword...)
 	if cmd == tcp.AGENT_DATA {
 		sdata := gob.Unpack(data[0].([]byte))
 		slaveMSG := sdata.([]interface{})[0].(*core.Message)
-		scmd := slaveMSG.MethodId.(string)
+		scmd := slaveMSG.Cmd
 		array := slaveMSG.Data
 		switch scmd {
 		case core.Cmd_RegisterNode:
@@ -124,16 +124,16 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 	}
 }
 
-func (m *master) distributeM(methodId string, data ...interface{}) {
+func (m *master) distributeM(cmd core.CmdType, data ...interface{}) {
 	for _, agent := range m.nodesMap {
 		msg := &core.Message{}
-		msg.MethodId = core.Cmd_Distribute
-		msg.Data = append(msg.Data, methodId)
+		msg.Cmd = core.Cmd_Distribute
+		msg.Data = append(msg.Data, cmd)
 		msg.Data = append(msg.Data, data...)
 		sendData := gob.Pack(msg)
 		m.RawSend(agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
 	}
-	core.DistributeMSG(m.Id, methodId, data...)
+	core.DistributeMSG(m.Id, cmd, data...)
 }
 
 func (m *master) forwardM(msg *core.Message, data []byte) {
@@ -152,7 +152,7 @@ func (m *master) forwardM(msg *core.Message, data []byte) {
 	//if has no encode data, encode it first.
 	if data == nil {
 		ret := &core.Message{
-			MethodId: core.Cmd_Forward,
+			Cmd: core.Cmd_Forward,
 		}
 		ret.Data = append(ret.Data, msg)
 		data = gob.Pack(ret)

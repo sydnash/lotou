@@ -6,26 +6,27 @@ import (
 
 type MsgType string
 type EncType string
+type CmdType string
 
 //Message is the based struct of msg through all service
 //by convention, the first value of Data is a string as the method name
 type Message struct {
-	Src      ServiceID
-	Dst      ServiceID
-	Type     MsgType // Used to be int32
-	EncType  EncType
-	Id       uint64 //request id or call id
-	MethodId interface{}
-	Data     []interface{}
+	Src     ServiceID
+	Dst     ServiceID
+	Type    MsgType // Used to be int32
+	EncType EncType
+	Id      uint64 //request id or call id
+	Cmd     CmdType
+	Data    []interface{}
 }
 
-func NewMessage(src, dst ServiceID, msgType MsgType, encType EncType, id uint64, methodId interface{}, data ...interface{}) *Message {
+func NewMessage(src, dst ServiceID, msgType MsgType, encType EncType, id uint64, cmd CmdType, data ...interface{}) *Message {
 	switch encType {
 	case MSG_ENC_TYPE_NO:
 	case MSG_ENC_TYPE_GO:
 		data = append([]interface{}(nil), gob.Pack(data...))
 	}
-	msg := &Message{src, dst, msgType, encType, id, methodId, data}
+	msg := &Message{src, dst, msgType, encType, id, cmd, data}
 	return msg
 }
 
@@ -33,15 +34,15 @@ func init() {
 	gob.RegisterStructType(Message{})
 }
 
-func sendNoEnc(src ServiceID, dst ServiceID, msgType MsgType, id uint64, methodId interface{}, data ...interface{}) error {
-	return lowLevelSend(src, dst, msgType, MSG_ENC_TYPE_NO, id, methodId, data...)
+func sendNoEnc(src ServiceID, dst ServiceID, msgType MsgType, id uint64, cmd CmdType, data ...interface{}) error {
+	return lowLevelSend(src, dst, msgType, MSG_ENC_TYPE_NO, id, cmd, data...)
 }
 
-func send(src ServiceID, dst ServiceID, msgType MsgType, encType EncType, id uint64, methodId interface{}, data ...interface{}) error {
-	return lowLevelSend(src, dst, msgType, encType, id, methodId, data...)
+func send(src ServiceID, dst ServiceID, msgType MsgType, encType EncType, id uint64, cmd CmdType, data ...interface{}) error {
+	return lowLevelSend(src, dst, msgType, encType, id, cmd, data...)
 }
 
-func lowLevelSend(src, dst ServiceID, msgType MsgType, encType EncType, id uint64, methodId interface{}, data ...interface{}) error {
+func lowLevelSend(src, dst ServiceID, msgType MsgType, encType EncType, id uint64, cmd CmdType, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
 	isLocal := checkIsLocalId(dst)
 
@@ -49,7 +50,7 @@ func lowLevelSend(src, dst ServiceID, msgType MsgType, encType EncType, id uint6
 		return err
 	}
 	var msg *Message
-	msg = NewMessage(src, dst, msgType, encType, id, methodId, data...)
+	msg = NewMessage(src, dst, msgType, encType, id, cmd, data...)
 	if err != nil {
 		//doesn't find service and dstid is remote id, send a forward msg to master.
 		route(Cmd_Forward, msg)
@@ -60,12 +61,12 @@ func lowLevelSend(src, dst ServiceID, msgType MsgType, encType EncType, id uint6
 }
 
 //send msg to dst by dst's service name
-func sendName(src ServiceID, dst string, msgType MsgType, methodId interface{}, data ...interface{}) error {
+func sendName(src ServiceID, dst string, msgType MsgType, cmd CmdType, data ...interface{}) error {
 	dsts, err := findServiceByName(dst)
 	if err != nil {
 		return err
 	}
-	return lowLevelSend(src, dsts.getId(), msgType, MSG_ENC_TYPE_GO, 0, methodId, data...)
+	return lowLevelSend(src, dsts.getId(), msgType, MSG_ENC_TYPE_GO, 0, cmd, data...)
 }
 
 func ForwardLocal(m *Message) {
@@ -89,17 +90,17 @@ func ForwardLocal(m *Message) {
 		dsts.dispatchRet(cid, m.Data...)
 	}
 }
-func DistributeMSG(src ServiceID, methodId interface{}, data ...interface{}) {
+func DistributeMSG(src ServiceID, cmd CmdType, data ...interface{}) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	for dst, ser := range h.dic {
 		if ServiceID(dst) != src {
-			localSendWithoutMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, 0, methodId, data...)
+			localSendWithoutMutex(src, ser, MSG_TYPE_DISTRIBUTE, MSG_ENC_TYPE_NO, 0, cmd, data...)
 		}
 	}
 }
 
-func localSendWithoutMutex(src ServiceID, dstService *service, msgType MsgType, encType EncType, id uint64, methodId interface{}, data ...interface{}) {
-	msg := NewMessage(src, dstService.getId(), msgType, encType, id, methodId, data...)
+func localSendWithoutMutex(src ServiceID, dstService *service, msgType MsgType, encType EncType, id uint64, cmd CmdType, data ...interface{}) {
+	msg := NewMessage(src, dstService.getId(), msgType, encType, id, cmd, data...)
 	dstService.pushMSG(msg)
 }

@@ -15,7 +15,7 @@ type M struct {
 }
 
 func (m *M) OnNormalMSG(msg *core.Message) {
-	cmd := msg.MethodId.(int)
+	cmd := msg.Cmd
 	if cmd == tcp.AGENT_CLOSED {
 		log.Info("agent closed")
 	}
@@ -23,7 +23,7 @@ func (m *M) OnNormalMSG(msg *core.Message) {
 
 func (m *M) OnSocketMSG(msg *core.Message) {
 	src := msg.Src
-	cmd := msg.MethodId.(int)
+	cmd := msg.Cmd
 	data := msg.Data
 	if cmd == tcp.AGENT_DATA {
 		data := data[0].([]byte)

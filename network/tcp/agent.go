@@ -76,7 +76,7 @@ func (a *Agent) OnMainLoop(dt int) {
 
 func (a *Agent) OnNormalMSG(msg *core.Message) {
 	data := msg.Data
-	cmd := msg.MethodId.(int)
+	cmd := msg.Cmd
 	if cmd == AGENT_CMD_SEND {
 		a.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
 		msg := data[0].([]byte)
@@ -105,6 +105,6 @@ func (a *Agent) close() {
 	a.Con.Close()
 }
 
-func (a *Agent) sendToHost(msgType core.MsgType, methodId interface{}, data ...interface{}) {
-	a.RawSend(a.hostService, msgType, methodId, data...)
+func (a *Agent) sendToHost(msgType core.MsgType, cmd core.CmdType, data ...interface{}) {
+	a.RawSend(a.hostService, msgType, cmd, data...)
 }

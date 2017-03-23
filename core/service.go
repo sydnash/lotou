@@ -196,7 +196,7 @@ func (s *service) runWithLoop(d int) {
 }
 
 //respndCb is a function like: func(isok bool, ...interface{})  the first param must be a bool
-func (s *service) request(dst ServiceID, encType EncType, timeout int, respondCb interface{}, methodId interface{}, data ...interface{}) {
+func (s *service) request(dst ServiceID, encType EncType, timeout int, respondCb interface{}, cmd CmdType, data ...interface{}) {
 	s.requestMutex.Lock()
 	id := s.requestId
 	s.requestId++
@@ -205,7 +205,7 @@ func (s *service) request(dst ServiceID, encType EncType, timeout int, respondCb
 	s.requestMutex.Unlock()
 	PanicWhen(cbp.respond.Kind() != reflect.Func, "respond cb must function.")
 
-	lowLevelSend(s.getId(), dst, MSG_TYPE_REQUEST, encType, id, methodId, data...)
+	lowLevelSend(s.getId(), dst, MSG_TYPE_REQUEST, encType, id, cmd, data...)
 
 	if timeout > 0 {
 		time.AfterFunc(time.Duration(timeout)*time.Millisecond, func() {
@@ -213,7 +213,7 @@ func (s *service) request(dst ServiceID, encType EncType, timeout int, respondCb
 			_, ok := s.requestMap[id]
 			s.requestMutex.Unlock()
 			if ok {
-				lowLevelSend(INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, MSG_ENC_TYPE_NO, id, 0)
+				lowLevelSend(INVALID_SERVICE_ID, s.getId(), MSG_TYPE_TIMEOUT, MSG_ENC_TYPE_NO, id, Cmd_None)
 			}
 		})
 	}
@@ -240,7 +240,7 @@ func (s *service) dispatchRequest(msg *Message) {
 }
 
 func (s *service) respond(dst ServiceID, encType EncType, rid uint64, data ...interface{}) {
-	lowLevelSend(s.getId(), dst, MSG_TYPE_RESPOND, encType, rid, 0, data...)
+	lowLevelSend(s.getId(), dst, MSG_TYPE_RESPOND, encType, rid, Cmd_None, data...)
 }
 
 //return request callback by request id
@@ -272,7 +272,7 @@ func (s *service) dispatchRespond(m *Message) {
 	cb.Call(param)
 }
 
-func (s *service) call(dst ServiceID, encType EncType, methodId interface{}, data ...interface{}) ([]interface{}, error) {
+func (s *service) call(dst ServiceID, encType EncType, cmd CmdType, data ...interface{}) ([]interface{}, error) {
 	PanicWhen(dst == s.getId(), "dst must equal to s's id")
 	s.callMutex.Lock()
 	id := s.callId
@@ -283,7 +283,7 @@ func (s *service) call(dst ServiceID, encType EncType, methodId interface{}, dat
 	s.callMutex.Lock()
 	s.callChanMap[id] = ch
 	s.callMutex.Unlock()
-	if err := lowLevelSend(s.getId(), dst, MSG_TYPE_CALL, encType, id, methodId, data...); err != nil {
+	if err := lowLevelSend(s.getId(), dst, MSG_TYPE_CALL, encType, id, cmd, data...); err != nil {
 		return nil, err
 	}
 	if conf.CallTimeOut > 0 {
@@ -311,7 +311,7 @@ func (s *service) ret(dst ServiceID, encType EncType, cid uint64, data ...interf
 	var dstService *service
 	dstService, err := findServiceById(dst)
 	if err != nil {
-		lowLevelSend(s.getId(), dst, MSG_TYPE_RET, encType, cid, 0, data...)
+		lowLevelSend(s.getId(), dst, MSG_TYPE_RET, encType, cid, Cmd_None, data...)
 		return
 	}
 	dstService.dispatchRet(cid, data...)

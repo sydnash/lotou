@@ -15,7 +15,7 @@ var (
 func (g *Game) OnMainLoop(dt int) {
 	if remoteId != 0 {
 		log.Info("send")
-		g.RawSend(remoteId, core.MSG_TYPE_NORMAL, 1, 2, 3, 4)
+		g.RawSend(remoteId, core.MSG_TYPE_NORMAL, "haha", 1, 2, 3, 4)
 
 		t := func(timeout bool, data ...interface{}) {
 			fmt.Println("request respond ", timeout, data)
