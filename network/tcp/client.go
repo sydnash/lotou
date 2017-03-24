@@ -162,7 +162,7 @@ func (c *Client) connect(n int) {
 				//split package
 				pack, err := Subpackage(c.inbuffer)
 				if err != nil {
-					log.Error("cliend read msg failed: %s", err)
+					log.Error("client read msg failed: %s", err)
 					c.onConError()
 					break
 				}
