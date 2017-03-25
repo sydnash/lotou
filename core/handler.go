@@ -7,6 +7,8 @@ import (
 )
 
 //definition for node id
+//if system is standalone, then it's node id is DEFAULT_NODE_ID
+//if system is multi node, master's node id is MASTER_NODE_ID, slave's node is allocation by master service.
 const (
 	NODE_ID_OFF                  = 64 - 16
 	NODE_ID_MASK                 = 0xFFFF << NODE_ID_OFF
@@ -18,6 +20,7 @@ const (
 
 type handleDic map[uint64]*service
 
+//a storage that stores all local services
 type handleStorage struct {
 	dicMutex           sync.Mutex
 	dic                handleDic
@@ -52,6 +55,8 @@ func checkIsLocalId(id ServiceID) bool {
 	return false
 }
 
+//checkIsLocalName check a given name is a local name.
+//a name start with '.' or empty is a local name. others a all global name
 func checkIsLocalName(name string) bool {
 	if len(name) == 0 {
 		return true
@@ -66,6 +71,7 @@ func init() {
 	h = newHandleStorage()
 }
 
+//registerService register a service and allocate a service id to the given service.
 func registerService(s *service) ServiceID {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
@@ -84,6 +90,7 @@ func registerService(s *service) ServiceID {
 	return ServiceID(sid)
 }
 
+//unregisterService delete a service
 func unregisterService(s *service) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
@@ -96,6 +103,7 @@ func unregisterService(s *service) {
 	exitGroup.Done()
 }
 
+//findServiceById return a service by service id
 func findServiceById(id ServiceID) (s *service, err error) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
@@ -106,6 +114,7 @@ func findServiceById(id ServiceID) (s *service, err error) {
 	return s, err
 }
 
+//findServiceByName return a service by service name, it only return local service.
 func findServiceByName(name string) (s *service, err error) {
 	PanicWhen(len(name) == 0, "name must not empty.")
 	h.dicMutex.Lock()

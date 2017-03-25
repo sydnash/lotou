@@ -28,6 +28,7 @@ type Module interface {
 	getDuration() int
 }
 
+//Skeleton a basic implementation for Module
 type Skeleton struct {
 	s                 *service
 	Id                ServiceID
@@ -38,6 +39,8 @@ type Skeleton struct {
 	callDispatcher    *CallHelper
 }
 
+//NewSkeleton create a Skeleton, d is the duration for OnMainLoop
+//if the parameter d is greater than 0, the OnMainLoop will be called once every d milliseconds
 func NewSkeleton(d int) *Skeleton {
 	ret := &Skeleton{D: d}
 	ret.normalDispatcher = NewCallHelper()
@@ -93,6 +96,7 @@ func (s *Skeleton) Call(dst ServiceID, encType EncType, cmd CmdType, data ...int
 	return s.s.call(dst, encType, cmd, data...)
 }
 
+//Schedule schedule a time with given parameter.
 func (s *Skeleton) Schedule(interval, repeat int, cb timer.TimerCallback) *timer.Timer {
 	if s.s == nil {
 		panic("Schedule must call after OnInit is called(contain OnInit)")
@@ -118,10 +122,10 @@ func (s *Skeleton) OnSocketMSG(msg *Message) {
 }
 func (s *Skeleton) OnRequestMSG(msg *Message) {
 	isAutoReply := s.requestDispatcher.getIsAutoReply(msg.Cmd)
-	if isAutoReply {
+	if isAutoReply { //if auto reply is set, auto respond when user's callback is return.
 		ret := s.requestDispatcher.Call(msg.Cmd, msg.Src, msg.Data...)
 		s.Respond(msg.Src, msg.EncType, msg.Id, ret...)
-	} else {
+	} else { //pass a closure to the user's callback, when to call depends on the user.
 		s.requestDispatcher.CallWithReplyFunc(msg.Cmd, msg.Src, func(ret ...interface{}) {
 			s.Respond(msg.Src, msg.EncType, msg.Id, ret...)
 		}, msg.Data...)

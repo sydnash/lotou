@@ -52,7 +52,7 @@ func lowLevelSend(src, dst ServiceID, msgType MsgType, encType EncType, id uint6
 	var msg *Message
 	msg = NewMessage(src, dst, msgType, encType, id, cmd, data...)
 	if err != nil {
-		//doesn't find service and dstid is remote id, send a forward msg to master.
+		//doesn't find service and dstid is remote id, send a forward msg to router.
 		route(Cmd_Forward, msg)
 		return nil
 	}
@@ -69,6 +69,7 @@ func sendName(src ServiceID, dst string, msgType MsgType, cmd CmdType, data ...i
 	return lowLevelSend(src, dsts.getId(), msgType, MSG_ENC_TYPE_GO, 0, cmd, data...)
 }
 
+//ForwardLocal forward the message to the specified local sevice.
 func ForwardLocal(m *Message) {
 	dsts, err := findServiceById(ServiceID(m.Dst))
 	if err != nil {
@@ -90,6 +91,8 @@ func ForwardLocal(m *Message) {
 		dsts.dispatchRet(cid, m.Data...)
 	}
 }
+
+//DistributeMSG distribute the message to all local sevice
 func DistributeMSG(src ServiceID, cmd CmdType, data ...interface{}) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
@@ -100,6 +103,7 @@ func DistributeMSG(src ServiceID, cmd CmdType, data ...interface{}) {
 	}
 }
 
+//localSendWithoutMutex send a message to the local service with no mutex.
 func localSendWithoutMutex(src ServiceID, dstService *service, msgType MsgType, encType EncType, id uint64, cmd CmdType, data ...interface{}) {
 	msg := NewMessage(src, dstService.getId(), msgType, encType, id, cmd, data...)
 	dstService.pushMSG(msg)

@@ -10,7 +10,7 @@ import (
 //StartService start a given module with specific name
 //call module's OnInit interface after register
 //and register name to master if name is a global name
-//start msg loop
+//and start msg loop in an another goroutine
 func StartService(name string, m Module) ServiceID {
 	s := newService(name)
 	s.m = m
@@ -28,11 +28,23 @@ func StartService(name string, m Module) ServiceID {
 	return id
 }
 
+//HelperFunctionToUseReflectCall help to convert realparam like([]interface{}) to reflect.Call's param([]reflect.Value
+//and if param is nil, then use reflect.New to create a empty to avoid crash when reflect.Call invoke.
+//and genrate more readable error message when param is not ok.
 func HelperFunctionToUseReflectCall(f reflect.Value, callParam []reflect.Value, startNum int, realParam []interface{}) {
 	n := len(realParam)
+	lastCallParamIdx := f.Type().NumIn() - 1
+	isVariadic := f.Type().IsVariadic()
 	for i := 0; i < n; i++ {
 		paramIndex := i + startNum
-		expectedType := f.Type().In(paramIndex)
+		var expectedType reflect.Type
+		if isVariadic && paramIndex >= lastCallParamIdx { //variadic function's last param is []T
+			expectedType = f.Type().In(lastCallParamIdx)
+			expectedType = expectedType.Elem()
+		} else {
+			expectedType = f.Type().In(paramIndex)
+		}
+		//if param is nil, create a empty reflect.Value
 		if realParam[i] == nil {
 			callParam[paramIndex] = reflect.New(expectedType).Elem()
 		} else {
@@ -40,6 +52,7 @@ func HelperFunctionToUseReflectCall(f reflect.Value, callParam []reflect.Value, 
 		}
 		actualType := callParam[paramIndex].Type()
 		if !actualType.AssignableTo(expectedType) {
+			//panic if param is not assignable to Call
 			errStr := fmt.Sprintf("InvocationCausedPanic: called with a mismatched parameter type [parameter #%v: expected %v; got %v].", paramIndex, expectedType, actualType)
 			panic(errStr)
 		}
@@ -51,6 +64,7 @@ func ParseNodeId(id ServiceID) uint64 {
 	return id.parseNodeId()
 }
 
+//Send send a message to dst service no src service.
 func Send(dst ServiceID, msgType MsgType, encType EncType, cmd CmdType, data ...interface{}) error {
 	return lowLevelSend(INVALID_SERVICE_ID, dst, msgType, encType, 0, cmd, data...)
 }
@@ -64,10 +78,12 @@ func SendCloseToAll() {
 	}
 }
 
+//Wait wait on a sync.WaitGroup, until all service is closed.
 func Wait() {
 	exitGroup.Wait()
 }
 
+//CheckIsLocalServiceId heck a given service id is a local service
 func CheckIsLocalServiceId(id ServiceID) bool {
 	return checkIsLocalId(id)
 }

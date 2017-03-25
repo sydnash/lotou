@@ -77,7 +77,7 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 	cmd := msg.Cmd
 	//data[0] is a gob encode with message
 	data := msg.Data
-	//it's first encode value is cmd such as (registerNode, regeisterName, getIdByName, forword...)
+	//it's first encode value is cmd such as (registerNode, regeisterName, getIdByName, forward...)
 	if cmd == tcp.AGENT_DATA {
 		sdata := gob.Unpack(data[0].([]byte))
 		slaveMSG := sdata.([]interface{})[0].(*core.Message)
