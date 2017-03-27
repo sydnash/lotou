@@ -23,7 +23,10 @@ type Module interface {
 	OnDistributeMSG(msg *Message)
 	//OnCloseNotify is called when received msg from SendClose() with false param.
 	OnCloseNotify()
+	//~ The very beginning of initializing a service to a new Module
+	OnModuleStartup(sid ServiceID, serviceName string)
 
+	// internal method lol
 	setService(s *service)
 	getDuration() int
 }
@@ -43,9 +46,6 @@ type Skeleton struct {
 //if the parameter d is greater than 0, the OnMainLoop will be called once every d milliseconds
 func NewSkeleton(d int) *Skeleton {
 	ret := &Skeleton{D: d}
-	ret.normalDispatcher = NewCallHelper()
-	ret.requestDispatcher = NewCallHelper()
-	ret.callDispatcher = NewCallHelper()
 	return ret
 }
 
@@ -53,6 +53,12 @@ func (s *Skeleton) setService(ser *service) {
 	s.s = ser
 	s.Id = ser.getId()
 	s.Name = ser.getName()
+}
+
+func (s *Skeleton) OnModuleStartup(sid ServiceID, serviceName string) {
+	s.normalDispatcher = NewCallHelper(serviceName)
+	s.requestDispatcher = NewCallHelper(serviceName)
+	s.callDispatcher = NewCallHelper(serviceName)
 }
 
 func (s *Skeleton) getDuration() int {
