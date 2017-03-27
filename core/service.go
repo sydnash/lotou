@@ -122,6 +122,7 @@ func (s *service) loopSelect() (ret bool) {
 	ret = true
 	defer func() {
 		if err := recover(); err != nil {
+			log.Error("error in service<%v>", s.getName())
 			log.Error("recover: stack: %v\n, %v", string(debug.Stack()), err)
 		}
 	}()
@@ -153,6 +154,7 @@ func (s *service) loopWithLoopSelect() (ret bool) {
 	ret = true
 	defer func() {
 		if err := recover(); err != nil {
+			log.Error("error in service<%v>", s.getName())
 			log.Error("recover: stack: %v\n, %v", string(debug.Stack()), err)
 		}
 	}()

@@ -7,10 +7,10 @@ import (
 	"runtime/debug"
 )
 
-//StartService start a given module with specific name
-//call module's OnInit interface after register
-//and register name to master if name is a global name
-//and start msg loop in an another goroutine
+// StartService starts the given modules with specific names
+//`service' will call module's OnInit after registration
+// and registers name to master if the name(of service) is a global name (starting without a dot)
+// and starts msg loop in an another goroutine
 func StartService(name string, m Module) ServiceID {
 	s := newService(name)
 	s.m = m
@@ -20,6 +20,7 @@ func StartService(name string, m Module) ServiceID {
 	if !checkIsLocalName(name) {
 		globalName(id, name)
 	}
+	s.m.OnModuleStartup(id, name)
 	if d > 0 {
 		s.runWithLoop(d)
 	} else {
@@ -28,9 +29,9 @@ func StartService(name string, m Module) ServiceID {
 	return id
 }
 
-//HelperFunctionToUseReflectCall help to convert realparam like([]interface{}) to reflect.Call's param([]reflect.Value
-//and if param is nil, then use reflect.New to create a empty to avoid crash when reflect.Call invoke.
-//and genrate more readable error message when param is not ok.
+//HelperFunctionToUseReflectCall helps to convert realparam like([]interface{}) to reflect.Call's param([]reflect.Value
+//and if param is nil, then use reflect.New to create an empty to avoid crash when reflect.Call invokes.
+//and genrates more readable error messages if param is not ok.
 func HelperFunctionToUseReflectCall(f reflect.Value, callParam []reflect.Value, startNum int, realParam []interface{}) {
 	n := len(realParam)
 	lastCallParamIdx := f.Type().NumIn() - 1
@@ -57,6 +58,21 @@ func HelperFunctionToUseReflectCall(f reflect.Value, callParam []reflect.Value, 
 			panic(errStr)
 		}
 	}
+}
+
+func PrintArgListForFunc(f reflect.Value) {
+	t := f.Type()
+	if t.Kind() != reflect.Func {
+		fmt.Println("Not a func")
+		return
+	}
+	inCount := t.NumIn()
+	var str string
+	for i := 0; i < inCount; i++ {
+		et := t.In(i)
+		str = str + ":" + et.Name()
+	}
+	fmt.Println(str)
 }
 
 //Parse Node Id parse node id from service id

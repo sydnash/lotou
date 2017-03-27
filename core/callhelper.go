@@ -17,7 +17,8 @@ type callbackDesc struct {
 	isAutoReply bool
 }
 type CallHelper struct {
-	funcMap map[CmdType]*callbackDesc
+	funcMap         map[CmdType]*callbackDesc
+	hostServiceName string //help to locate which callback is not registered.
 }
 
 type ReplyFunc func(data ...interface{})
@@ -26,10 +27,11 @@ var (
 	FuncNotFound = errors.New("func not found.")
 )
 
-func NewCallHelper() *CallHelper {
-	ret := &CallHelper{}
-	ret.funcMap = make(map[CmdType]*callbackDesc)
-	return ret
+func NewCallHelper(name string) *CallHelper {
+	return &CallHelper{
+		hostServiceName: name,
+		funcMap:         make(map[CmdType]*callbackDesc),
+	}
 }
 
 //AddFunc add callback with normal function
@@ -65,7 +67,7 @@ func (c *CallHelper) getIsAutoReply(cmd CmdType) bool {
 func (c *CallHelper) findCallbackDesc(cmd CmdType) *callbackDesc {
 	cb, ok := c.funcMap[cmd]
 	if !ok {
-		log.Fatal("func: %v is not found", cmd)
+		log.Fatal("func: <%v>:%d is not found in {%v}", cmd, len(cmd), c.hostServiceName)
 	}
 	return cb
 }
@@ -96,7 +98,6 @@ func (c *CallHelper) Call(cmd CmdType, src ServiceID, param ...interface{}) []in
 //CallWithReplyFunc invoke special function for cmd with a reply function which is used to reply Call or Request.
 func (c *CallHelper) CallWithReplyFunc(cmd CmdType, src ServiceID, replyFunc ReplyFunc, param ...interface{}) {
 	cb := c.findCallbackDesc(cmd)
-
 	//addition two param for source service id and reply function
 	p := make([]reflect.Value, len(param)+2)
 	p[0] = reflect.ValueOf(src)

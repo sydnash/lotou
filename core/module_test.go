@@ -1,16 +1,17 @@
-package core
+package core_test
 
 import (
 	"fmt"
 	"github.com/sydnash/lotou/conf"
+	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"testing"
 	"time"
 )
 
 type Game struct {
-	*Skeleton
-	Dst ServiceID
+	*core.Skeleton
+	Dst core.ServiceID
 }
 
 type XMsg struct {
@@ -20,34 +21,34 @@ type XMsg struct {
 }
 
 func (g *Game) OnMainLoop(dt int) {
-	g.Send(g.Dst, MSG_TYPE_NORMAL, MSG_ENC_TYPE_GO, "testNormal", g.Name, []byte{1, 2, 3, 4, 56})
-	g.RawSend(g.Dst, MSG_TYPE_NORMAL, "testNormal", g.Name, g.Id)
+	g.Send(g.Dst, core.MSG_TYPE_NORMAL, core.MSG_ENC_TYPE_GO, "testNormal", g.Name, []byte{1, 2, 3, 4, 56})
+	g.RawSend(g.Dst, core.MSG_TYPE_NORMAL, "testNormal", g.Name, g.Id)
 
 	t := func(timeout bool, data ...interface{}) {
 		fmt.Println("request respond ", timeout, data)
 	}
-	g.Request(g.Dst, MSG_ENC_TYPE_GO, 10, t, "testRequest", "hello")
+	g.Request(g.Dst, core.MSG_ENC_TYPE_GO, 10, t, "testRequest", "hello")
 
-	fmt.Println(g.Call(g.Dst, MSG_ENC_TYPE_GO, "testCall", "hello"))
+	fmt.Println(g.Call(g.Dst, core.MSG_ENC_TYPE_GO, "testCall", "hello"))
 }
 
 func (g *Game) OnInit() {
 	//test for go and no enc
-	g.RegisterHandlerFunc(MSG_TYPE_NORMAL, "testNormal", func(src ServiceID, data ...interface{}) {
+	g.RegisterHandlerFunc(core.MSG_TYPE_NORMAL, "testNormal", func(src core.ServiceID, data ...interface{}) {
 		log.Info("%v, %v", src, data)
 	}, true)
-	g.RegisterHandlerFunc(MSG_TYPE_REQUEST, "testRequest", func(src ServiceID, data ...interface{}) string {
+	g.RegisterHandlerFunc(core.MSG_TYPE_REQUEST, "testRequest", func(src core.ServiceID, data ...interface{}) string {
 		return "world"
 	}, true)
-	g.RegisterHandlerFunc(MSG_TYPE_CALL, "testCall", func(src ServiceID, data ...interface{}) (string, string) {
+	g.RegisterHandlerFunc(core.MSG_TYPE_CALL, "testCall", func(src core.ServiceID, data ...interface{}) (string, string) {
 		return "hello", "world"
 	}, true)
 }
 
 func TestModule(t *testing.T) {
 	log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
-	id1 := StartService("g1", &Game{Skeleton: NewSkeleton(0)})
-	StartService("g2", &Game{Skeleton: NewSkeleton(1000), Dst: id1})
+	id1 := core.StartService("g1", &Game{Skeleton: core.NewSkeleton(0)})
+	core.StartService("g2", &Game{Skeleton: core.NewSkeleton(1000), Dst: id1})
 
 	ch := make(chan int)
 	go func() {
