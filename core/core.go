@@ -59,6 +59,21 @@ func HelperFunctionToUseReflectCall(f reflect.Value, callParam []reflect.Value, 
 	}
 }
 
+func PrintArgListForFunc(f reflect.Value) {
+	t := f.Type()
+	if t.Kind() != reflect.Func {
+		fmt.Println("Not a func")
+		return
+	}
+	inCount := t.NumIn()
+	var str string
+	for i := 0; i < inCount; i++ {
+		et := t.In(i)
+		str = str + ":" + et.Name()
+	}
+	fmt.Println(str)
+}
+
 //Parse Node Id parse node id from service id
 func ParseNodeId(id ServiceID) uint64 {
 	return id.parseNodeId()
