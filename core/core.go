@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/sydnash/lotou/log"
 	"reflect"
-	"runtime/debug"
 )
 
 // StartService starts the given modules with specific names
@@ -109,7 +108,7 @@ func SafeGo(f func()) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Error("recover: stack: %v\n, %v", string(debug.Stack()), err)
+				log.Error("recover: stack: %v\n, %v", GetStack(), err)
 			}
 			return
 		}()

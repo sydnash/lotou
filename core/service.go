@@ -7,7 +7,6 @@ import (
 	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/timer"
 	"reflect"
-	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -123,7 +122,7 @@ func (s *service) loopSelect() (ret bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Error("error in service<%v>", s.getName())
-			log.Error("recover: stack: %v\n, %v", string(debug.Stack()), err)
+			log.Error("recover: stack: %v\n, %v", GetStack(), err)
 		}
 	}()
 	select {
@@ -155,7 +154,7 @@ func (s *service) loopWithLoopSelect() (ret bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Error("error in service<%v>", s.getName())
-			log.Error("recover: stack: %v\n, %v", string(debug.Stack()), err)
+			log.Error("recover: stack: %v\n, %v", GetStack(), err)
 		}
 	}()
 	select {
