@@ -56,9 +56,9 @@ func (s *Skeleton) setService(ser *service) {
 }
 
 func (s *Skeleton) OnModuleStartup(sid ServiceID, serviceName string) {
-	s.normalDispatcher = NewCallHelper(serviceName)
-	s.requestDispatcher = NewCallHelper(serviceName)
-	s.callDispatcher = NewCallHelper(serviceName)
+	s.normalDispatcher = NewCallHelper(serviceName + ":normalDispatcher")
+	s.requestDispatcher = NewCallHelper(serviceName + ":requestDispatcher")
+	s.callDispatcher = NewCallHelper(serviceName + ":callDispatcher")
 }
 
 func (s *Skeleton) getDuration() int {
