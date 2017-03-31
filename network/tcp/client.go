@@ -6,7 +6,6 @@ import (
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/log"
 	"net"
-	"sync/atomic"
 	"time"
 )
 
@@ -40,6 +39,7 @@ func NewClient(host, port string, hostID core.ServiceID) *Client {
 		return nil
 	}
 	c.RemoteAddress = tcpAddress
+	//status modify on main goroutinue
 	c.status = CLIENT_STATUS_NOT_CONNECT
 	c.bufferForOutMsg = bytes.NewBuffer([]byte{})
 	return c
@@ -87,8 +87,10 @@ func (c *Client) sendBufferOutMsgAndData(data []byte) {
 }
 
 func (c *Client) onSend(src core.ServiceID, param ...interface{}) {
+	//status check and modify on main goroutinue
 	if c.status != CLIENT_STATUS_CONNECTED {
 		if c.status == CLIENT_STATUS_NOT_CONNECT {
+			c.status = CLIENT_STATUS_CONNECTING
 			go c.connect(-1)
 		}
 		data := param[0].([]byte)
@@ -105,6 +107,7 @@ func (c *Client) onSend(src core.ServiceID, param ...interface{}) {
 		c.bufferForOutMsg.Write(data)
 		return
 	}
+	//sendBufferOutMsgAndData on main goroutinue
 	c.sendBufferOutMsgAndData(param[0].([]byte))
 }
 
@@ -118,13 +121,19 @@ func (c *Client) OnNormalMSG(msg *core.Message) {
 		c.onConnect(n)
 	case CLIENT_CMD_SEND:
 		c.onSend(src, param...)
+	case CLIENT_SELF_CONNECTED:
+		//status modify on main goroutinue
+		c.status = CLIENT_STATUS_CONNECTED
+		//sendBufferOutMsgAndData on main goroutinue
+		c.sendBufferOutMsgAndData(nil)
+	case CLIENT_SELF_DISCONNECTED:
+		//status modify on goroutinue
+		c.status = CLIENT_STATUS_NOT_CONNECT
+		c.OnDestroy()
 	}
 }
 
 func (c *Client) connect(n int) {
-	if !atomic.CompareAndSwapInt32(&c.status, CLIENT_STATUS_NOT_CONNECT, CLIENT_STATUS_CONNECTING) {
-		return
-	}
 	i := 0
 	for {
 		if c.isNeedExit {
@@ -156,7 +165,8 @@ func (c *Client) connect(n int) {
 			c.outbuffer.Reset(c.Con)
 		}
 		c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_CONNECTED) //connect success
-		c.sendBufferOutMsgAndData(nil)
+		//send normal msg to tell self tcp is connected.
+		c.RawSend(c.Id, core.MSG_TYPE_NORMAL, CLIENT_SELF_CONNECTED)
 		go func() {
 			for {
 				//split package
@@ -170,17 +180,12 @@ func (c *Client) connect(n int) {
 			}
 		}()
 	}
-	atomic.StoreInt32(&c.status, CLIENT_STATUS_CONNECTED)
 }
 
 func (c *Client) onConError() {
 	c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_DISCONNECTED) //disconnected
-	c.OnDestroy()
-	if c.Con != nil {
-		c.Con.Close()
-	}
-	c.Con = nil
-	atomic.StoreInt32(&c.status, CLIENT_STATUS_NOT_CONNECT)
+	//send normal msg to tell self tcp is diconnected.
+	c.RawSend(c.Id, core.MSG_TYPE_NORMAL, CLIENT_SELF_DISCONNECTED)
 }
 
 func (c *Client) sendToHost(msgType core.MsgType, cmd core.CmdType, data ...interface{}) {
