@@ -39,6 +39,7 @@ func init() {
 	validNodeIdVec = vector.New()
 }
 
+//InitNode set node's information.
 func InitNode(_isStandalone, _isMaster bool) {
 	isStandalone = _isStandalone
 	isMaster = _isMaster
@@ -47,7 +48,8 @@ func InitNode(_isStandalone, _isMaster bool) {
 	}
 }
 
-//RegisterNode : register slave node to master, and get a node id.
+//RegisterNode : register slave node to master, and get a node id
+// block until register success
 func RegisterNode() {
 	once.Do(func() {
 		if !isStandalone && !isMaster {
@@ -58,6 +60,7 @@ func RegisterNode() {
 	})
 }
 
+//DispatchRegisterNodeRet send RegisterNode's return to channel which RegisterNode is wait for
 func DispatchRegisterNodeRet(id uint64) {
 	registerNodeChan <- id
 }
