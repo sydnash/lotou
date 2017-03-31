@@ -28,7 +28,7 @@ var (
 )
 
 func init() {
-	registerNodeChan = make(chan uint64)
+	registerNodeChan = make(chan uint64, 1)
 
 	nameChanMap = make(map[uint]chan *nameRet)
 	nameRequestId = 0
@@ -95,7 +95,7 @@ func NameToId(name string) (ServiceID, error) {
 		tmp := nameRequestId
 		nameMapMutex.Unlock()
 
-		ch := make(chan *nameRet)
+		ch := make(chan *nameRet, 1)
 		nameMapMutex.Lock()
 		nameChanMap[tmp] = ch
 		nameMapMutex.Unlock()

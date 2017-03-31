@@ -282,7 +282,8 @@ func (s *service) call(dst ServiceID, encType EncType, cmd CmdType, data ...inte
 	s.callId++
 	s.callMutex.Unlock()
 
-	ch := make(chan []interface{})
+	//ch has one buffer, make ret service not block on it.
+	ch := make(chan []interface{}, 1)
 	s.callMutex.Lock()
 	s.callChanMap[id] = ch
 	s.callMutex.Unlock()
