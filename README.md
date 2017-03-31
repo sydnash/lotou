@@ -1,7 +1,7 @@
 # lotou
 
 lotou是一个基于golang的轻量级游戏服务器框架，主要对游戏内部的消息传递进行了封装，方便多服务、多节点游戏开发。
-
+一些关于lotou的介绍可以看我的相关博文[lotou介绍](http://blog.csdn.net/sydnash/article/details/66033983)
 如果有兴趣，可以联系我
 QQ：157621271
 wechat：daijun_1234  
