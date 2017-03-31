@@ -23,7 +23,7 @@ func PanicWhen(b bool, s string) {
 	}
 }
 
-//GetStack return current runtime stack as string, and cut the message which is before log and print
+//GetStack return current runtime stack as string, and cut the message which is before log and panic
 func GetStack() string {
 	stack := string(debug.Stack())
 	for {
