@@ -2,6 +2,7 @@ package vector
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -86,4 +87,7 @@ func TestDelete(t *testing.T) {
 	n := New()
 	n.Copy(v)
 	errorOnDeepEqual(n.s, []interface{}{4, 3, 6, 6, 2, 5}, "Copy", t)
+
+	n.DeleteByValue(4)
+	errorOnDeepEqual(n.s, []interface{}{3, 6, 6, 2, 5}, "delete by value", t)
 }
