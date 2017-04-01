@@ -44,6 +44,8 @@ func newHandleStorage() *handleStorage {
 	return h
 }
 
+//checkIsLocalId checks a given service id is a local service's id
+//a serviceId's node id is equal to DEFAULT_NODE_ID or nodeId is a local service's id
 func checkIsLocalId(id ServiceID) bool {
 	nodeId := id.parseNodeId()
 	if nodeId == DEFAULT_NODE_ID {
@@ -55,7 +57,7 @@ func checkIsLocalId(id ServiceID) bool {
 	return false
 }
 
-//checkIsLocalName check a given name is a local name.
+//checkIsLocalName checks a given name is a local name.
 //a name start with '.' or empty is a local name. others a all global name
 func checkIsLocalName(name string) bool {
 	if len(name) == 0 {
@@ -90,7 +92,7 @@ func registerService(s *service) ServiceID {
 	return ServiceID(sid)
 }
 
-//unregisterService delete a service
+//unregisterService delete a service and put it's to cache which can be resued again when register
 func unregisterService(s *service) {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()

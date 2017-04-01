@@ -28,7 +28,7 @@ var (
 )
 
 func init() {
-	registerNodeChan = make(chan uint64)
+	registerNodeChan = make(chan uint64, 1)
 
 	nameChanMap = make(map[uint]chan *nameRet)
 	nameRequestId = 0
@@ -39,6 +39,7 @@ func init() {
 	validNodeIdVec = vector.New()
 }
 
+//InitNode set node's information.
 func InitNode(_isStandalone, _isMaster bool) {
 	isStandalone = _isStandalone
 	isMaster = _isMaster
@@ -47,7 +48,8 @@ func InitNode(_isStandalone, _isMaster bool) {
 	}
 }
 
-//RegisterNode : register slave node to master, and get a node id.
+//RegisterNode : register slave node to master, and get a node id
+// block until register success
 func RegisterNode() {
 	once.Do(func() {
 		if !isStandalone && !isMaster {
@@ -58,6 +60,7 @@ func RegisterNode() {
 	})
 }
 
+//DispatchRegisterNodeRet send RegisterNode's return to channel which RegisterNode is wait for
 func DispatchRegisterNodeRet(id uint64) {
 	registerNodeChan <- id
 }
@@ -92,7 +95,7 @@ func NameToId(name string) (ServiceID, error) {
 		tmp := nameRequestId
 		nameMapMutex.Unlock()
 
-		ch := make(chan *nameRet)
+		ch := make(chan *nameRet, 1)
 		nameMapMutex.Lock()
 		nameChanMap[tmp] = ch
 		nameMapMutex.Unlock()

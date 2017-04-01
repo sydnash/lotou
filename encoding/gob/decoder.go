@@ -147,7 +147,6 @@ func (dec *Decoder) decodeUInt() uint64 {
 		if b < 0x80 {
 			if i > 9 || i == 9 && b > 1 {
 				panic("decode uint error.")
-				return 0
 			}
 			t = i + 1
 			dec.r = dec.r + t
@@ -157,7 +156,6 @@ func (dec *Decoder) decodeUInt() uint64 {
 		s += 7
 	}
 	panic("decode uint error.")
-	return 0
 }
 
 func (dec *Decoder) decodeInt() int64 {

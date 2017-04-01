@@ -117,6 +117,7 @@ func (s *service) dispatchMSG(msg *Message) bool {
 	return false
 }
 
+//select on msgChan only
 func (s *service) loopSelect() (ret bool) {
 	ret = true
 	defer func() {
@@ -149,6 +150,7 @@ func (s *service) loop() {
 	s.destroy()
 }
 
+//select on msgChan and a loop ticker
 func (s *service) loopWithLoopSelect() (ret bool) {
 	ret = true
 	defer func() {
@@ -185,10 +187,12 @@ func (s *service) loopWithLoop() {
 	s.destroy()
 }
 
+//start a goroutinue with no ticker for main loop
 func (s *service) run() {
 	SafeGo(s.loop)
 }
 
+//start a goroutinue with ticker for main loop
 func (s *service) runWithLoop(d int) {
 	s.loopDuration = d
 	s.loopTicker = time.NewTicker(time.Duration(d) * time.Millisecond)
@@ -278,7 +282,8 @@ func (s *service) call(dst ServiceID, encType EncType, cmd CmdType, data ...inte
 	s.callId++
 	s.callMutex.Unlock()
 
-	ch := make(chan []interface{})
+	//ch has one buffer, make ret service not block on it.
+	ch := make(chan []interface{}, 1)
 	s.callMutex.Lock()
 	s.callChanMap[id] = ch
 	s.callMutex.Unlock()

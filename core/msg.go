@@ -45,7 +45,7 @@ func send(src ServiceID, dst ServiceID, msgType MsgType, encType EncType, id uin
 func lowLevelSend(src, dst ServiceID, msgType MsgType, encType EncType, id uint64, cmd CmdType, data ...interface{}) error {
 	dsts, err := findServiceById(dst)
 	isLocal := checkIsLocalId(dst)
-
+	//a local service is not been found
 	if err != nil && isLocal {
 		return err
 	}

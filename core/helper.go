@@ -23,6 +23,7 @@ func PanicWhen(b bool, s string) {
 	}
 }
 
+//GetStack return calling stack as string in which messages before log and panic are tripped.
 func GetStack() string {
 	stack := string(debug.Stack())
 	for {
