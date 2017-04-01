@@ -1,65 +1,83 @@
+Lotou is a lightweithed framework for game server implemented in golang. 
+It utilizes the communication between nodes by abstracting exchangings of messages 
+so that the multi-nodes and multi-services can be easily achieved.
+
+If you are interested in developing Lotou, feel free to contact me via 
+   QQ 157621271 
+   Wechat ID daijun_1234. 
+   QQ group is also available 362112175. (Fill verification message with `Lotou`)
+Advices and geeks are always welcomed. 
+
+[中文博客](http://blog.csdn.net/sydnash/article/details/66033983)
+-------------------
 # lotou
+Lotou is inspired by the framework SKYNET written by cloudwu.
+Within this framework, all services communicates each other by messaging. 
+Functions supplied by services are not exposed by API calling. 
+In current version, module core is responsible for routing messages, 
+and every service has its own message chan for receiving and sending. 
 
+# features
 
+1. message based comunication between service(idea from share memory through comunication in golang)
+2. multicore support
+3. cluster support 
+4. extremely simple user interface
 
-lotou是一个基于golang的轻量级游戏服务器框架，主要对游戏内部的消息传递进行了封装，方便多服务、多节点游戏开发。
-一些关于lotou的介绍可以看我的相关博文[lotou介绍](http://blog.csdn.net/sydnash/article/details/66033983)
-
-
-如果有兴趣，可以联系我
-QQ：157621271
-wechat：daijun_1234  
-golang&lotou 交流群号：362112175    欢迎达人进来分享技术
-
-申请请写lotou  
-
-a golang game server framework
-
-I want write it as a game server.
-
-lotou模仿了一部分skynet的模式，服务分为多个service，service之间通过消息进行通信，不会进行
-直接的函数调用。目前通过core对消息进行转发，每一个service都有一个chan用于接收core转发的消
-息。
-
-## encoding
-
-encoding is used to encode and decode socket message, here provide to encode type:  
-1. a binary encode like go's json, but it encode a struct to binary, and decode from binary stream.  
-2. a gob encode, it encode each value's type, can auto parse to interface{} of that type.  
-
-### binary
-binary用于进行二进制编码，主要用户客户端、服务器通信。
-使用方式和golang的json有点类似。
- [useage](https://github.com/sydnash/lotou/blob/master/encoding/binary/binary_test.go)
-
-### gob
-gob用于实现服务节点间的通信，由于服务间的通信有可能在本机有可能跨节点，
-本地消息通信不需要进行编码，跨节点通信的时候则需要进行编码。gob会同时将
-数据的类型和值编码到package中，这样就不需要对消息进行注册，不过消息中的
-结构体类型必须先注册到gob中进行，为了保证struct的ID一致，每一个节点都要
-使用相同的顺序注册所有结构体。
-
-目前对于slice、map的编码不够高效，为了可以编解码[]interface{}类型的slice，
-目前会对slice每一个元素都对类型进行编码，希望可以根据elem类型进行适当的
-调整。
-
-内部使用reflect实现。
- [useage](https://github.com/sydnash/lotou/blob/master/encoding/gob/type_test.go)
-	
-## log
-
-log模块用于打印调试和错误信息，目前使用的是异步打印方式，暂不支持同步打印，这种模式会在程序panic的时候有些关键信息无法打印出来，还在考虑是否换为同步打印模式。
-
-##network
-
-network模块实现了一个基于tcp的server和client，暂时还未加入心跳机制，client会在需要发送数据的时候自动建立tcp连接。
+# main functional package
 
 ## core
+core supplies the communication between services. 
+All services are registered to `core`, and send message to others by core.send.
 
-core提供service之间通信的桥梁，所有的service都会在core进行注册，然后service之间通过core.send进行消息发送。
+## binary
+
+`binary` encodes data into binary stream for communication between servers and clients.
+Usage of this encoding convention is somewhat like the usage of json marshalling. 
+
+gob(not gob in golang's own lib)
+Gob encoding aims to sustain nodes' communication. 
+Communication of services can be trans-nodes, so the encoding messages into binary stream is necessary.
+Message switching within nodes do not need to be encoded for better performance. 
+
+All primitive types in golang can be encoded. 
+Any combination of parameters is easily supported 
+as long as the sender and the receiver complies with the same signature
+
+self-defined struct can also be supported, but the struct must be registered in advanced.
+If different nodes need to use the same struct, the registration of those structs must 
+be registered in a fixed and unique sequence. 
+
+At present, encoding performances for slice and map are not so good. 
+In order to encode type of `[]interface{}`, each elements of which are encoded separately. 
+To be more specific, type info for each elements are all marshalled. 
+So if there are elements of one certain same type, type info are marshalled redundantly.
+
+Marshalling of gob(Lotou) is achieved by reflect.
+
+## log
+
+Module of log is for printing debug and error information. 
+Currently, log is Synchronized mode, if we have too many log which needs to wirte to file, it may block the main logic.
+(it may be changed to asynchronized mode some day)
+
+## network
+network implements the routes between nodes in TCP. 
+Roles of `server` and `client` work as what they are called. 
+Heartbeat is not implemented yet. 
+`client` establishes connection to its `server` at the first time of sending message. 
 
 ## topology
-
-topology，用于支持拓扑结构的服务器，一个master和N个slave，master会作为数据交互中心，不同logic主机上的消息会通过  master进行中转。
-目前可以通过slave master模块，使节点可以给本地节点的服务注册全局名字，可以通过全局名字获取服务ID，同时对发送给非
-本地节点的消息进行转发。
+Multi-node servers are based on topoloy. 
+There are two types of nodes in Lotou 
+and different types of nodes are clusted into the same network.
+Within a certain network there is only one master node and serveral slave nodes. 
+Services can be run in any type of node and there are two types of services:
+Local service and global service. 
+Local service are ones within the same node known to each other by name.
+Global service are ones run by different nodes
+ and they are exposed to all services of all nodes by being registered to master.
+ 
+ 
+ 
+ 

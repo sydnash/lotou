@@ -1,5 +1,9 @@
 package vector
 
+type Comparable interface {
+	Equal(Comparable) bool
+}
+
 type Vector struct {
 	s []interface{}
 }
@@ -123,4 +127,26 @@ func (v *Vector) Clear() {
 		v.s[i] = nil
 	}
 	v.s = v.s[0:0]
+}
+
+func isEqual(d1, d2 interface{}) bool {
+	p, ok := d1.(Comparable)
+	if ok {
+		return p.Equal(d2.(Comparable))
+	} else {
+		return d1 == d2
+	}
+}
+
+func (v *Vector) DeleteByValue(d interface{}) {
+	for i, t := range v.s {
+		if isEqual(t, d) {
+			v.Delete(i)
+			return
+		}
+	}
+}
+
+func (v *Vector) Raw() []interface{} {
+	return v.s
 }

@@ -60,7 +60,7 @@ func (c *Client) onConnect(n int) {
 
 func (c *Client) sendBufferOutMsgAndData(data []byte) {
 	if c.Con != nil {
-		c.Con.SetWriteDeadline(time.Now().Add(time.Second * 20))
+		c.Con.SetWriteDeadline(time.Now().Add(time.Second * 5))
 		if c.bufferForOutMsg.Len() > 0 {
 			_, err := c.outbuffer.Write(c.bufferForOutMsg.Bytes())
 			if err != nil {
