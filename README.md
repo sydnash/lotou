@@ -1,4 +1,4 @@
-Lotou is a lightweithed framework for game server implemented in golang.
+Lotou is a lightweight framework for game server implemented in golang.
 It utilizes the communication between nodes by abstracting exchangings of messages 
 so that the multi-nodes and multi-services can be easily achieved.
 
@@ -25,7 +25,7 @@ and every service has its own message chan for receiving and sending.
 
 # features
 
-1. message based comunication between service(idea from share memory through comunication in golang)
+1. message based on communication between service(idea from share memory through communication in golang)
 2. multicore support
 3. cluster support 
 4. extremely simple user interface
