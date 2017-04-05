@@ -2,17 +2,6 @@ Lotou is a lightweight framework for game server implemented in golang.
 It utilizes the communication between nodes by abstracting exchangings of messages 
 so that the multi-nodes and multi-services can be easily achieved.
 
-If you are interested in developing Lotou, feel free to contact me via 
-
-   QQ 157621271 
-   
-   Wechat ID daijun_1234. 
-   
-   QQ group is also available 362112175. (Fill verification message with `Lotou`)
-   
-   twitter @sydnash1
-   
-Advices and geeks are always welcomed. 
 
 [中文博客](http://blog.csdn.net/sydnash/article/details/66033983)
 -------------------
@@ -85,5 +74,18 @@ Global service are ones run by different nodes
  and they are exposed to all services of all nodes by being registered to master.
  
  
+# contact us
+
+If you are interested in developing Lotou, feel free to contact me via 
+
+   QQ 157621271 
+   
+   Wechat ID daijun_1234. 
+   
+   QQ group is also available 362112175. (Fill verification message with `Lotou`)
+   
+   twitter @sydnash1
+   
+Advices and geeks are always welcomed. 
  
  
