@@ -6,6 +6,10 @@ import (
 	"reflect"
 )
 
+func GetTypeRepr(x interface{}) string {
+	return getTypeFrag(x)
+}
+
 func getTypeFrag(x interface{}) string {
 	return getTypeFragStr(reflect.TypeOf(x))
 }
@@ -86,7 +90,7 @@ func getStructFlatStr(t reflect.Type) string {
 		panic(`Not a struct as expected`)
 	}
 	n := t.NumField()
-	var s string = fmt.Sprintf("%v=Struct{<%v>::", t.Name(), n)
+	var s string = fmt.Sprintf("%v.%v=Struct{<%v>::", t.PkgPath(), t.Name(), n)
 	for i := 0; i < n; i++ {
 		f := t.Field(i) //~ StructField
 		s += fmt.Sprintf("%v<%v>;", f.Name, getTypeFragStr(f.Type))
