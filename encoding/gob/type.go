@@ -8,7 +8,6 @@ import (
 
 var (
 	rtypeToUtMutxt    sync.Mutex
-	typeId            uint
 	typeIdToUt        map[uint]reflect.Type
 	baseRtToTypeId    map[reflect.Type]uint
 	kindToReflectType map[reflect.Kind]reflect.Type
@@ -25,7 +24,7 @@ func RegisterStructType(i interface{}) {
 	if ok {
 		return
 	}
-	typeId++
+	typeId := getStructID(rt)
 	baseRtToTypeId[rt] = typeId
 	typeIdToUt[typeId] = rt
 }
