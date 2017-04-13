@@ -2,7 +2,11 @@ package tcp
 
 import (
 	"bufio"
+	"errors"
+	"github.com/sydnash/lotou/log"
 )
+
+var ErrPacketLenExceed = errors.New("packet length exceed")
 
 func IntToByteSlice(v uint32) []byte {
 	a := make([]byte, 4)
@@ -29,6 +33,10 @@ func Subpackage(in *bufio.Reader) (pack []byte, err error) {
 			packLen = int(ByteSliceToInt(pre))
 			break
 		}
+	}
+	if packLen > MAX_PACKET_LEN {
+		log.Error("packet length exceeds the maximum range: %v", packLen)
+		return pack, ErrPacketLenExceed
 	}
 	for {
 		t, err := in.Peek(packLen)

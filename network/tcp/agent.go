@@ -39,6 +39,7 @@ func (a *Agent) OnInit() {
 	a.leftTimeBeforArrived = AgentNoDataHoldtime
 	a.inbuffer = bufio.NewReader(a.Con)
 	a.outbuffer = bufio.NewWriter(a.Con)
+	log.Info("receive a connect at: %v", a.Con.RemoteAddr())
 	go func() {
 		for {
 			pack, err := Subpackage(a.inbuffer)
@@ -68,7 +69,7 @@ func (a *Agent) OnMainLoop(dt int) {
 	if !a.hasDataArrived {
 		a.leftTimeBeforArrived -= dt
 		if a.leftTimeBeforArrived < 0 {
-			log.Error("agent hasn't got any data for %v ms", AgentNoDataHoldtime)
+			log.Error("agent hasn't got any data within %v ms", AgentNoDataHoldtime)
 			a.SendClose(a.Id, false)
 		}
 	}

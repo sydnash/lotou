@@ -18,3 +18,7 @@ const (
 	CLIENT_CMD_CONNECT       core.CmdType = "CmdType.Tcp.ClientConnect"
 	CLIENT_CMD_SEND          core.CmdType = "CmdType.Tcp.ClientSend"
 )
+
+const (
+	MAX_PACKET_LEN = 1024 * 1024 * 10 //10M
+)
