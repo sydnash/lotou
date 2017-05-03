@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/sydnash/lotou/log"
 	"reflect"
+	"fmt"
 )
 
 //CallHelper use reflect.Call to invoke a function.
@@ -46,7 +47,7 @@ func (c *CallHelper) AddFunc(cmd CmdType, fun interface{}) {
 func (c *CallHelper) AddMethod(cmd CmdType, v interface{}, methodName string) {
 	self := reflect.ValueOf(v)
 	f := self.MethodByName(methodName)
-	PanicWhen(f.Kind() != reflect.Func, "method must be a function type.")
+	PanicWhen(f.Kind() != reflect.Func, fmt.Sprintf("[CallHelper:AddMethod] cmd{%v} method must be a function type.", cmd))
 	c.funcMap[cmd] = &callbackDesc{f, true}
 }
 

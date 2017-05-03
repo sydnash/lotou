@@ -52,6 +52,7 @@ func (c *Client) OnDestroy() {
 	c.isNeedExit = true
 	if c.Con != nil {
 		c.Con.Close()
+		c.Con = nil
 	}
 }
 func (c *Client) onConnect(n int) {
@@ -91,6 +92,7 @@ func (c *Client) onSend(src core.ServiceID, param ...interface{}) {
 	if c.status != CLIENT_STATUS_CONNECTED {
 		if c.status == CLIENT_STATUS_NOT_CONNECT {
 			c.status = CLIENT_STATUS_CONNECTING
+			c.isNeedExit = false
 			go c.connect(-1)
 		}
 		data := param[0].([]byte)
