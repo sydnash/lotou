@@ -11,6 +11,7 @@ const (
 	Cmd_GetIdByNameRet  CmdType = "CmdType.Core.GetIdByNameRet"
 	Cmd_NameAdd         CmdType = "CmdType.Core.NameAdd"
 	Cmd_NameDeleted     CmdType = "CmdType.Core.NameDeleted"
+	Cmd_Default         CmdType = "CmdType.Core.Default"
 )
 
 /*
