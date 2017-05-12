@@ -36,5 +36,9 @@ func TestSlave(t *testing.T) {
 	conf.CoreIsMaster = false
 
 	game := &Game{core.NewSkeleton(1000), 0}
-	lotou.Start(nil, &lotou.ModuleParam{"game2", game})
+	lotou.Start(nil, &core.ModuleParam{
+		N: "game2",
+		M: game,
+		L: 0,
+	})
 }

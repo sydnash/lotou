@@ -47,8 +47,16 @@ func (g *Game) OnInit() {
 
 func TestModule(t *testing.T) {
 	log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
-	id1 := core.StartService("g1", &Game{Skeleton: core.NewSkeleton(0)})
-	core.StartService("g2", &Game{Skeleton: core.NewSkeleton(1000), Dst: id1})
+	id1 := core.StartService(&core.ModuleParam{
+		N: "g1",
+		M: &Game{Skeleton: core.NewSkeleton(0)},
+		L: 0,
+	})
+	core.StartService(&core.ModuleParam{
+		N: "g2",
+		M: &Game{Skeleton: core.NewSkeleton(1000), Dst: id1},
+		L: 0,
+	})
 
 	ch := make(chan int)
 	go func() {

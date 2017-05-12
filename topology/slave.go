@@ -14,9 +14,17 @@ type slave struct {
 
 func StartSlave(ip, port string) {
 	m := &slave{Skeleton: core.NewSkeleton(0)}
-	core.StartService(".router", m)
+	core.StartService(&core.ModuleParam{
+		N: ".router",
+		M: m,
+		L: 0,
+	})
 	c := tcp.NewClient(ip, port, m.Id)
-	m.client = core.StartService("", c)
+	m.client = core.StartService(&core.ModuleParam{
+		N: "",
+		M: c,
+		L: 0,
+	})
 }
 
 func (s *slave) OnNormalMSG(msg *core.Message) {

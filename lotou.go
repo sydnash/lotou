@@ -14,11 +14,6 @@ import (
 	"time"
 )
 
-type ModuleParam struct {
-	N string
-	M core.Module
-}
-
 type CloseFunc func()
 
 //Start start lotou with given modules which in is in data.
@@ -30,7 +25,7 @@ type CloseFunc func()
 //capture system's SIGKILL SIGTERM signal
 //and wait until all service are closed.
 //f will be called when SIGKILL or SIGTERM is received.
-func Start(f CloseFunc, data ...*ModuleParam) {
+func Start(f CloseFunc, data ...*core.ModuleParam) {
 	rand.Seed(time.Now().UnixNano())
 	logger := log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
 	logger.SetColored(conf.LogHasColor)
@@ -48,7 +43,7 @@ func Start(f CloseFunc, data ...*ModuleParam) {
 	}
 
 	for _, m := range data {
-		core.StartService(m.N, m.M)
+		core.StartService(m)
 	}
 
 	/*err := http.ListenAndServe(":10000", nil)
@@ -74,7 +69,7 @@ func Start(f CloseFunc, data ...*ModuleParam) {
 }
 
 //RawStart start lotou, with no wait
-func RawStart(data ...*ModuleParam) {
+func RawStart(data ...*core.ModuleParam) {
 	log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
 
 	core.InitNode(conf.CoreIsStandalone, conf.CoreIsMaster)
@@ -89,6 +84,6 @@ func RawStart(data ...*ModuleParam) {
 	}
 
 	for _, m := range data {
-		core.StartService(m.N, m.M)
+		core.StartService(m)
 	}
 }

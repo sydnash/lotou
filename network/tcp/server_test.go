@@ -40,7 +40,11 @@ func TestServer(t *testing.T) {
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
 	m := &M{Skeleton: core.NewSkeleton(0)}
 	m.decoder = binary.NewDecoder()
-	core.StartService(".m", m)
+	core.StartService(&core.ModuleParam{
+		N: ".m",
+		M: m,
+		L: 0,
+	})
 
 	s := tcp.NewServer("", "3333", m.Id)
 	s.Listen()

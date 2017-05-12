@@ -68,7 +68,11 @@ func (self *Server) Listen() error {
 				break
 			}
 			a := NewAgent(tcpCon, self.hostService)
-			core.StartService("", a)
+			core.StartService(&core.ModuleParam{
+				N: "",
+				M: a,
+				L: 0,
+			})
 		}
 	}()
 

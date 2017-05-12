@@ -47,9 +47,12 @@ var (
 	ServiceCallTimeout = errors.New("call time out")
 )
 
-func newService(name string) *service {
+func newService(name string, len int) *service {
 	s := &service{name: name}
-	s.msgChan = make(chan *Message, 1024)
+	if len <= 1024 {
+		len = 1024
+	}
+	s.msgChan = make(chan *Message, len)
 	s.requestId = 0
 	s.requestMap = make(map[uint64]requestCB)
 	s.callChanMap = make(map[uint64]chan []interface{})

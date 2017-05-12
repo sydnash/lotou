@@ -6,20 +6,26 @@ import (
 	"reflect"
 )
 
+type ModuleParam struct {
+	N string
+	M Module
+	L int
+}
+
 // StartService starts the given modules with specific names
 //`service' will call module's OnInit after registration
 // and registers name to master if the name(of service) is a global name (starting without a dot)
 // and starts msg loop in an another goroutine
-func StartService(name string, m Module) ServiceID {
-	s := newService(name)
-	s.m = m
+func StartService(m *ModuleParam) ServiceID {
+	s := newService(m.N, m.L)
+	s.m = m.M
 	id := registerService(s)
-	m.setService(s)
-	d := m.getDuration()
-	if !checkIsLocalName(name) {
-		globalName(id, name)
+	m.M.setService(s)
+	d := m.M.getDuration()
+	if !checkIsLocalName(m.N) {
+		globalName(id, m.N)
 	}
-	s.m.OnModuleStartup(id, name)
+	s.m.OnModuleStartup(id, m.N)
 	if d > 0 {
 		s.runWithLoop(d)
 	} else {

@@ -34,7 +34,11 @@ func TestMaster(t *testing.T) {
 	core.RegisterNode()
 
 	game := &Game{core.NewSkeleton(0)}
-	id := core.StartService("game1", game)
+	id := core.StartService(&core.ModuleParam{
+		N: "game1",
+		M: game,
+		L: 0,
+	})
 	log.Info("game1's id :%v", id)
 
 	log.Info("test")

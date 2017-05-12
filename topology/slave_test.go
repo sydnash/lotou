@@ -37,7 +37,11 @@ func TestSlavea(t *testing.T) {
 	core.RegisterNode()
 	log.Info("start create service")
 	game := &Game{core.NewSkeleton(1000)}
-	core.StartService("game2", game)
+	core.StartService(&core.ModuleParam{
+		N: "game2",
+		M: game,
+		L: 0,
+	})
 	log.Info("game2's id: %v", game.Id)
 
 	var err error

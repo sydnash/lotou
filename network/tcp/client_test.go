@@ -52,12 +52,20 @@ func TestClient(t *testing.T) {
 
 	for i := 0; i < 1; i++ {
 		c := &C{Skeleton: core.NewSkeleton(1000)}
-		core.StartService(".client", c)
+		core.StartService(&core.ModuleParam{
+			N: ".client",
+			M: c,
+			L: 0,
+		})
 		c.encoder = binary.NewEncoder()
 		c.decoder = binary.NewDecoder()
 
 		client := tcp.NewClient("127.0.0.1", "3333", c.Id)
-		c.client = core.StartService(".cc", client)
+		c.client = core.StartService(&core.ModuleParam{
+			N: ".cc",
+			M: client,
+			L: 0,
+		})
 	}
 
 	for {

@@ -19,7 +19,11 @@ func StartMaster(ip, port string) {
 	m := &master{Skeleton: core.NewSkeleton(0)}
 	m.nodesMap = make(map[uint64]core.ServiceID)
 	m.globalNameMap = make(map[string]core.ServiceID)
-	core.StartService(".router", m)
+	core.StartService(&core.ModuleParam{
+		N: ".router",
+		M: m,
+		L: 0,
+	})
 
 	if !conf.CoreIsStandalone {
 		m.tcpServer = tcp.NewServer(ip, port, m.Id)
