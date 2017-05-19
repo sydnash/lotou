@@ -1,5 +1,6 @@
 package gob
 
+/*
 import (
 	"fmt"
 	"hash/fnv"
@@ -101,12 +102,14 @@ func getStructFlatStr(t reflect.Type) string {
 
 func getStructID(t reflect.Type) uint {
 	strrpr := getTypeFragStr(t)
+	fmt.Println(strrpr)
 	h := fnv.New64a()
 	h.Sum([]byte(strrpr))
 	return uint(h.Sum64())
 }
+*/
 
-/* Uncomment the rest to get the original implementation
+// Uncomment the rest to get the original implementation
 var (
 	_baseID uint
 )
@@ -115,4 +118,3 @@ func getStructID() uint {
 	_baseID++
 	return _baseID
 }
-*/

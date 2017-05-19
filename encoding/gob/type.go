@@ -24,7 +24,7 @@ func RegisterStructType(i interface{}) {
 	if ok {
 		return
 	}
-	typeId := getStructID(rt)
+	typeId := getStructID()
 	baseRtToTypeId[rt] = typeId
 	typeIdToUt[typeId] = rt
 }
