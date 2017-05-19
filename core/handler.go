@@ -78,12 +78,12 @@ func registerService(s *service) ServiceID {
 	h.dicMutex.Lock()
 	defer h.dicMutex.Unlock()
 	var baseServiceId uint64
-	if h.baseServiceIdCache.Empty() {
-		h.curId++
-		baseServiceId = h.curId
-	} else {
-		baseServiceId = h.baseServiceIdCache.Pop().(uint64)
-	}
+	//if h.baseServiceIdCache.Empty() {
+	h.curId++
+	baseServiceId = h.curId
+	//} else {
+	//	baseServiceId = h.baseServiceIdCache.Pop().(uint64)
+	//}
 	id := h.nodeId<<NODE_ID_OFF | baseServiceId
 	h.dic[id] = s
 	sid := ServiceID(id)
