@@ -12,19 +12,26 @@ const (
 	PARSE_STATUS_END
 )
 
+const (
+	PACKAGE_LEN_COUNT int = 4
+)
+
 var ErrPacketLenExceed = errors.New("packet length exceed")
 
 type ParseCache struct {
-	msg     []byte
-	msgLen  int
-	copyLen int
-	status  int
+	msg           []byte
+	msgLen        int
+	copyLen       int
+	status        int
+	msgHeader     [PACKAGE_LEN_COUNT]byte
+	copyHeaderLen int
 }
 
 func (p *ParseCache) reset() {
 	p.msg = nil
 	p.msgLen = 0
 	p.copyLen = 0
+	p.copyHeaderLen = 0
 	p.status = PARSE_STATUS_LEN
 }
 
@@ -42,7 +49,6 @@ func ByteSliceToInt(s []byte) (v uint32) {
 }
 
 func Subpackage(cache []byte, in net.Conn, status *ParseCache) (pack [][]byte, err error) {
-	packageLenCount := 4
 READ_LOOP:
 	for {
 		if len(pack) > 0 {
@@ -57,39 +63,36 @@ READ_LOOP:
 		for {
 			switch status.status {
 			case PARSE_STATUS_LEN:
-				if len(cache[startPos:n]) < packageLenCount-status.copyLen {
-					if status.msg == nil {
-						status.msg = make([]byte, packageLenCount)
-					}
-					copyLen := copy(status.msg, cache[startPos:n])
-					status.copyLen += copyLen
+				if len(cache[startPos:n]) < PACKAGE_LEN_COUNT-status.copyHeaderLen {
+					copyLen := copy(status.msgHeader[status.copyHeaderLen:], cache[startPos:n])
+					status.copyHeaderLen += copyLen
 					if len(pack) == 0 {
 						continue READ_LOOP
 					} else {
 						return pack, nil
 					}
 				}
-				if status.msg == nil {
+				if status.copyHeaderLen == 0 {
 					status.msgLen = int(ByteSliceToInt(cache[startPos:n]))
-					startPos += packageLenCount
+					startPos += PACKAGE_LEN_COUNT
 				} else {
-					copyLen := copy(status.msg[status.copyLen:], cache[startPos:n])
+					copyLen := copy(status.msgHeader[status.copyHeaderLen:], cache[startPos:n])
 					startPos += copyLen
-					status.msgLen = int(ByteSliceToInt(status.msg))
+					status.msgLen = int(ByteSliceToInt(status.msgHeader[:]))
 				}
 				if status.msgLen > MAX_PACKET_LEN {
 					log.Error("packet length(%v) exceeds the maximum message length %v", status.msgLen, MAX_PACKET_LEN)
 					return pack, ErrPacketLenExceed
 				}
 				tmp := make([]byte, status.msgLen)
-				if status.msg != nil {
-					copy(tmp, status.msg)
+				if status.copyHeaderLen != 0 {
+					copy(tmp, status.msgHeader[:])
 				} else {
-					copy(tmp[0:packageLenCount], cache[startPos-packageLenCount:startPos])
+					copy(tmp[0:PACKAGE_LEN_COUNT], cache[startPos-PACKAGE_LEN_COUNT:startPos])
 				}
 				status.status = PARSE_STATUS_MSG
 				status.msg = tmp
-				status.copyLen = packageLenCount
+				status.copyLen = PACKAGE_LEN_COUNT
 			case PARSE_STATUS_MSG:
 				copyLen := copy(status.msg[status.copyLen:], cache[startPos:n])
 				status.copyLen += copyLen
