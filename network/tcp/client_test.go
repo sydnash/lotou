@@ -1,7 +1,6 @@
 package tcp_test
 
 import (
-	"fmt"
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/encoding/binary"
 	"github.com/sydnash/lotou/log"
@@ -43,7 +42,7 @@ func (c *C) OnSocketMSG(msg *core.Message) {
 		c.decoder.SetBuffer(data)
 		var msg []byte = []byte{}
 		c.decoder.Decode(&msg)
-		fmt.Println(string(msg))
+		log.Info(string(msg))
 	}
 }
 
@@ -51,7 +50,7 @@ func TestClient(t *testing.T) {
 	log.Init("test", log.FATAL_LEVEL, log.DEBUG_LEVEL, 10000, 1000)
 
 	for i := 0; i < 1; i++ {
-		c := &C{Skeleton: core.NewSkeleton(1000)}
+		c := &C{Skeleton: core.NewSkeleton(10)}
 		core.StartService(&core.ModuleParam{
 			N: ".client",
 			M: c,

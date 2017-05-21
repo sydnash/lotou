@@ -20,8 +20,9 @@ type Client struct {
 	Con             *net.TCPConn
 	RemoteAddress   *net.TCPAddr
 	hostService     core.ServiceID
-	inbuffer        *bufio.Reader
+	inbuffer        []byte
 	outbuffer       *bufio.Writer
+	parseCache      *ParseCache
 	status          int32
 	bufferForOutMsg *bytes.Buffer
 	isNeedExit      bool
@@ -46,6 +47,7 @@ func NewClient(host, port string, hostID core.ServiceID) *Client {
 }
 
 func (c *Client) OnInit() {
+	c.inbuffer = make([]byte, DEFAULT_RECV_BUFF_LEN)
 }
 
 func (c *Client) OnDestroy() {
@@ -136,6 +138,11 @@ func (c *Client) OnNormalMSG(msg *core.Message) {
 }
 
 func (c *Client) connect(n int) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error("recover: stack: %v\n, %v", core.GetStack(), err)
+		}
+	}()
 	i := 0
 	for {
 		if c.isNeedExit {
@@ -145,7 +152,7 @@ func (c *Client) connect(n int) {
 			var err error
 			c.Con, err = net.DialTCP("tcp", nil, c.RemoteAddress)
 			if err != nil {
-				log.Error("client connect failed: %s", err)
+				//log.Error("client connect failed: %s", err)
 			} else {
 				break
 			}
@@ -159,26 +166,33 @@ func (c *Client) connect(n int) {
 	if c.Con == nil {
 		c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_CONNECT_FAILED) //connect failed
 	} else {
-		if c.inbuffer == nil && c.outbuffer == nil {
-			c.inbuffer = bufio.NewReader(c.Con)
+		if c.outbuffer == nil {
 			c.outbuffer = bufio.NewWriter(c.Con)
+			c.parseCache = &ParseCache{}
 		} else {
-			c.inbuffer.Reset(c.Con)
 			c.outbuffer.Reset(c.Con)
+			c.parseCache.reset()
 		}
 		c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_CONNECTED) //connect success
 		//send normal msg to tell self tcp is connected.
 		c.RawSend(c.Id, core.MSG_TYPE_NORMAL, CLIENT_SELF_CONNECTED)
 		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Error("recover: stack: %v\n, %v", core.GetStack(), err)
+				}
+			}()
 			for {
 				//split package
-				pack, err := Subpackage(c.inbuffer)
+				pack, err := Subpackage(c.inbuffer, c.Con, c.parseCache)
 				if err != nil {
 					log.Error("client read msg failed: %s", err)
 					c.onConError()
 					break
 				}
-				c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_DATA, pack) //recv message
+				for _, v := range pack {
+					c.sendToHost(core.MSG_TYPE_SOCKET, CLIENT_DATA, v) //recv message
+				}
 			}
 		}()
 	}

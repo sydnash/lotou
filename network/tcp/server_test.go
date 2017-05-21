@@ -1,7 +1,6 @@
 package tcp_test
 
 import (
-	"fmt"
 	"github.com/sydnash/lotou/core"
 	"github.com/sydnash/lotou/encoding/binary"
 	"github.com/sydnash/lotou/log"
@@ -30,7 +29,7 @@ func (m *M) OnSocketMSG(msg *core.Message) {
 		m.decoder.SetBuffer(data)
 		var msg []byte = []byte{}
 		m.decoder.Decode(&msg)
-		fmt.Println(src, string(msg))
+		log.Info("%v, %v", src, string(msg))
 
 		m.RawSend(src, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, data)
 	}

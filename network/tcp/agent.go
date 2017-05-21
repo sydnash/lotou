@@ -28,8 +28,9 @@ type Agent struct {
 	hostService          core.ServiceID
 	hasDataArrived       bool
 	leftTimeBeforArrived int
-	inbuffer             *bufio.Reader
+	inbuffer             []byte
 	outbuffer            *bufio.Writer
+	parseCache           *ParseCache
 }
 
 const AgentNoDataHoldtime = 5000
@@ -37,12 +38,18 @@ const AgentNoDataHoldtime = 5000
 func (a *Agent) OnInit() {
 	a.hasDataArrived = false
 	a.leftTimeBeforArrived = AgentNoDataHoldtime
-	a.inbuffer = bufio.NewReader(a.Con)
+	a.inbuffer = make([]byte, DEFAULT_RECV_BUFF_LEN)
 	a.outbuffer = bufio.NewWriter(a.Con)
+	a.parseCache = &ParseCache{}
 	log.Info("receive a connect at: %v", a.Con.RemoteAddr())
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Error("recover: stack: %v\n, %v", core.GetStack(), err)
+			}
+		}()
 		for {
-			pack, err := Subpackage(a.inbuffer)
+			pack, err := Subpackage(a.inbuffer, a.Con, a.parseCache)
 			if err != nil {
 				log.Error("agent read msg failed: %s", err)
 				a.onConnectError()
@@ -51,7 +58,9 @@ func (a *Agent) OnInit() {
 			if !a.hasDataArrived {
 				a.hasDataArrived = true
 			}
-			a.sendToHost(core.MSG_TYPE_SOCKET, AGENT_DATA, pack)
+			for _, v := range pack {
+				a.sendToHost(core.MSG_TYPE_SOCKET, AGENT_DATA, v)
+			}
 		}
 	}()
 }
