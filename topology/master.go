@@ -64,7 +64,7 @@ func (m *master) onRegisterNode(src core.ServiceID) {
 
 func (m *master) onRegisterName(serviceId core.ServiceID, serviceName string) {
 	m.globalNameMap[serviceName] = serviceId
-	m.distributeM(core.Cmd_NameAdd, serviceName, serviceId)
+	m.distributeM(core.Cmd_NameAdd, core.NodeInfo{serviceName, serviceId})
 }
 
 func (m *master) onGetIdByName(src core.ServiceID, name string, rId uint) {
@@ -116,12 +116,11 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 		core.CollectNodeId(nodeId)
 
 		//notify other services delete name's id on agent which is disconnected.
-		type tmp []interface{}
 		deletedNames := []interface{}{}
 		for name, id := range m.globalNameMap {
 			nid := core.ParseNodeId(id)
 			if nid == nodeId {
-				deletedNames = append(deletedNames, tmp{name, id})
+				deletedNames = append(deletedNames, core.NodeInfo{name, id})
 			}
 		}
 		m.distributeM(core.Cmd_NameDeleted, deletedNames...)

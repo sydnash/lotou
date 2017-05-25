@@ -20,6 +20,11 @@ type Message struct {
 	Data    []interface{}
 }
 
+type NodeInfo struct {
+	Name string
+	Id   ServiceID
+}
+
 func NewMessage(src, dst ServiceID, msgType MsgType, encType EncType, id uint64, cmd CmdType, data ...interface{}) *Message {
 	switch encType {
 	case MSG_ENC_TYPE_NO:
@@ -32,6 +37,7 @@ func NewMessage(src, dst ServiceID, msgType MsgType, encType EncType, id uint64,
 
 func init() {
 	gob.RegisterStructType(Message{})
+	gob.RegisterStructType(NodeInfo{})
 }
 
 func sendNoEnc(src ServiceID, dst ServiceID, msgType MsgType, id uint64, cmd CmdType, data ...interface{}) error {
