@@ -39,7 +39,10 @@ func (s *slave) OnSocketMSG(msg *core.Message) {
 	//data[0] is a gob encode data of Message
 	data := msg.Data
 	if cmd == tcp.CLIENT_DATA {
-		sdata := gob.Unpack(data[0].([]byte))
+		sdata, err := gob.Unpack(data[0].([]byte))
+		if err != nil {
+			return
+		}
 		masterMSG := sdata.([]interface{})[0].(*core.Message)
 		scmd := masterMSG.Cmd
 		array := masterMSG.Data

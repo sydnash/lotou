@@ -90,7 +90,10 @@ func ForwardLocal(m *Message) {
 		dsts.pushMSG(m)
 	case MSG_TYPE_RET:
 		if m.EncType == MSG_ENC_TYPE_GO {
-			t := gob.Unpack(m.Data[0].([]byte))
+			t, err := gob.Unpack(m.Data[0].([]byte))
+			if err != nil {
+				panic(err)
+			}
 			m.Data = t.([]interface{})
 		}
 		cid := m.Id

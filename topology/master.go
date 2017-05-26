@@ -83,7 +83,11 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 	data := msg.Data
 	//it's first encode value is cmd such as (registerNode, regeisterName, getIdByName, forward...)
 	if cmd == tcp.AGENT_DATA {
-		sdata := gob.Unpack(data[0].([]byte))
+		sdata, err := gob.Unpack(data[0].([]byte))
+		if err != nil {
+			m.SendClose(src, false)
+			return
+		}
 		slaveMSG := sdata.([]interface{})[0].(*core.Message)
 		scmd := slaveMSG.Cmd
 		array := slaveMSG.Data
