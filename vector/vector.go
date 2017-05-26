@@ -138,6 +138,15 @@ func isEqual(d1, d2 interface{}) bool {
 	}
 }
 
+func (v *Vector) indexOf(d interface{}) {
+	for i, t := range v.s {
+		if isEqual(t, d) {
+			return i
+		}
+	}
+	return -1
+}
+
 func (v *Vector) DeleteByValue(d interface{}) {
 	for i, t := range v.s {
 		if isEqual(t, d) {
