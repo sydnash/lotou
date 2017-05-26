@@ -15,7 +15,7 @@ func TestPackMore(t *testing.T) {
 	}
 	bytes := gob.Pack(m1)
 	fmt.Println(bytes)
-	m2 := gob.Unpack(bytes)
+	m2, _ := gob.Unpack(bytes)
 	m3 := m2.([]interface{})[0].(*core.Message)
 	if m3.Type != specificType {
 		t.Error("Not the same")

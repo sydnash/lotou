@@ -96,7 +96,10 @@ func (s *service) destroy() {
 
 func (s *service) dispatchMSG(msg *Message) bool {
 	if msg.EncType == MSG_ENC_TYPE_GO {
-		t := gob.Unpack(msg.Data[0].([]byte))
+		t, err := gob.Unpack(msg.Data[0].([]byte))
+		if err != nil {
+			panic(err)
+		}
 		msg.Data = t.([]interface{})
 	}
 	switch msg.Type {
