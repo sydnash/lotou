@@ -138,7 +138,7 @@ func isEqual(d1, d2 interface{}) bool {
 	}
 }
 
-func (v *Vector) IndexOf(d interface{}) {
+func (v *Vector) IndexOf(d interface{}) int {
 	for i, t := range v.s {
 		if isEqual(t, d) {
 			return i
