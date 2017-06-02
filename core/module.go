@@ -105,7 +105,7 @@ func (s *Skeleton) Call(dst ServiceID, encType EncType, cmd CmdType, data ...int
 //Schedule schedule a time with given parameter.
 func (s *Skeleton) Schedule(interval, repeat int, cb timer.TimerCallback) *timer.Timer {
 	if s.s == nil {
-		panic("Schedule must call after OnInit is called(contain OnInit)")
+		panic("Schedule must call after OnInit is called(not contain OnInit)")
 	}
 	return s.s.schedule(interval, repeat, cb)
 }
