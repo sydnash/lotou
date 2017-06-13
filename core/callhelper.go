@@ -69,7 +69,7 @@ func (c *CallHelper) findCallbackDesc(cmd CmdType) *callbackDesc {
 	cb, ok := c.funcMap[cmd]
 	if !ok {
 		if cb, ok = c.funcMap[Cmd_Default]; ok {
-			log.Info("func: <%v>:%d is not found in {%v}, use default cmd handler.", cmd, len(cmd), c.hostServiceName)
+			//log.Info("func: <%v>:%d is not found in {%v}, use default cmd handler.", cmd, len(cmd), c.hostServiceName)
 		} else {
 			log.Fatal("func: <%v>:%d is not found in {%v}", cmd, len(cmd), c.hostServiceName)
 		}
