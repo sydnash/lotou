@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/sydnash/lotou/helper"
 	"github.com/sydnash/lotou/log"
 	"reflect"
 )
@@ -114,7 +115,7 @@ func SafeGo(f func()) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Error("recover: stack: %v\n, %v", GetStack(), err)
+				log.Error("recover: stack: %v\n, %v", helper.GetStack(), err)
 			}
 			return
 		}()

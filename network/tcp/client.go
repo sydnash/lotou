@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"github.com/sydnash/lotou/core"
+	"github.com/sydnash/lotou/helper"
 	"github.com/sydnash/lotou/log"
 	"net"
 	"time"
@@ -140,7 +141,7 @@ func (c *Client) OnNormalMSG(msg *core.Message) {
 func (c *Client) connect(n int) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Error("recover: stack: %v\n, %v", core.GetStack(), err)
+			log.Error("recover: stack: %v\n, %v", helper.GetStack(), err)
 		}
 	}()
 	i := 0
@@ -179,7 +180,7 @@ func (c *Client) connect(n int) {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					log.Error("recover: stack: %v\n, %v", core.GetStack(), err)
+					log.Error("recover: stack: %v\n, %v", helper.GetStack(), err)
 				}
 			}()
 			for {

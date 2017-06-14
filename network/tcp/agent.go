@@ -3,6 +3,7 @@ package tcp
 import (
 	"bufio"
 	"github.com/sydnash/lotou/core"
+	"github.com/sydnash/lotou/helper"
 	"github.com/sydnash/lotou/log"
 	"net"
 	"time"
@@ -45,7 +46,7 @@ func (a *Agent) OnInit() {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Error("recover: stack: %v\n, %v", core.GetStack(), err)
+				log.Error("recover: stack: %v\n, %v", helper.GetStack(), err)
 			}
 		}()
 		for {

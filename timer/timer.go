@@ -2,6 +2,8 @@ package timer
 
 import (
 	"errors"
+	"github.com/sydnash/lotou/helper"
+	"github.com/sydnash/lotou/log"
 )
 
 var (
@@ -45,7 +47,7 @@ func (t *Timer) update(dt int) {
 		t.elapsed -= t.interval
 		t.repeated += 1
 
-		t.cb(t.interval)
+		t.trigger()
 
 		if !t.isForever {
 			if t.repeated >= t.repeat {
@@ -54,6 +56,15 @@ func (t *Timer) update(dt int) {
 			}
 		}
 	}
+}
+
+func (t *Timer) trigger() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error("Timer:trigger stack: %v\n, %v", helper.GetStack(), err)
+		}
+	}()
+	t.cb(t.interval)
 }
 
 //Reset reset timer's time elapsed and repeated times.
