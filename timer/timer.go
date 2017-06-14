@@ -21,7 +21,7 @@ type Timer struct {
 
 func NewTimer(interval, repeat int, cb TimerCallback) *Timer {
 	if interval <= 0 {
-		panic("")
+		panic("NewTimer: interval is negative or zero.")
 	}
 	t := &Timer{}
 	t.interval = interval
