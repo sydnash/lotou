@@ -55,7 +55,7 @@ func RegisterNode() {
 		if !isStandalone && !isMaster {
 			route(Cmd_RegisterNode)
 			h.nodeId = <-registerNodeChan
-			worker = NewIdWorker(h.nodeId)
+			worker, _ = NewIdWorker(int64(h.nodeId))
 			log.Info("SlaveNode register:%v", h.nodeId)
 		}
 	})
