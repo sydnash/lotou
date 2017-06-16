@@ -31,7 +31,7 @@ type IdWorker struct {
 var worker *IdWorker
 
 func init() {
-	worker, _ = NewIdWorker(1)
+	worker, _ = NewIdWorker(0)
 }
 
 func UUID() uint64 {
