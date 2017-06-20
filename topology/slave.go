@@ -61,6 +61,8 @@ func (s *slave) OnSocketMSG(msg *core.Message) {
 		case core.Cmd_Forward:
 			msg := array[0].(*core.Message)
 			s.forwardM(msg)
+		case core.Cmd_Exit:
+			core.SendCloseToAll()
 		}
 	}
 }

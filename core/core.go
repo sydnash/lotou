@@ -100,6 +100,14 @@ func SendCloseToAll() {
 	}
 }
 
+func Exit() {
+	if isStandalone {
+		SendCloseToAll()
+	} else {
+		route(Cmd_Exit)
+	}
+}
+
 //Wait wait on a sync.WaitGroup, until all service is closed.
 func Wait() {
 	exitGroup.Wait()

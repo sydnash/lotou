@@ -13,6 +13,7 @@ type master struct {
 	nodesMap      map[uint64]core.ServiceID //nodeid : agentSID
 	globalNameMap map[string]core.ServiceID
 	tcpServer     *tcp.Server
+	isNeedExit    bool
 }
 
 func StartMaster(ip, port string) {
@@ -48,6 +49,8 @@ func (m *master) OnNormalMSG(msg *core.Message) {
 		rid := data[1].(uint)
 		id, ok := m.globalNameMap[name]
 		core.DispatchGetIdByNameRet(id, ok, name, rid)
+	case core.Cmd_Exit:
+		m.closeAll()
 	default:
 		log.Info("Unknown command for master: %v", cmd)
 	}
@@ -106,6 +109,8 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 			//find correct agent and send msg to that node.
 			forwardMsg := array[0].(*core.Message)
 			m.forwardM(forwardMsg, data[0].([]byte))
+		case core.Cmd_Exit:
+			m.closeAll()
 		}
 	} else if cmd == tcp.AGENT_CLOSED {
 		//on agent disconnected
@@ -128,6 +133,10 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 			}
 		}
 		m.distributeM(core.Cmd_NameDeleted, deletedNames...)
+
+		if len(m.nodesMap) == 0 && m.isNeedExit {
+			core.SendCloseToAll()
+		}
 	}
 }
 
@@ -141,6 +150,19 @@ func (m *master) distributeM(cmd core.CmdType, data ...interface{}) {
 		m.RawSend(agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
 	}
 	core.DistributeMSG(m.Id, cmd, data...)
+}
+
+func (m *master) closeAll() {
+	m.isNeedExit = true
+	for _, agent := range m.nodesMap {
+		msg := &core.Message{}
+		msg.Cmd = core.Cmd_Exit
+		sendData := gob.Pack(msg)
+		m.RawSend(agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
+	}
+	if len(m.nodesMap) == 0 {
+		core.SendCloseToAll()
+	}
 }
 
 func (m *master) forwardM(msg *core.Message, data []byte) {
