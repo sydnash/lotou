@@ -3,8 +3,8 @@ package log
 import (
 	"fmt"
 	"log"
-	"sync"
 	"runtime"
+	"sync"
 )
 
 // levels
