@@ -97,7 +97,7 @@ func (self *SimpleLogger) createLogFile(dir string) (*os.File, error) {
 		now.Minute(),
 		now.Second())
 	if dir != "" {
-		os.MkdirAll(dir, os.ModeDir)
+		os.MkdirAll(dir, os.ModePerm)
 	}
 	file, err := os.Create(path.Join(dir, filename))
 	if err != nil {
