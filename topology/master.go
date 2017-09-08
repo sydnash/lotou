@@ -129,6 +129,7 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 		for name, id := range m.globalNameMap {
 			nid := core.ParseNodeId(id)
 			if nid == nodeId {
+				log.Warn("service is delete: name: %v id: %v", name, id)
 				deletedNames = append(deletedNames, core.NodeInfo{name, id})
 			}
 		}
