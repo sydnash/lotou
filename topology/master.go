@@ -116,10 +116,15 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 		//on agent disconnected
 		//delet node from nodesMap
 		var nodeId uint64 = 0
+		hasFind := false
 		for id, v := range m.nodesMap {
 			if v == src {
+				hasFind = true
 				nodeId = id
 			}
+		}
+		if !hasFind {
+			return
 		}
 		delete(m.nodesMap, nodeId)
 		core.CollectNodeId(nodeId)
