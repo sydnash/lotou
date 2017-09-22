@@ -84,13 +84,19 @@ func (s *service) pushMSG(m *Message) {
 	select {
 	case s.msgChan <- m:
 	default:
-		panic(fmt.Sprintf("service is full.<%s>", s.getName()))
+		if s.msgChan == nil {
+			log.Warn("msg chan is closed.<%s>", s.getName())
+		} else {
+			panic(fmt.Sprintf("service is full.<%s>", s.getName()))
+		}
 	}
 }
 
 func (s *service) destroy() {
 	unregisterService(s)
-	close(s.msgChan)
+	msgChan := s.msgChan
+	s.msgChan = nil
+	close(msgChan)
 	if s.loopTicker != nil {
 		s.loopTicker.Stop()
 	}
