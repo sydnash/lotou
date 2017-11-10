@@ -19,6 +19,7 @@ type SimpleLogger struct {
 	//shell log
 	shellLevel int
 	isColored  bool
+	buffer     chan *Msg
 }
 
 const (
@@ -49,7 +50,7 @@ func (self *SimpleLogger) SetColored(colored bool) {
 	self.isColored = colored
 }
 
-func (self *SimpleLogger) DoPrintf(level int, levelDesc, format string, a ...interface{}) {
+func (self *SimpleLogger) doPrintf(level int, levelDesc, format string, a ...interface{}) {
 	nformat := levelDesc + format
 	if level >= self.fileLevel {
 		if self.logLine > self.maxLine {
@@ -74,6 +75,14 @@ func (self *SimpleLogger) DoPrintf(level int, levelDesc, format string, a ...int
 		nformat := sel_fmt[level] + format
 		log.Printf(nformat, a...)
 	}
+}
+
+func (self *SimpleLogger) DoPrintf(level int, levelDesc, format string, a ...interface{}) {
+	if self.buffer == nil {
+		self.doPrintf(level, levelDesc, format, a...)
+		return
+	}
+	self.buffer <- &Msg{level, levelDesc, format, a}
 }
 
 func (self *SimpleLogger) setFileOutDir(path string) {
@@ -107,6 +116,17 @@ func (self *SimpleLogger) createLogFile(dir string) (*os.File, error) {
 	return file, nil
 }
 
+func (self *SimpleLogger) run() {
+	go func() {
+		for {
+			m, ok := <-self.buffer
+			if ok {
+				self.doPrintf(m.level, m.levelDesc, m.fmt, m.param...)
+			}
+		}
+	}()
+}
+
 func CreateLogger(path string, fileLevel, shellLevel, maxLine, bufSize int) *SimpleLogger {
 	logger := &SimpleLogger{}
 	logger.setFileOutDir(path)
@@ -114,6 +134,11 @@ func CreateLogger(path string, fileLevel, shellLevel, maxLine, bufSize int) *Sim
 	logger.setShellLogLevel(shellLevel)
 	logger.maxLine = maxLine
 	logger.logLine = maxLine + 1
+	if bufSize > 10 {
+		log.Printf("log start with async mode.")
+		logger.buffer = make(chan *Msg, bufSize)
+		logger.run()
+	}
 	return logger
 }
 

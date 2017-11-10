@@ -8,9 +8,14 @@ import (
 	"github.com/sydnash/lotou/network/tcp"
 )
 
+type Node struct {
+	Agent core.ServiceID
+	Name  string
+}
+
 type master struct {
 	*core.Skeleton
-	nodesMap      map[uint64]core.ServiceID //nodeid : agentSID
+	nodesMap      map[uint64]Node //nodeid : Node struct
 	globalNameMap map[string]core.ServiceID
 	tcpServer     *tcp.Server
 	isNeedExit    bool
@@ -18,7 +23,7 @@ type master struct {
 
 func StartMaster(ip, port string) {
 	m := &master{Skeleton: core.NewSkeleton(0)}
-	m.nodesMap = make(map[uint64]core.ServiceID)
+	m.nodesMap = make(map[uint64]Node)
 	m.globalNameMap = make(map[string]core.ServiceID)
 	core.StartService(&core.ModuleParam{
 		N: ".router",
@@ -51,15 +56,22 @@ func (m *master) OnNormalMSG(msg *core.Message) {
 		core.DispatchGetIdByNameRet(id, ok, name, rid)
 	case core.Cmd_Exit:
 		m.closeAll()
+	case core.Cmd_Exit_Node:
+		nodeName := data[0].(string)
+		m.closeNode(nodeName)
 	default:
 		log.Info("Unknown command for master: %v", cmd)
 	}
 }
 
-func (m *master) onRegisterNode(src core.ServiceID) {
+func (m *master) onRegisterNode(src core.ServiceID, nodeName string) {
 	//generate node id
 	nodeId := core.GenerateNodeId()
-	m.nodesMap[nodeId] = src
+	log.Info("register node: nodeId: %v, nodeName: %v", nodeId, nodeName)
+	m.nodesMap[nodeId] = Node{
+		Agent: src,
+		Name:  nodeName,
+	}
 	msg := core.NewMessage(core.INVALID_SERVICE_ID, core.INVALID_SERVICE_ID, core.MSG_TYPE_NORMAL, core.MSG_ENC_TYPE_NO, 0, core.Cmd_RegisterNodeRet, nodeId)
 	sendData := gob.Pack(msg)
 	m.RawSend(src, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
@@ -96,7 +108,8 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 		array := slaveMSG.Data
 		switch scmd {
 		case core.Cmd_RegisterNode:
-			m.onRegisterNode(src)
+			nodeName := array[0].(string)
+			m.onRegisterNode(src, nodeName)
 		case core.Cmd_RegisterName:
 			serviceId := array[0].(uint64)
 			serviceName := array[1].(string)
@@ -111,6 +124,9 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 			m.forwardM(forwardMsg, data[0].([]byte))
 		case core.Cmd_Exit:
 			m.closeAll()
+		case core.Cmd_Exit_Node:
+			nodeName := array[0].(string)
+			m.closeNode(nodeName)
 		}
 	} else if cmd == tcp.AGENT_CLOSED {
 		//on agent disconnected
@@ -118,7 +134,7 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 		var nodeId uint64 = 0
 		hasFind := false
 		for id, v := range m.nodesMap {
-			if v == src {
+			if v.Agent == src {
 				hasFind = true
 				nodeId = id
 			}
@@ -147,24 +163,35 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 }
 
 func (m *master) distributeM(cmd core.CmdType, data ...interface{}) {
-	for _, agent := range m.nodesMap {
+	for _, node := range m.nodesMap {
 		msg := &core.Message{}
 		msg.Cmd = core.Cmd_Distribute
 		msg.Data = append(msg.Data, cmd)
 		msg.Data = append(msg.Data, data...)
 		sendData := gob.Pack(msg)
-		m.RawSend(agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
+		m.RawSend(node.Agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
 	}
 	core.DistributeMSG(m.Id, cmd, data...)
 }
 
+func (m *master) closeNode(nodeName string) {
+	for _, node := range m.nodesMap {
+		if node.Name == nodeName {
+			msg := &core.Message{}
+			msg.Cmd = core.Cmd_Exit
+			sendData := gob.Pack(msg)
+			m.RawSend(node.Agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
+		}
+	}
+}
+
 func (m *master) closeAll() {
 	m.isNeedExit = true
-	for _, agent := range m.nodesMap {
+	for _, node := range m.nodesMap {
 		msg := &core.Message{}
 		msg.Cmd = core.Cmd_Exit
 		sendData := gob.Pack(msg)
-		m.RawSend(agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
+		m.RawSend(node.Agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, sendData)
 	}
 	if len(m.nodesMap) == 0 {
 		core.SendCloseToAll()
@@ -179,7 +206,7 @@ func (m *master) forwardM(msg *core.Message, data []byte) {
 		core.ForwardLocal(msg)
 		return
 	}
-	agent, ok := m.nodesMap[nodeId]
+	node, ok := m.nodesMap[nodeId]
 	if !ok {
 		log.Debug("node:%v is disconnected.", nodeId)
 		return
@@ -192,7 +219,7 @@ func (m *master) forwardM(msg *core.Message, data []byte) {
 		ret.Data = append(ret.Data, msg)
 		data = gob.Pack(ret)
 	}
-	m.RawSend(agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, data)
+	m.RawSend(node.Agent, core.MSG_TYPE_NORMAL, tcp.AGENT_CMD_SEND, data)
 }
 
 func (m *master) OnDestroy() {
@@ -200,6 +227,6 @@ func (m *master) OnDestroy() {
 		m.tcpServer.Close()
 	}
 	for _, v := range m.nodesMap {
-		m.SendClose(v, false)
+		m.SendClose(v.Agent, false)
 	}
 }

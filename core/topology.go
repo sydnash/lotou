@@ -50,13 +50,13 @@ func InitNode(_isStandalone, _isMaster bool) {
 
 //RegisterNode : register slave node to master, and get a node id
 // block until register success
-func RegisterNode() {
+func RegisterNode(nodeName string) {
 	once.Do(func() {
 		if !isStandalone && !isMaster {
-			route(Cmd_RegisterNode)
+			route(Cmd_RegisterNode, nodeName)
 			h.nodeId = <-registerNodeChan
 			worker, _ = NewIdWorker(int64(h.nodeId))
-			log.Info("SlaveNode register:%v", h.nodeId)
+			log.Info("SlaveNode register ndoe success: nodeId: %v, nodeName: {%v}", h.nodeId, nodeName)
 		}
 	})
 }

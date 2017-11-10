@@ -12,6 +12,7 @@ const (
 	Cmd_NameAdd         CmdType = "CmdType.Core.NameAdd"
 	Cmd_NameDeleted     CmdType = "CmdType.Core.NameDeleted"
 	Cmd_Exit            CmdType = "CmdType.Core.Exit"
+	Cmd_Exit_Node       CmdType = "CmdType.Core.ExitNode"
 	Cmd_Default         CmdType = "CmdType.Core.Default"
 )
 
