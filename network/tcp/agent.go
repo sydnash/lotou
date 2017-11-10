@@ -43,6 +43,7 @@ func (a *Agent) OnInit() {
 	a.outbuffer = bufio.NewWriter(a.Con)
 	a.parseCache = &ParseCache{}
 	log.Info("receive a connect at: %v->%v", a.Con.LocalAddr(), a.Con.RemoteAddr())
+	a.sendToHost(core.MSG_TYPE_SOCKET, AGENT_ARRIVE, a.Con.LocalAddr().String(), a.Con.RemoteAddr().String())
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
