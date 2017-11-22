@@ -26,14 +26,19 @@ type CloseFunc func()
 //and wait until all service are closed.
 //f will be called when SIGKILL or SIGTERM is received.
 func Start(f CloseFunc, data ...*core.ModuleParam) {
-	StartWithName("", f, data...)
+	StartWithName("", f, nil, data...)
 }
 
-func StartWithName(nodeName string, f CloseFunc, data ...*core.ModuleParam) {
+func StartWithName(nodeName string, f CloseFunc, customLogger log.Logger, data ...*core.ModuleParam) {
 	rand.Seed(time.Now().UnixNano())
-	logFilePath := nodeName + "_" + conf.LogFilePath
-	logger := log.Init(logFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
-	logger.SetColored(conf.LogHasColor)
+
+	if customLogger == nil {
+		logFilePath := nodeName + "_" + conf.LogFilePath
+		logger := log.Init(logFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
+		logger.SetColored(conf.LogHasColor)
+	} else {
+		log.SetLogger(customLogger)
+	}
 	core.InitNode(conf.CoreIsStandalone, conf.CoreIsMaster)
 
 	log.Info("starting node: {%v}", nodeName)
