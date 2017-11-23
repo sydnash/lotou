@@ -62,6 +62,7 @@ func (s *slave) OnSocketMSG(msg *core.Message) {
 			msg := array[0].(*core.Message)
 			s.forwardM(msg)
 		case core.Cmd_Exit:
+			log.Info("receive exit command, node will exit now.")
 			core.SendCloseToAll()
 		}
 	}

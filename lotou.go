@@ -26,18 +26,29 @@ type CloseFunc func()
 //and wait until all service are closed.
 //f will be called when SIGKILL or SIGTERM is received.
 func Start(f CloseFunc, data ...*core.ModuleParam) {
+	StartWithName("", f, nil, data...)
+}
+
+func StartWithName(nodeName string, f CloseFunc, customLogger log.Logger, data ...*core.ModuleParam) {
 	rand.Seed(time.Now().UnixNano())
-	logger := log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
-	logger.SetColored(conf.LogHasColor)
+
+	if customLogger == nil {
+		logFilePath := nodeName + "_" + conf.LogFilePath
+		logger := log.Init(logFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
+		logger.SetColored(conf.LogHasColor)
+	} else {
+		log.SetLogger(customLogger)
+	}
 	core.InitNode(conf.CoreIsStandalone, conf.CoreIsMaster)
 
+	log.Info("starting node: {%v}", nodeName)
 	if !conf.CoreIsStandalone {
 		if conf.CoreIsMaster {
 			topology.StartMaster(conf.MasterListenIp, conf.MultiNodePort)
 		} else {
 			topology.StartSlave(conf.SlaveConnectIp, conf.MultiNodePort)
 		}
-		core.RegisterNode()
+		core.RegisterNode(nodeName)
 	} else {
 		topology.StartMaster(conf.MasterListenIp, conf.MultiNodePort)
 	}
@@ -69,18 +80,19 @@ func Start(f CloseFunc, data ...*core.ModuleParam) {
 }
 
 //RawStart start lotou, with no wait
-func RawStart(data ...*core.ModuleParam) {
+func RawStart(nodeName string, data ...*core.ModuleParam) {
 	log.Init(conf.LogFilePath, conf.LogFileLevel, conf.LogShellLevel, conf.LogMaxLine, conf.LogBufferSize)
 
 	core.InitNode(conf.CoreIsStandalone, conf.CoreIsMaster)
 
+	log.Info("start node: {%v}", nodeName)
 	if !conf.CoreIsStandalone {
 		if conf.CoreIsMaster {
 			topology.StartMaster(conf.MasterListenIp, conf.MultiNodePort)
 		} else {
 			topology.StartSlave(conf.SlaveConnectIp, conf.MultiNodePort)
 		}
-		core.RegisterNode()
+		core.RegisterNode(nodeName)
 	}
 
 	for _, m := range data {
