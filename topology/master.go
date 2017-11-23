@@ -152,6 +152,7 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 			if nid == nodeId {
 				log.Warn("service is delete: name: %v id: %v", name, id)
 				deletedNames = append(deletedNames, core.NodeInfo{name, id})
+				delete(m.globalNameMap, name)
 			}
 		}
 		m.distributeM(core.Cmd_NameDeleted, deletedNames...)
