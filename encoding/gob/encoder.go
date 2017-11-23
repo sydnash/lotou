@@ -55,7 +55,14 @@ func (enc *Encoder) Reset() {
 
 func (enc *Encoder) grow(n int) {
 	if enc.w+n > cap(enc.b) {
-		buf := make([]byte, 2*cap(enc.b), 2*cap(enc.b))
+		newLen := 2 * cap(enc.b)
+		for {
+			if newLen >= enc.w+n {
+				break
+			}
+			newLen = 2 * newLen
+		}
+		buf := make([]byte, newLen, newLen)
 		copy(buf, enc.b[:enc.w])
 		enc.b = buf[:]
 	}

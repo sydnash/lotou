@@ -71,7 +71,4 @@ func TestType(t *testing.T) {
 			idx++
 		}
 	}
-
-	var testbyte = []interface{}{1, 2, 3}
-	t = reflect.ValueOf(testbyte)
 }
