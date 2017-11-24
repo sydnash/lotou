@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime"
+	"sync"
 	"time"
 )
 
@@ -20,6 +22,7 @@ type SimpleLogger struct {
 	shellLevel int
 	isColored  bool
 	buffer     chan *Msg
+	wg         sync.WaitGroup
 }
 
 const (
@@ -116,14 +119,26 @@ func (self *SimpleLogger) createLogFile(dir string) (*os.File, error) {
 	return file, nil
 }
 
+func (self *SimpleLogger) Close() {
+	for len(self.buffer) > 0 {
+		runtime.Gosched()
+	}
+	close(self.buffer)
+	self.wg.Wait()
+}
+
 func (self *SimpleLogger) run() {
 	go func() {
+		self.wg.Add(1)
 		for {
 			m, ok := <-self.buffer
 			if ok {
 				self.doPrintf(m.level, m.levelDesc, m.fmt, m.param...)
+			} else {
+				break
 			}
 		}
+		self.wg.Done()
 	}()
 }
 

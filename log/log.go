@@ -35,6 +35,7 @@ type Msg struct {
 type Logger interface {
 	DoPrintf(level int, levelDesc, format string, a ...interface{})
 	SetColored(colored bool)
+	Close()
 }
 
 var glogger Logger
@@ -99,6 +100,15 @@ func Error(format string, param ...interface{}) {
 func Fatal(format string, param ...interface{}) {
 	format = preProcess(format)
 	do(FATAL_LEVEL, FATAL_LEVEL_DESC, format, param...)
+}
+
+func Close() {
+	if glogger == nil {
+		return
+	}
+	gloggerMut.Lock()
+	glogger.Close()
+	gloggerMut.Unlock()
 }
 
 //init log with SimpleLogger

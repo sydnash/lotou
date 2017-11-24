@@ -77,6 +77,8 @@ func StartWithName(nodeName string, f CloseFunc, customLogger log.Logger, data .
 	}()
 
 	core.Wait()
+
+	log.Close()
 }
 
 //RawStart start lotou, with no wait
