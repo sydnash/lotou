@@ -28,12 +28,11 @@ const (
 type Msg struct {
 	level     int
 	levelDesc string
-	fmt       string
-	param     []interface{}
+	msg       string
 }
 
 type Logger interface {
-	DoPrintf(level int, levelDesc, format string, a ...interface{})
+	DoPrintf(level int, levelDesc, msg string)
 	SetColored(colored bool)
 	Close()
 }
@@ -48,9 +47,9 @@ func do(level int, desc, format string, param ...interface{}) {
 		log.Fatal("log is not init, please call log.Init first.")
 		return
 	}
-	m := &Msg{level, desc, format, param}
+	m := &Msg{level, desc, fmt.Sprintf(format, param...)}
 	gloggerMut.Lock()
-	glogger.DoPrintf(m.level, m.levelDesc, m.fmt, m.param...)
+	glogger.DoPrintf(m.level, m.levelDesc, m.msg)
 	gloggerMut.Unlock()
 
 	if level == FATAL_LEVEL {

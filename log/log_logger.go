@@ -53,8 +53,8 @@ func (self *SimpleLogger) SetColored(colored bool) {
 	self.isColored = colored
 }
 
-func (self *SimpleLogger) doPrintf(level int, levelDesc, format string, a ...interface{}) {
-	nformat := levelDesc + format
+func (self *SimpleLogger) doPrintf(level int, levelDesc, msg string) {
+	nformat := levelDesc + msg
 	if level >= self.fileLevel {
 		if self.logLine > self.maxLine {
 			if self.baseFile != nil {
@@ -66,7 +66,7 @@ func (self *SimpleLogger) doPrintf(level int, levelDesc, format string, a ...int
 			self.logLine = 0
 		}
 		if self.fileLogger != nil {
-			self.fileLogger.Printf(nformat, a...)
+			self.fileLogger.Printf(nformat)
 			self.logLine++
 		}
 	}
@@ -75,17 +75,17 @@ func (self *SimpleLogger) doPrintf(level int, levelDesc, format string, a ...int
 		if !self.isColored {
 			sel_fmt = std_format
 		}
-		nformat := sel_fmt[level] + format
-		log.Printf(nformat, a...)
+		nformat := sel_fmt[level] + msg
+		log.Printf(nformat)
 	}
 }
 
-func (self *SimpleLogger) DoPrintf(level int, levelDesc, format string, a ...interface{}) {
+func (self *SimpleLogger) DoPrintf(level int, levelDesc, msg string) {
 	if self.buffer == nil {
-		self.doPrintf(level, levelDesc, format, a...)
+		self.doPrintf(level, levelDesc, msg)
 		return
 	}
-	self.buffer <- &Msg{level, levelDesc, format, a}
+	self.buffer <- &Msg{level, levelDesc, msg}
 }
 
 func (self *SimpleLogger) setFileOutDir(path string) {
@@ -133,7 +133,7 @@ func (self *SimpleLogger) run() {
 		for {
 			m, ok := <-self.buffer
 			if ok {
-				self.doPrintf(m.level, m.levelDesc, m.fmt, m.param...)
+				self.doPrintf(m.level, m.levelDesc, m.msg)
 			} else {
 				break
 			}
