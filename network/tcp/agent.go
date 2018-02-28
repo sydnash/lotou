@@ -71,7 +71,7 @@ func NewAgent(con *net.TCPConn, hostID core.ServiceID) *Agent {
 	a := &Agent{
 		Con:         con,
 		hostService: hostID,
-		Skeleton:    core.NewSkeleton(10),
+		Skeleton:    core.NewSkeleton(5000),
 	}
 	return a
 }
