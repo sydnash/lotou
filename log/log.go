@@ -28,13 +28,13 @@ const (
 type Msg struct {
 	level     int
 	levelDesc string
-	fmt       string
-	param     []interface{}
+	msg       string
 }
 
 type Logger interface {
-	DoPrintf(level int, levelDesc, format string, a ...interface{})
+	DoPrintf(level int, levelDesc, msg string)
 	SetColored(colored bool)
+	Close()
 }
 
 var glogger Logger
@@ -47,9 +47,9 @@ func do(level int, desc, format string, param ...interface{}) {
 		log.Fatal("log is not init, please call log.Init first.")
 		return
 	}
-	m := &Msg{level, desc, format, param}
+	m := &Msg{level, desc, fmt.Sprintf(format, param...)}
 	gloggerMut.Lock()
-	glogger.DoPrintf(m.level, m.levelDesc, m.fmt, m.param...)
+	glogger.DoPrintf(m.level, m.levelDesc, m.msg)
 	gloggerMut.Unlock()
 
 	if level == FATAL_LEVEL {
@@ -99,6 +99,15 @@ func Error(format string, param ...interface{}) {
 func Fatal(format string, param ...interface{}) {
 	format = preProcess(format)
 	do(FATAL_LEVEL, FATAL_LEVEL_DESC, format, param...)
+}
+
+func Close() {
+	if glogger == nil {
+		return
+	}
+	gloggerMut.Lock()
+	glogger.Close()
+	gloggerMut.Unlock()
 }
 
 //init log with SimpleLogger
