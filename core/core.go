@@ -44,6 +44,9 @@ func HelperFunctionToUseReflectCall(f reflect.Value, callParam []reflect.Value, 
 	isVariadic := f.Type().IsVariadic()
 	for i := 0; i < n; i++ {
 		paramIndex := i + startNum
+		if paramIndex >= f.Type().NumIn() {
+			panic(fmt.Sprintf("InvocationCausedPanic(%v): called param count(%v) is len than reciver function's parma count(%v)", f.Type().String(), len(callParam), f.Type().NumIn()))
+		}
 		var expectedType reflect.Type
 		if isVariadic && paramIndex >= lastCallParamIdx { //variadic function's last param is []T
 			expectedType = f.Type().In(lastCallParamIdx)
@@ -60,7 +63,7 @@ func HelperFunctionToUseReflectCall(f reflect.Value, callParam []reflect.Value, 
 		actualType := callParam[paramIndex].Type()
 		if !actualType.AssignableTo(expectedType) {
 			//panic if param is not assignable to Call
-			errStr := fmt.Sprintf("InvocationCausedPanic: called with a mismatched parameter type [parameter #%v: expected %v; got %v].", paramIndex, expectedType, actualType)
+			errStr := fmt.Sprintf("InvocationCausedPanic(%v): called with a mismatched parameter type [parameter #%v: expected %v; got %v].", f.Type().String(), paramIndex, expectedType, actualType)
 			panic(errStr)
 		}
 	}
