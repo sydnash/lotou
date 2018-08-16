@@ -20,6 +20,6 @@ const (
 )
 
 const (
-	MAX_PACKET_LEN        = 1024 * 1024 * 10 //10M
+	MAX_PACKET_LEN        = 1024 * 1024 * 100 //100M
 	DEFAULT_RECV_BUFF_LEN = 1 * 1024
 )

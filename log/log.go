@@ -63,7 +63,10 @@ func SetLogger(logger Logger) {
 	gloggerMut.Unlock()
 }
 
-func preProcess(format string) string {
+func preProcess(format string, level int) string {
+	if level == INFO_LEVEL || level == WARN_LEVEL || level == FATAL_LEVEL {
+		return format
+	}
 	if !HasCallerPos {
 		return format
 	}
@@ -77,27 +80,27 @@ func preProcess(format string) string {
 }
 
 func Debug(format string, param ...interface{}) {
-	format = preProcess(format)
+	format = preProcess(format, DEBUG_LEVEL)
 	do(DEBUG_LEVEL, DEBUG_LEVEL_DESC, format, param...)
 }
 
 func Info(format string, param ...interface{}) {
-	format = preProcess(format)
+	format = preProcess(format, INFO_LEVEL)
 	do(INFO_LEVEL, INFO_LEVEL_DESC, format, param...)
 }
 
 func Warn(format string, param ...interface{}) {
-	format = preProcess(format)
+	format = preProcess(format, WARN_LEVEL)
 	do(WARN_LEVEL, WARN_LEVEL_DESC, format, param...)
 }
 
 func Error(format string, param ...interface{}) {
-	format = preProcess(format)
+	format = preProcess(format, ERROR_LEVEL)
 	do(ERROR_LEVEL, ERROR_LEVEL_DESC, format, param...)
 }
 
 func Fatal(format string, param ...interface{}) {
-	format = preProcess(format)
+	format = preProcess(format, FATAL_LEVEL)
 	do(FATAL_LEVEL, FATAL_LEVEL_DESC, format, param...)
 }
 

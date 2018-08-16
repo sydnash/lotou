@@ -26,6 +26,7 @@ import (
 type Agent struct {
 	*core.Skeleton
 	Con                  *net.TCPConn
+	closeing             bool
 	hostService          core.ServiceID
 	hasDataArrived       bool
 	leftTimeBeforArrived int
@@ -87,6 +88,9 @@ func (a *Agent) OnMainLoop(dt int) {
 }
 
 func (a *Agent) OnNormalMSG(msg *core.Message) {
+	if a.closeing {
+		return
+	}
 	data := msg.Data
 	cmd := msg.Cmd
 	if cmd == AGENT_CMD_SEND {
@@ -95,10 +99,12 @@ func (a *Agent) OnNormalMSG(msg *core.Message) {
 		if _, err := a.outbuffer.Write(msg); err != nil {
 			log.Error("agent write msg failed: %s", err)
 			a.onConnectError()
+			return
 		}
 		if err := a.outbuffer.Flush(); err != nil {
 			log.Error("agent flush msg failed: %s", err)
 			a.onConnectError()
+			return
 		}
 	}
 }
@@ -110,6 +116,7 @@ func (a *Agent) OnDestroy() {
 func (a *Agent) onConnectError() {
 	a.sendToHost(core.MSG_TYPE_SOCKET, AGENT_CLOSED)
 	a.SendClose(a.Id, false)
+	a.closeing = true
 }
 
 func (a *Agent) close() {
