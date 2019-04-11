@@ -144,6 +144,7 @@ func (self *SimpleLogger) run() {
 
 func CreateLogger(path string, fileLevel, shellLevel, maxLine, bufSize int) *SimpleLogger {
 	logger := &SimpleLogger{}
+	log.SetFlags(log.Ldate | log.Lmicroseconds)
 	logger.setFileOutDir(path)
 	logger.setFileLogLevel(fileLevel)
 	logger.setShellLogLevel(shellLevel)

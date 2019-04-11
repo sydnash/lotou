@@ -2,9 +2,10 @@ package core
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/sydnash/lotou/helper"
 	"github.com/sydnash/lotou/log"
-	"reflect"
 )
 
 type ModuleParam struct {
@@ -116,6 +117,13 @@ func ExitNodeByName(nodeName string) {
 		SendCloseToAll()
 	} else {
 		route(Cmd_Exit_Node, nodeName)
+	}
+}
+
+func RefreshSlaveWhiteIPList(ips []string) {
+	if isStandalone {
+	} else {
+		route(Cmd_RefreshSlaveWhiteIPList, ips)
 	}
 }
 

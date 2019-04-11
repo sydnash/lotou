@@ -3,14 +3,15 @@ package core
 import (
 	"errors"
 	"fmt"
+	"reflect"
+	"sync"
+	"time"
+
 	"github.com/sydnash/lotou/conf"
 	"github.com/sydnash/lotou/encoding/gob"
 	"github.com/sydnash/lotou/helper"
 	"github.com/sydnash/lotou/log"
 	"github.com/sydnash/lotou/timer"
-	"reflect"
-	"sync"
-	"time"
 )
 
 type ServiceID uint64
@@ -309,6 +310,38 @@ func (s *service) call(dst ServiceID, encType EncType, cmd CmdType, data ...inte
 	}
 	if conf.CallTimeOut > 0 {
 		time.AfterFunc(time.Duration(conf.CallTimeOut)*time.Millisecond, func() {
+			s.dispatchRet(id, ServiceCallTimeout)
+		})
+	}
+	ret := <-ch
+	s.callMutex.Lock()
+	delete(s.callChanMap, id)
+	s.callMutex.Unlock()
+
+	close(ch)
+	if err, ok := ret[0].(error); ok {
+		return ret[1:], err
+	}
+	return ret, nil
+}
+
+func (s *service) callWithTimeout(dst ServiceID, encType EncType, timeout int, cmd CmdType, data ...interface{}) ([]interface{}, error) {
+	helper.PanicWhen(dst == s.getId(), "dst must equal to s's id")
+	s.callMutex.Lock()
+	id := s.callId
+	s.callId++
+	s.callMutex.Unlock()
+
+	//ch has one buffer, make ret service not block on it.
+	ch := make(chan []interface{}, 1)
+	s.callMutex.Lock()
+	s.callChanMap[id] = ch
+	s.callMutex.Unlock()
+	if err := lowLevelSend(s.getId(), dst, MSG_TYPE_CALL, encType, id, cmd, data...); err != nil {
+		return nil, err
+	}
+	if timeout > 0 {
+		time.AfterFunc(time.Duration(timeout)*time.Millisecond, func() {
 			s.dispatchRet(id, ServiceCallTimeout)
 		})
 	}

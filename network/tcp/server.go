@@ -6,17 +6,19 @@ when a tcp connect comming in
 create a agent
 */
 import (
-	"github.com/sydnash/lotou/core"
-	"github.com/sydnash/lotou/log"
 	"net"
 	"time"
+
+	"github.com/sydnash/lotou/core"
+	"github.com/sydnash/lotou/log"
 )
 
 type Server struct {
-	Host        string
-	Port        string
-	hostService core.ServiceID
-	listener    *net.TCPListener
+	Host              string
+	Port              string
+	AcceptWhiteIpList []net.IP
+	hostService       core.ServiceID
+	listener          *net.TCPListener
 }
 
 const (
@@ -30,6 +32,16 @@ func NewServer(host, port string, hsID core.ServiceID) *Server {
 		hostService: hsID,
 	}
 	return s
+}
+
+func (self *Server) SetAcceptWhiteIPList(ipList []string) {
+	self.AcceptWhiteIpList = self.AcceptWhiteIpList[0:0]
+	for _, ipStr := range ipList {
+		ip := net.ParseIP(ipStr)
+		if ip != nil {
+			self.AcceptWhiteIpList = append(self.AcceptWhiteIpList, ip)
+		}
+	}
 }
 
 func (self *Server) Listen() error {
@@ -66,6 +78,27 @@ func (self *Server) Listen() error {
 				log.Error("tcp server: accept err %s, server closed.", err)
 				core.Send(self.hostService, core.MSG_TYPE_NORMAL, core.MSG_ENC_TYPE_NO, TCPServerClosed)
 				break
+			}
+			if len(self.AcceptWhiteIpList) > 0 {
+				remoteAddr := tcpCon.RemoteAddr()
+				tcpAddr, e := net.ResolveTCPAddr("tcp", remoteAddr.String())
+				if e != nil {
+					log.Error("tcp server: receive remote address error. %v ", e)
+					continue
+				}
+				ip := tcpAddr.IP
+				isAllowAccept := false
+				for _, allowIP := range self.AcceptWhiteIpList {
+					if allowIP.Equal(ip) {
+						isAllowAccept = true
+						break
+					}
+				}
+				if !isAllowAccept {
+					log.Error("tcp server: receive a remote connect with ip: [ %v ] which is not in white ip list. [ %v ], so close it.", ip, self.AcceptWhiteIpList)
+					tcpCon.Close()
+					continue
+				}
 			}
 			a := NewAgent(tcpCon, self.hostService)
 			core.StartService(&core.ModuleParam{

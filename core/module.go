@@ -85,7 +85,7 @@ func (s *Skeleton) SendClose(dst ServiceID, isForce bool) {
 	sendNoEnc(s.s.getId(), dst, MSG_TYPE_CLOSE, 0, Cmd_None, isForce)
 }
 
-//Request send a request msg to dst, and start timeout function if timeout > 0
+//Request send a request msg to dst, and start timeout function if timeout > 0, millisecond
 //after receiver call Respond, the responseCb will be called
 func (s *Skeleton) Request(dst ServiceID, encType EncType, timeout int, responseCb interface{}, cmd CmdType, data ...interface{}) {
 	s.s.request(dst, encType, timeout, responseCb, cmd, data...)
@@ -100,6 +100,12 @@ func (s *Skeleton) Respond(dst ServiceID, encType EncType, rid uint64, data ...i
 //after receiver call Ret, it will return
 func (s *Skeleton) Call(dst ServiceID, encType EncType, cmd CmdType, data ...interface{}) ([]interface{}, error) {
 	return s.s.call(dst, encType, cmd, data...)
+}
+
+//CallWithTimeout send a call msg to dst, and start a timeout function with the timeout millisecond
+//after receiver call Ret, it will return
+func (s *Skeleton) CallWithTimeout(dst ServiceID, encType EncType, timeout int, cmd CmdType, data ...interface{}) ([]interface{}, error) {
+	return s.s.callWithTimeout(dst, encType, timeout, cmd, data...)
 }
 
 //Schedule schedule a time with given parameter.

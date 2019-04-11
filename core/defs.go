@@ -1,19 +1,20 @@
 package core
 
 const (
-	Cmd_None            CmdType = "CmdType.Core.None"
-	Cmd_Forward         CmdType = "CmdType.Core.Forward"
-	Cmd_Distribute      CmdType = "CmdType.Core.Distribute"
-	Cmd_RegisterNode    CmdType = "CmdType.Core.RegisterNode"
-	Cmd_RegisterNodeRet CmdType = "CmdType.Core.RegisterNodeRet"
-	Cmd_RegisterName    CmdType = "CmdType.Core.RegisterName"
-	Cmd_GetIdByName     CmdType = "CmdType.Core.GetIdByName"
-	Cmd_GetIdByNameRet  CmdType = "CmdType.Core.GetIdByNameRet"
-	Cmd_NameAdd         CmdType = "CmdType.Core.NameAdd"
-	Cmd_NameDeleted     CmdType = "CmdType.Core.NameDeleted"
-	Cmd_Exit            CmdType = "CmdType.Core.Exit"
-	Cmd_Exit_Node       CmdType = "CmdType.Core.ExitNode"
-	Cmd_Default         CmdType = "CmdType.Core.Default"
+	Cmd_None                    CmdType = "CmdType.Core.None"
+	Cmd_Forward                 CmdType = "CmdType.Core.Forward"
+	Cmd_Distribute              CmdType = "CmdType.Core.Distribute"
+	Cmd_RegisterNode            CmdType = "CmdType.Core.RegisterNode"
+	Cmd_RegisterNodeRet         CmdType = "CmdType.Core.RegisterNodeRet"
+	Cmd_RegisterName            CmdType = "CmdType.Core.RegisterName"
+	Cmd_GetIdByName             CmdType = "CmdType.Core.GetIdByName"
+	Cmd_GetIdByNameRet          CmdType = "CmdType.Core.GetIdByNameRet"
+	Cmd_NameAdd                 CmdType = "CmdType.Core.NameAdd"
+	Cmd_NameDeleted             CmdType = "CmdType.Core.NameDeleted"
+	Cmd_Exit                    CmdType = "CmdType.Core.Exit"
+	Cmd_Exit_Node               CmdType = "CmdType.Core.ExitNode"
+	Cmd_Default                 CmdType = "CmdType.Core.Default"
+	Cmd_RefreshSlaveWhiteIPList CmdType = "CmdType.Core.RefreshSlaveWhiteIPList"
 )
 
 /*

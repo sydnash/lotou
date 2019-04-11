@@ -33,6 +33,7 @@ func StartMaster(ip, port string) {
 
 	if !conf.CoreIsStandalone {
 		m.tcpServer = tcp.NewServer(ip, port, m.Id)
+		m.tcpServer.SetAcceptWhiteIPList(conf.SlaveWhiteIPList)
 		m.tcpServer.Listen()
 	}
 }
@@ -59,6 +60,9 @@ func (m *master) OnNormalMSG(msg *core.Message) {
 	case core.Cmd_Exit_Node:
 		nodeName := data[0].(string)
 		m.closeNode(nodeName)
+	case core.Cmd_RefreshSlaveWhiteIPList:
+		ips := data[0].([]string)
+		m.tcpServer.SetAcceptWhiteIPList(ips)
 	default:
 		log.Info("Unknown command for master: %v", cmd)
 	}
@@ -127,6 +131,9 @@ func (m *master) OnSocketMSG(msg *core.Message) {
 		case core.Cmd_Exit_Node:
 			nodeName := array[0].(string)
 			m.closeNode(nodeName)
+		case core.Cmd_RefreshSlaveWhiteIPList:
+			ips := array[0].([]string)
+			m.tcpServer.SetAcceptWhiteIPList(ips)
 		}
 	} else if cmd == tcp.AGENT_CLOSED {
 		//on agent disconnected
