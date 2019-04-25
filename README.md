@@ -88,4 +88,8 @@ If you are interested in developing Lotou, feel free to contact me via
    
 Advices and geeks are always welcomed. 
  
+ # next
  
+use `etcd` as service discover.
+
+use `nats` as node message diliver.
