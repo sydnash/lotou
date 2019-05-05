@@ -45,7 +45,7 @@ func HelperFunctionToUseReflectCall(f reflect.Value, callParam []reflect.Value, 
 	isVariadic := f.Type().IsVariadic()
 	for i := 0; i < n; i++ {
 		paramIndex := i + startNum
-		if paramIndex >= f.Type().NumIn() {
+		if !isVariadic && paramIndex >= f.Type().NumIn() {
 			panic(fmt.Sprintf("InvocationCausedPanic(%v): called param count(%v) is len than reciver function's parma count(%v)", f.Type().String(), len(callParam), f.Type().NumIn()))
 		}
 		var expectedType reflect.Type
